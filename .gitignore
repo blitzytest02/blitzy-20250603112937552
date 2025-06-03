@@ -1,0 +1,406 @@
+# =============================================================================
+# .gitignore for Node.js Tutorial Application
+# Node.js v22.16.0 LTS with Express.js v5.1.0
+# =============================================================================
+# This file specifies intentionally untracked files that Git should ignore.
+# Educational Node.js tutorial application for demonstrating /hello endpoint
+# =============================================================================
+
+# =============================================================================
+# SECURITY-CRITICAL PATTERNS (HIGHEST PRIORITY)
+# =============================================================================
+# These patterns prevent sensitive information from being committed to version control
+# Critical for preventing credential exposure and maintaining application security
+
+# Environment Variables and Secrets
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Private Keys and Certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.ca-bundle
+
+# Secret Configuration Files
+config/secrets.*
+secrets/
+.secrets/
+*.secret
+*.secret.*
+
+# Authentication and API Keys
+.auth
+.credentials
+apikeys.json
+serviceAccountKey.json
+
+# =============================================================================
+# NODE.JS DEPENDENCIES AND PACKAGE MANAGEMENT
+# =============================================================================
+# Node.js dependencies should be installed fresh via package.json
+# Demonstrates proper dependency management for educational purposes
+
+# Dependency Directories
+node_modules/
+jspm_packages/
+
+# Package Manager Logs and Debug Files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Package Manager Cache and Lock Files
+.npm
+.yarn-integrity
+.pnp
+.pnp.js
+.pnp.cjs
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Package Manager Configuration
+.npmrc
+.yarnrc
+.yarnrc.yml
+
+# Package Distribution Files
+*.tgz
+*.tar.gz
+
+# =============================================================================
+# DEVELOPMENT TOOLS AND IDE CONFIGURATION
+# =============================================================================
+# IDE-specific files should not be shared as they are user/environment specific
+# Demonstrates separation between personal dev environment and project config
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.vscode-test/
+
+# IntelliJ IDEA and WebStorm
+.idea/
+*.swp
+*.swo
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Atom
+.atom/
+
+# Eclipse
+.project
+.settings/
+.classpath
+
+# Vim and Emacs
+*~
+.#*
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Other Editors
+*.swp
+*.swo
+*~
+.DS_Store?
+._*
+
+# History Files
+.history/
+.vscode-test-web/
+
+# =============================================================================
+# TESTING AND COVERAGE OUTPUT
+# =============================================================================
+# Test results and coverage reports are generated artifacts, not source code
+# Educational value: shows separation between source and generated test data
+
+# Coverage Reports
+coverage/
+*.lcov
+.nyc_output/
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+
+# Test Results
+test-results/
+junit.xml
+*.xml
+test-report.xml
+
+# Jest
+.jest/
+
+# Mocha
+.mocha/
+
+# =============================================================================
+# BUILD AND DISTRIBUTION ARTIFACTS
+# =============================================================================
+# Build outputs should be generated fresh from source code
+# Demonstrates separation between source code and compiled artifacts
+
+# Build Directories
+dist/
+build/
+out/
+lib/
+es/
+esm/
+cjs/
+
+# Compilation Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+
+# Generated Documentation
+docs/generated/
+api-docs/
+
+# =============================================================================
+# LOGS AND RUNTIME FILES
+# =============================================================================
+# Runtime-generated files should not be committed to version control
+# Educational value: distinguishes between source code and runtime artifacts
+
+# Log Files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime Data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage Directory Used by Tools like Istanbul
+lib-cov/
+
+# Grunt Intermediate Storage
+.grunt/
+
+# Bower Dependency Directory
+bower_components/
+
+# =============================================================================
+# TEMPORARY AND CACHE FILES
+# =============================================================================
+# Temporary files can be recreated and should not be tracked
+# Demonstrates proper handling of transient files
+
+# Temporary Directories
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Cache Directories
+.cache/
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL History
+.node_repl_history
+
+# =============================================================================
+# PLATFORM-SPECIFIC SYSTEM FILES
+# =============================================================================
+# Operating system generated files are irrelevant to application functionality
+# Demonstrates cross-platform development considerations
+
+# macOS
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+Icon?
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# DOCKER AND CONTAINER FILES
+# =============================================================================
+# Container-specific files may contain environment-specific settings
+# Educational value: container configuration management
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+*.dockerfile
+Dockerfile.*
+
+# =============================================================================
+# DOCUMENTATION AND ARCHIVE FILES
+# =============================================================================
+# Backup and temporary documentation files should not be tracked
+# Demonstrates proper documentation version control practices
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+*.tmp
+
+# Archive Files
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Documentation Backups
+*.md.backup
+README.*.backup
+
+# =============================================================================
+# VERSION CONTROL AND DEPLOYMENT
+# =============================================================================
+# Files related to other version control systems and deployment
+
+# Subversion
+.svn/
+
+# Mercurial
+.hg/
+.hgignore
+
+# Bazaar
+.bzr/
+
+# Git
+.git/
+*.patch
+
+# Deployment
+.deploy*/
+deploy.sh
+.deployment/
+
+# =============================================================================
+# MONITORING AND PROFILING
+# =============================================================================
+# Performance and monitoring artifacts
+
+# Profiling Data
+*.prof
+*.heapdump
+*.heapsnapshot
+
+# Monitoring
+newrelic_agent.log
+.newrelic/
+
+# =============================================================================
+# MISCELLANEOUS FILES
+# =============================================================================
+# Additional files that should be excluded
+
+# Editor Directories and Files
+.editorconfig
+.eslintrc.local
+.prettierrc.local
+
+# Lock Files (Optional - some teams prefer to commit these)
+# Uncomment if your team decides not to commit lock files
+# package-lock.json
+# yarn.lock
+
+# Local Configuration Override Files
+*.local
+*.dev
+.development
+
+# =============================================================================
+# EDUCATIONAL SECTION: PATTERNS EXPLANATION
+# =============================================================================
+# This section demonstrates understanding of why files are excluded:
+#
+# 1. SECURITY: .env*, *.key, secrets/ - Prevents credential exposure
+# 2. DEPENDENCIES: node_modules/ - Installed via package.json, not committed
+# 3. GENERATED: coverage/, dist/, *.log - Created during development/testing
+# 4. PLATFORM: .DS_Store, Thumbs.db - OS-specific, irrelevant to application
+# 5. PERSONAL: .vscode/, .idea/ - Individual developer preferences
+#
+# Educational Value:
+# - Demonstrates security awareness through comprehensive exclusion patterns
+# - Shows understanding of Node.js ecosystem and development workflow
+# - Illustrates cross-platform development considerations
+# - Teaches separation between source code and generated artifacts
+# =============================================================================
+
+# =============================================================================
+# END OF .GITIGNORE
+# Node.js Tutorial Application - Educational Repository Management
+# Total patterns: 100+ comprehensive exclusion rules for clean repository
+# =============================================================================
