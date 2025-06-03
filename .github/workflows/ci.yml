@@ -1,0 +1,212 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/backend/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'jest.config.js'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  schedule:
+    # Weekly scheduled run every Monday at 2 AM UTC for dependency and security validation
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    # Manual workflow trigger for on-demand CI execution and testing
+
+# Prevent concurrent workflow runs for the same branch to optimize resource usage
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Environment variables for consistent configuration across all jobs
+env:
+  NODE_ENV: test
+  CI: true
+  COVERAGE_THRESHOLD: 95
+  NPM_CONFIG_PROGRESS: false
+  NPM_CONFIG_LOGLEVEL: error
+  FORCE_COLOR: 1
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    # Test against Node.js v22.16.0 LTS and latest v22.x for compatibility validation
+    strategy:
+      matrix:
+        node-version: ['22.16.0', '22.x']
+        
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Checkout source code with full git history for comprehensive analysis
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+          
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: |
+          # Install exact dependencies from package-lock.json for reproducible builds
+          npm ci
+          
+      - name: Run Linting
+        working-directory: src/backend
+        run: |
+          # Execute ESLint for code quality and style consistency validation
+          npm run lint
+          
+      - name: Run Unit Tests
+        working-directory: src/backend
+        run: |
+          # Execute Jest test suite with coverage collection and CI optimizations
+          npm run test:ci
+          
+      - name: Upload Coverage Reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: src/backend/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-reports-${{ matrix.node-version }}
+          path: src/backend/coverage/
+          retention-days: 7
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Checkout source code for security vulnerability scanning
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+          
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: |
+          # Install dependencies for security vulnerability analysis
+          npm ci
+          
+      - name: Run Security Audit
+        working-directory: src/backend
+        run: |
+          # Execute npm security audit to identify known vulnerabilities in dependencies
+          npm audit --audit-level=moderate
+          
+      - name: Run Dependency Check
+        uses: ossf/scorecard-action@v2
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+          
+      - name: Upload SARIF Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, security]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+          
+      - name: Download Coverage Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage-reports-22.16.0
+          path: coverage
+          
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: npm ci
+        
+      - name: Validate Coverage Threshold
+        working-directory: src/backend
+        env:
+          COVERAGE_THRESHOLD: 95
+        run: |
+          # Create coverage validation script
+          cat > scripts/validate-coverage.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          
+          const threshold = parseInt(process.env.COVERAGE_THRESHOLD || '95');
+          const coverageSummaryPath = path.join('coverage', 'coverage-summary.json');
+          
+          if (!fs.existsSync(coverageSummaryPath)) {
+            console.error('Coverage summary not found');
+            process.exit(1);
+          }
+          
+          const coverage = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf8'));
+          const { lines, functions, branches, statements } = coverage.total;
+          
+          console.log(`Coverage Summary:`);
+          console.log(`Lines: ${lines.pct}%`);
+          console.log(`Functions: ${functions.pct}%`);
+          console.log(`Branches: ${branches.pct}%`);
+          console.log(`Statements: ${statements.pct}%`);
+          
+          const metrics = [lines, functions, branches, statements];
+          const failedMetrics = metrics.filter(metric => metric.pct < threshold);
+          
+          if (failedMetrics.length > 0) {
+            console.error(`Coverage below threshold of ${threshold}%`);
+            process.exit(1);
+          }
+          
+          console.log(`All coverage metrics meet the ${threshold}% threshold`);
+          EOF
+          
+          # Create scripts directory if it doesn't exist
+          mkdir -p scripts
+          
+          # Run coverage validation
+          node scripts/validate-coverage.js
+          
+      - name: Quality Gate Status
+        run: |
+          echo "✅ Quality gate passed - all checks successful"
+          echo "🧪 Test Suite: Passed"
+          echo "🔒 Security Scan: Passed" 
+          echo "📊 Coverage Threshold: Met"
+          echo "🏆 All quality requirements satisfied"
