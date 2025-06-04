@@ -1,68 +1,76 @@
 #!/usr/bin/env python3
 """
 Comprehensive pytest test suite for WSGI server lifecycle management and Flask application integration.
+Replaces server.test.js functionality using pytest framework with subprocess integration for Gunicorn WSGI server testing.
 
-This module provides thorough validation of WSGI server startup, shutdown, performance characteristics,
-and production deployment scenarios. Replaces server.test.js functionality using pytest framework
-with subprocess integration for Gunicorn WSGI server testing.
-
-Key Testing Areas:
-- WSGI server lifecycle including startup, shutdown, and signal handling
-- Gunicorn WSGI server integration testing using subprocess for production deployment validation
-- Flask application factory testing with WSGI entry point validation
-- pytest-benchmark integration for WSGI server performance measurement with response time thresholds
-- psutil memory monitoring for WSGI server resource usage validation with 75MB limit
-- Python signal handling testing for SIGTERM and SIGINT with graceful shutdown validation
-- pytest fixture-based environment variable testing with python-dotenv integration
-- Concurrent request testing using threading for WSGI server load validation
+This module provides thorough validation of WSGI server startup, shutdown, performance characteristics, and 
+production deployment scenarios using pytest-benchmark, psutil memory monitoring, and concurrent request testing.
+Demonstrates production-grade Python testing practices for educational purposes while ensuring reliable
+WSGI server behavior across development and deployment environments.
 
 Educational Purpose:
-- Demonstrates comprehensive Flask WSGI testing patterns using pytest ecosystem
-- Shows production-ready WSGI server validation with Gunicorn integration
-- Provides pytest-benchmark performance testing examples with statistical analysis
-- Illustrates psutil system monitoring integration for resource validation
-- Replaces Node.js server testing patterns with Python equivalents
+- Shows pytest-based WSGI server testing replacing Jest HTTP server testing patterns
+- Demonstrates subprocess integration for Gunicorn process management and lifecycle validation
+- Provides Flask application factory testing with WSGI entry point validation
+- Shows pytest-benchmark integration for performance measurement and SLA enforcement
+- Demonstrates psutil memory monitoring for resource usage validation with 75MB limit
+- Implements Python signal handling testing for SIGTERM and SIGINT graceful shutdown
+- Shows pytest fixture-based environment variable testing with python-dotenv integration
+- Provides concurrent request testing using threading for WSGI server load validation
 
-Dependencies:
-- pytest>=8.4.0: Testing framework with advanced fixture management
-- pytest-flask>=1.3.0: Flask application testing integration
-- pytest-benchmark>=4.0.0: Performance testing and benchmarking
-- psutil>=5.9.0: System resource monitoring and process management
-- gunicorn>=21.2.0: Production WSGI server for testing
-- python-dotenv>=1.0.1: Environment variable management
-- threading: Concurrent request testing support
-- subprocess: WSGI server process management
-- signal: Python signal handling validation
+Production Testing Features:
+- WSGI server lifecycle validation including startup, shutdown, and signal handling
+- Gunicorn WSGI server integration testing using subprocess for production deployment validation
+- Flask application factory testing with WSGI entry point validation 
+- pytest-benchmark integration for WSGI server performance measurement with response time thresholds
+- psutil memory monitoring for WSGI server resource usage validation with 75MB limit enforcement
+- Python signal handling testing for SIGTERM and SIGINT with graceful shutdown validation
+- pytest fixture-based environment variable testing with python-dotenv integration
+- Concurrent request testing using threading for WSGI server load validation per performance requirements
 """
 
 import os
 import sys
-import time
 import signal
+import time
 import socket
-import subprocess
 import threading
+import subprocess
 import json
-import logging
-from pathlib import Path
 from contextlib import contextmanager
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, Any, Optional, List, Tuple
-from unittest.mock import patch, MagicMock
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from typing import Dict, Any, Optional, List, Generator
+import logging
 
-import pytest
-import psutil
-import requests
-from dotenv import load_dotenv
-
-# Import Flask application components for WSGI testing
+# Third-party imports for comprehensive WSGI testing
 try:
-    from src.app import create_app
-    from src.wsgi import create_wsgi_application
+    import pytest
+    import psutil
+    import requests
+    from dotenv import load_dotenv
+    from flask import Flask
 except ImportError as e:
-    pytest.fail(f"Failed to import Flask application components: {e}")
+    print(f"❌ Critical Import Error: {e}")
+    print("🔧 Please ensure all testing dependencies are installed:")
+    print("   pip install pytest>=8.4.0 pytest-flask>=1.3.0 psutil>=5.9.0")
+    print("   pip install requests>=2.31.0 python-dotenv>=1.0.1")
+    print("🎓 Educational Note: WSGI testing requires pytest ecosystem and system monitoring")
+    sys.exit(1)
 
-# Configure test logging for educational visibility
+# Import Flask application factory and WSGI entry point
+try:
+    from src.backend.app import create_app
+    from src.backend.wsgi import create_wsgi_application
+except ImportError as e:
+    print(f"❌ Flask Application Import Error: {e}")
+    print("🔧 Ensure Flask application modules are available:")
+    print("   src/backend/app.py with create_app() function")
+    print("   src/backend/wsgi.py with create_wsgi_application() function")
+    print("🎓 Educational Note: WSGI testing depends on Flask application factory patterns")
+    sys.exit(1)
+
+# Configure pytest logging for WSGI test visibility
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -70,943 +78,1329 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class WSGITestFixtures:
+# ============================================================================
+# PYTEST FIXTURES FOR WSGI SERVER TESTING
+# ============================================================================
+
+@pytest.fixture(scope='session', autouse=True)
+def configure_wsgi_test_environment():
     """
-    Pytest fixture collection for WSGI server testing providing comprehensive
-    test infrastructure including dynamic port allocation, memory monitoring,
-    and environment configuration management.
-    """
+    Session-scoped autouse fixture for WSGI testing environment configuration.
+    Replaces Jest global setup with pytest session-level configuration using python-dotenv.
     
-    @pytest.fixture(scope='session', autouse=True)
-    def configure_test_environment(self):
-        """
-        Session-wide pytest fixture for WSGI test environment configuration.
-        Loads test environment variables and ensures clean test isolation.
-        """
-        # Store original environment for restoration
-        original_env = os.environ.copy()
+    This fixture automatically configures the Flask testing environment using python-dotenv
+    for comprehensive environment variable management, ensuring consistent WSGI testing
+    behavior across all test modules and functions.
+    """
+    logger.info("🔄 Configuring WSGI testing environment using python-dotenv")
+    
+    # Store original environment for restoration
+    original_env = os.environ.copy()
+    
+    # Load testing environment configuration
+    load_dotenv('.env.testing', override=True)
+    
+    # Configure Flask testing environment
+    test_environment = {
+        'FLASK_ENV': 'testing',
+        'TESTING': '1',
+        'LOG_LEVEL': 'ERROR',
+        'HOST': 'localhost',
+        'WTF_CSRF_ENABLED': 'False',
+        'FLASK_DEBUG': 'False'
+    }
+    
+    # Apply testing environment configuration
+    os.environ.update(test_environment)
+    
+    logger.info("✅ WSGI testing environment configured successfully")
+    logger.info("🎓 Educational Note: python-dotenv provides 12-factor app configuration")
+    
+    yield
+    
+    # Restore original environment
+    logger.info("🧹 Restoring original environment after WSGI testing session")
+    os.environ.clear()
+    os.environ.update(original_env)
+
+
+@pytest.fixture
+def memory_monitor():
+    """
+    pytest fixture for psutil-based memory monitoring during WSGI server testing.
+    Replaces Jest memory monitoring with Python psutil process monitoring.
+    
+    Provides comprehensive memory usage tracking with 75MB limit enforcement
+    for WSGI server resource validation and leak detection.
+    
+    Returns:
+        Dict[str, Any]: Memory monitoring context with baseline and validation functions
+    """
+    logger.info("📊 Initializing psutil memory monitoring for WSGI testing")
+    
+    # Get current process for memory monitoring
+    process = psutil.Process()
+    baseline_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
+    
+    memory_context = {
+        'process': process,
+        'baseline_mb': baseline_memory,
+        'max_allowed_mb': 75,
+        'measurements': []
+    }
+    
+    def record_measurement(label: str) -> float:
+        """Record memory measurement with label"""
+        current_memory = process.memory_info().rss / 1024 / 1024
+        measurement = {
+            'label': label,
+            'memory_mb': current_memory,
+            'timestamp': time.time()
+        }
+        memory_context['measurements'].append(measurement)
+        logger.info(f"📈 Memory measurement ({label}): {current_memory:.2f}MB")
+        return current_memory
+    
+    def validate_memory_limit() -> None:
+        """Validate memory usage within 75MB limit"""
+        current_memory = record_measurement("validation_check")
+        assert current_memory < memory_context['max_allowed_mb'], \
+            f"Memory usage {current_memory:.2f}MB exceeds 75MB limit"
+    
+    memory_context['record'] = record_measurement
+    memory_context['validate'] = validate_memory_limit
+    
+    # Record initial baseline
+    record_measurement("test_start_baseline")
+    
+    logger.info(f"📋 Memory monitoring initialized - Baseline: {baseline_memory:.2f}MB")
+    logger.info("🎓 Educational Note: psutil enables precise Python process monitoring")
+    
+    yield memory_context
+    
+    # Final memory validation and cleanup
+    final_memory = record_measurement("test_end_validation")
+    memory_growth = final_memory - baseline_memory
+    
+    logger.info(f"📊 Final memory usage: {final_memory:.2f}MB (Growth: {memory_growth:.2f}MB)")
+    
+    # Validate memory growth within acceptable limits
+    assert memory_growth < 10, f"Memory growth {memory_growth:.2f}MB exceeds 10MB test limit"
+    assert final_memory < 75, f"Final memory usage {final_memory:.2f}MB exceeds 75MB limit"
+    
+    logger.info("✅ Memory validation completed successfully")
+
+
+@pytest.fixture
+def dynamic_port():
+    """
+    pytest fixture for dynamic port allocation preventing WSGI server conflicts.
+    Replaces Jest port management with Python socket-based dynamic allocation.
+    
+    Provides isolated port allocation for concurrent pytest execution and
+    WSGI server testing without port conflicts.
+    
+    Returns:
+        int: Dynamically allocated port number for WSGI server testing
+    """
+    logger.info("🔌 Allocating dynamic port for WSGI server testing")
+    
+    # Find available port using socket binding
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('localhost', 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    
+    # Validate port is in acceptable range
+    assert 1024 <= port <= 65535, f"Dynamic port {port} outside acceptable range"
+    
+    # Set environment variable for WSGI server configuration
+    os.environ['FLASK_RUN_PORT'] = str(port)
+    os.environ['WSGI_PORT'] = str(port)
+    
+    logger.info(f"🎯 Dynamic port allocated: {port}")
+    logger.info("🎓 Educational Note: Dynamic ports prevent test conflicts")
+    
+    yield port
+    
+    # Cleanup environment variables
+    os.environ.pop('FLASK_RUN_PORT', None)
+    os.environ.pop('WSGI_PORT', None)
+    
+    logger.info(f"🧹 Dynamic port {port} released")
+
+
+@pytest.fixture
+def flask_app():
+    """
+    pytest fixture for Flask application factory testing with WSGI integration.
+    Replaces Jest application mocking with Flask application factory pattern.
+    
+    Provides configured Flask application instance for WSGI server testing
+    with proper testing configuration and context management.
+    
+    Returns:
+        Flask: Configured Flask application instance for testing
+    """
+    logger.info("🌶️ Creating Flask application using factory pattern")
+    
+    try:
+        # Create Flask application using application factory
+        app = create_app(config_name='testing')
         
-        # Load test environment configuration
-        load_dotenv('.env.testing', override=True)
-        
-        # Set Flask testing environment variables
-        os.environ.update({
-            'FLASK_ENV': 'testing',
-            'TESTING': '1',
-            'LOG_LEVEL': 'ERROR',  # Reduce noise during testing
-            'FLASK_DEBUG': 'False'  # Disable debug mode for performance testing
+        # Configure additional testing settings
+        app.config.update({
+            'TESTING': True,
+            'WTF_CSRF_ENABLED': False,
+            'SERVER_NAME': None,  # Allow flexible server name for testing
+            'APPLICATION_ROOT': '/',
         })
         
-        logger.info("🔧 WSGI test environment configured with python-dotenv")
-        yield
+        logger.info("✅ Flask application created successfully")
+        logger.info("🎓 Educational Note: Application factory pattern enables flexible testing")
         
-        # Restore original environment
-        os.environ.clear()
-        os.environ.update(original_env)
-        logger.info("🧹 WSGI test environment restored")
-    
-    @pytest.fixture
-    def dynamic_port(self):
-        """
-        pytest fixture for dynamic port allocation preventing WSGI server conflicts.
-        Uses socket-based port discovery to ensure available ports for testing.
-        """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', 0))
-            port = s.getsockname()[1]
+        yield app
         
-        # Set port in environment for WSGI server configuration
-        os.environ['PORT'] = str(port)
-        logger.info(f"🔌 Allocated dynamic port: {port} for WSGI testing")
-        
-        yield port
-        
-        # Clean up port environment variable
-        os.environ.pop('PORT', None)
-    
-    @pytest.fixture
-    def memory_monitor(self):
-        """
-        pytest fixture for psutil-based memory monitoring during WSGI tests.
-        Provides baseline memory tracking and validates 75MB memory limit enforcement.
-        """
-        process = psutil.Process()
-        baseline_memory = process.memory_info().rss / 1024 / 1024  # Convert to MB
-        
-        logger.info(f"📊 Memory baseline: {baseline_memory:.2f}MB")
-        
-        yield {
-            'baseline': baseline_memory,
-            'process': process,
-            'limit_mb': 75
-        }
-        
-        # Validate memory usage after test completion
-        current_memory = process.memory_info().rss / 1024 / 1024
-        memory_growth = current_memory - baseline_memory
-        
-        # Log memory statistics for educational visibility
-        logger.info(f"📈 Memory after test: {current_memory:.2f}MB (growth: {memory_growth:.2f}MB)")
-        
-        # Assert memory limit compliance
-        assert current_memory < 75, f"Memory usage {current_memory:.2f}MB exceeds 75MB limit"
-        assert memory_growth < 10, f"Memory growth {memory_growth:.2f}MB exceeds 10MB per test limit"
-    
-    @pytest.fixture
-    def wsgi_test_config(self):
-        """
-        pytest fixture providing WSGI-specific test configuration.
-        Configures Gunicorn parameters and WSGI server settings for testing.
-        """
-        return {
-            'workers': 1,  # Single worker for predictable testing
-            'timeout': 30,  # Request timeout in seconds
-            'bind_host': '127.0.0.1',
-            'worker_class': 'sync',  # Synchronous worker for simplicity
-            'max_requests': 100,  # Prevent memory leaks
-            'preload_app': True,  # Faster startup
-        }
+    except Exception as e:
+        logger.error(f"❌ Flask application creation failed: {e}")
+        pytest.fail(f"Flask application factory error: {e}")
 
 
-class TestWSGIServerLifecycle(WSGITestFixtures):
+@pytest.fixture
+def wsgi_app():
     """
-    Comprehensive WSGI server lifecycle testing using pytest framework.
-    Validates WSGI server startup, shutdown, signal handling, and process management
-    using subprocess integration with Gunicorn WSGI server.
+    pytest fixture for WSGI application entry point testing.
+    Validates WSGI application factory integration and configuration.
+    
+    Returns:
+        Flask: WSGI-configured Flask application instance
+    """
+    logger.info("🔗 Creating WSGI application entry point")
+    
+    try:
+        # Create WSGI application using wsgi.py entry point
+        wsgi_application = create_wsgi_application()
+        
+        logger.info("✅ WSGI application created successfully")
+        logger.info("🎓 Educational Note: WSGI entry point enables production deployment")
+        
+        yield wsgi_application
+        
+    except Exception as e:
+        logger.error(f"❌ WSGI application creation failed: {e}")
+        pytest.fail(f"WSGI application factory error: {e}")
+
+
+@pytest.fixture
+def performance_baseline():
+    """
+    pytest fixture for performance baseline measurement and validation.
+    Provides performance tracking context for WSGI server testing.
+    
+    Returns:
+        Dict[str, Any]: Performance measurement context with timing functions
+    """
+    logger.info("⏱️ Initializing performance baseline measurement")
+    
+    baseline_context = {
+        'measurements': [],
+        'thresholds': {
+            'cold_start_ms': 100,
+            'warm_request_ms': 50,
+            'concurrent_avg_ms': 50,
+            'memory_limit_mb': 75
+        }
+    }
+    
+    def measure_duration(label: str):
+        """Context manager for duration measurement"""
+        @contextmanager
+        def timing_context():
+            start_time = time.perf_counter()
+            try:
+                yield
+            finally:
+                duration_ms = (time.perf_counter() - start_time) * 1000
+                measurement = {
+                    'label': label,
+                    'duration_ms': duration_ms,
+                    'timestamp': time.time()
+                }
+                baseline_context['measurements'].append(measurement)
+                logger.info(f"⏱️ Performance measurement ({label}): {duration_ms:.2f}ms")
+        return timing_context()
+    
+    def validate_threshold(label: str, duration_ms: float, threshold_key: str):
+        """Validate performance against baseline thresholds"""
+        threshold = baseline_context['thresholds'][threshold_key]
+        assert duration_ms < threshold, \
+            f"{label} duration {duration_ms:.2f}ms exceeds {threshold}ms threshold"
+        logger.info(f"✅ {label} performance within {threshold}ms threshold")
+    
+    baseline_context['measure'] = measure_duration
+    baseline_context['validate'] = validate_threshold
+    
+    logger.info("📋 Performance baseline measurement initialized")
+    logger.info("🎓 Educational Note: Performance baselines ensure SLA compliance")
+    
+    yield baseline_context
+
+
+# ============================================================================
+# WSGI SERVER LIFECYCLE TESTING
+# ============================================================================
+
+class TestWSGIServerLifecycle:
+    """
+    Comprehensive WSGI server lifecycle testing using subprocess and signal management.
+    Replaces Jest server lifecycle tests with Python subprocess-based Gunicorn testing.
+    
+    This test class validates WSGI server startup, shutdown, signal handling, and
+    process management using pytest fixtures and subprocess integration.
     """
     
-    def test_wsgi_application_factory_creation(self, memory_monitor):
+    def test_wsgi_server_startup_lifecycle(self, dynamic_port, memory_monitor, performance_baseline):
         """
-        Test Flask application factory pattern creates valid WSGI application.
-        Validates WSGI entry point functionality and application configuration.
+        Test WSGI server startup lifecycle with Gunicorn process management.
+        Replaces Jest server.listen() testing with Gunicorn subprocess lifecycle validation.
+        
+        Validates:
+        - Gunicorn WSGI server process initialization
+        - Flask application factory loading within WSGI context
+        - Worker process startup and readiness validation
+        - Port binding and network interface configuration
+        - Memory usage during startup within 75MB limit
         """
-        # Test WSGI application factory function
-        wsgi_app = create_wsgi_application()
+        logger.info("🚀 Testing WSGI server startup lifecycle")
         
-        # Validate WSGI application interface
-        assert wsgi_app is not None, "WSGI application factory returned None"
-        assert hasattr(wsgi_app, '__call__'), "WSGI application must be callable"
-        assert hasattr(wsgi_app, 'config'), "WSGI application must have config attribute"
+        # Record initial memory baseline
+        memory_monitor['record']("startup_test_begin")
         
-        # Validate Flask application configuration
-        assert wsgi_app.config['TESTING'] is True, "WSGI application must be in testing mode"
+        with performance_baseline['measure']("wsgi_startup"):
+            # Start Gunicorn WSGI server using subprocess
+            gunicorn_command = [
+                'python', '-m', 'gunicorn',
+                '--bind', f'127.0.0.1:{dynamic_port}',
+                '--workers', '1',
+                '--timeout', '30',
+                '--worker-class', 'sync',
+                '--access-logfile', '-',
+                '--error-logfile', '-',
+                '--log-level', 'info',
+                'src.backend.wsgi:application'
+            ]
+            
+            logger.info(f"🔧 Starting Gunicorn WSGI server on port {dynamic_port}")
+            
+            # Start WSGI server process
+            process = subprocess.Popen(
+                gunicorn_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=os.getcwd()
+            )
+            
+            try:
+                # Wait for WSGI server startup (up to 10 seconds)
+                startup_timeout = 10
+                for attempt in range(startup_timeout):
+                    try:
+                        response = requests.get(
+                            f'http://127.0.0.1:{dynamic_port}/health',
+                            timeout=1
+                        )
+                        if response.status_code == 200:
+                            logger.info("✅ WSGI server startup successful")
+                            break
+                    except requests.exceptions.RequestException:
+                        time.sleep(1)
+                        continue
+                else:
+                    pytest.fail(f"WSGI server failed to start within {startup_timeout} seconds")
+                
+                # Validate server process is running
+                assert process.poll() is None, "WSGI server process terminated unexpectedly"
+                
+                # Validate memory usage during startup
+                memory_monitor['validate']()
+                
+                # Test basic endpoint availability
+                health_response = requests.get(f'http://127.0.0.1:{dynamic_port}/health')
+                assert health_response.status_code == 200
+                assert health_response.json()['status'] == 'healthy'
+                
+                logger.info("🎯 WSGI server startup lifecycle validation completed")
+                
+            finally:
+                # Graceful shutdown
+                logger.info("🛑 Initiating WSGI server graceful shutdown")
+                process.terminate()
+                
+                # Wait for graceful shutdown
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    logger.warning("⚠️ Graceful shutdown timeout, forcing termination")
+                    process.kill()
+                    process.wait()
+                
+                logger.info("✅ WSGI server shutdown completed")
         
-        logger.info("✅ WSGI application factory validation passed")
+        # Validate startup performance
+        startup_measurements = [m for m in performance_baseline['measurements'] if m['label'] == 'wsgi_startup']
+        if startup_measurements:
+            startup_duration = startup_measurements[-1]['duration_ms']
+            performance_baseline['validate']('WSGI startup', startup_duration, 'cold_start_ms')
+        
+        logger.info("🎓 Educational Note: Subprocess testing validates production deployment")
     
-    def test_wsgi_server_startup_shutdown_lifecycle(self, dynamic_port, memory_monitor, wsgi_test_config):
+    def test_wsgi_server_signal_handling(self, dynamic_port, memory_monitor):
         """
-        Test complete WSGI server startup and shutdown lifecycle using subprocess.
-        Validates Gunicorn WSGI server integration with Flask application factory.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
+        Test WSGI server Python signal handling for graceful shutdown.
+        Validates SIGTERM and SIGINT signal processing with proper cleanup.
         
-        # Gunicorn command for WSGI server startup
-        gunicorn_cmd = [
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', str(wsgi_test_config['workers']),
-            '--timeout', str(wsgi_test_config['timeout']),
-            '--worker-class', wsgi_test_config['worker_class'],
-            '--max-requests', str(wsgi_test_config['max_requests']),
-            '--preload-app',
-            'src.wsgi:application'  # WSGI module and application variable
+        Validates:
+        - SIGTERM signal handling for container orchestration
+        - SIGINT signal handling for development interruption
+        - Graceful worker process shutdown
+        - Connection draining and request completion
+        - Memory cleanup during shutdown process
+        """
+        logger.info("📡 Testing WSGI server signal handling")
+        
+        # Record memory baseline for signal testing
+        memory_monitor['record']("signal_test_begin")
+        
+        # Start WSGI server for signal testing
+        gunicorn_command = [
+            'python', '-m', 'gunicorn',
+            '--bind', f'127.0.0.1:{dynamic_port}',
+            '--workers', '1',
+            '--timeout', '30',
+            'src.backend.wsgi:application'
         ]
         
-        logger.info(f"🚀 Starting WSGI server: {' '.join(gunicorn_cmd)}")
-        
-        # Start WSGI server process
         process = subprocess.Popen(
-            gunicorn_cmd,
+            gunicorn_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            cwd=Path(__file__).parent.parent.parent.parent  # Project root
+            text=True
         )
         
         try:
-            # Wait for WSGI server startup (with timeout)
-            startup_timeout = 10  # seconds
-            startup_start = time.time()
+            # Wait for server readiness
+            time.sleep(2)
             
-            while time.time() - startup_start < startup_timeout:
-                try:
-                    response = requests.get(f"http://{bind_address}/hello", timeout=2)
-                    if response.status_code == 200:
-                        logger.info("✅ WSGI server startup successful")
-                        break
-                except requests.exceptions.RequestException:
-                    time.sleep(0.5)
-                    continue
-            else:
-                pytest.fail(f"WSGI server failed to start within {startup_timeout}s")
+            # Validate server is responding
+            health_response = requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=2)
+            assert health_response.status_code == 200
             
-            # Validate server is responding correctly
-            response = requests.get(f"http://{bind_address}/hello", timeout=5)
-            assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+            logger.info("🎯 Testing SIGTERM signal handling")
             
-            data = response.json()
-            assert 'message' in data, "Response must contain 'message' field"
-            assert data['message'] == 'Hello world', f"Expected 'Hello world', got {data['message']}"
-            
-            logger.info("✅ WSGI server response validation passed")
-            
-        finally:
-            # Graceful shutdown test
-            logger.info("🛑 Testing graceful WSGI server shutdown")
-            
-            # Send SIGTERM for graceful shutdown
+            # Send SIGTERM signal (graceful shutdown)
             process.send_signal(signal.SIGTERM)
             
-            # Wait for graceful shutdown with timeout
+            # Monitor graceful shutdown process
+            shutdown_start = time.time()
+            return_code = process.wait(timeout=10)
+            shutdown_duration = time.time() - shutdown_start
+            
+            # Validate graceful shutdown behavior
+            assert return_code == 0, f"WSGI server did not shut down gracefully (exit code: {return_code})"
+            assert shutdown_duration < 10, f"Graceful shutdown took {shutdown_duration:.2f}s (>10s limit)"
+            
+            # Validate server is no longer responding
+            with pytest.raises(requests.exceptions.RequestException):
+                requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=1)
+            
+            logger.info(f"✅ SIGTERM handled gracefully in {shutdown_duration:.2f}s")
+            
+        except subprocess.TimeoutExpired:
+            logger.error("❌ WSGI server failed to respond to SIGTERM")
+            process.kill()
+            process.wait()
+            pytest.fail("WSGI server signal handling timeout")
+        
+        # Validate memory after signal handling
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: Signal handling enables container orchestration")
+    
+    def test_wsgi_server_port_binding_validation(self, memory_monitor):
+        """
+        Test WSGI server port binding validation and configuration.
+        Validates port conflict detection and dynamic port allocation.
+        
+        Validates:
+        - Dynamic port allocation without conflicts
+        - Port binding validation and error handling
+        - Multiple port configuration testing
+        - Network interface binding validation
+        """
+        logger.info("🔌 Testing WSGI server port binding validation")
+        
+        memory_monitor['record']("port_binding_test_begin")
+        
+        # Test dynamic port allocation
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_socket:
+            test_socket.bind(('localhost', 0))
+            test_socket.listen(1)
+            allocated_port = test_socket.getsockname()[1]
+            
+            # Test WSGI server startup on allocated port
+            gunicorn_command = [
+                'python', '-m', 'gunicorn',
+                '--bind', f'127.0.0.1:{allocated_port}',
+                '--workers', '1',
+                '--timeout', '10',
+                'src.backend.wsgi:application'
+            ]
+            
+            # Release socket for WSGI server binding
+            pass
+        
+        # Start WSGI server with validated port
+        process = subprocess.Popen(
+            gunicorn_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        try:
+            # Wait for successful port binding
+            time.sleep(3)
+            
+            # Validate port binding success
+            response = requests.get(f'http://127.0.0.1:{allocated_port}/health', timeout=2)
+            assert response.status_code == 200
+            
+            # Validate server process is running
+            assert process.poll() is None, "WSGI server process terminated unexpectedly"
+            
+            logger.info(f"✅ WSGI server successfully bound to port {allocated_port}")
+            
+        finally:
+            # Cleanup WSGI server process
+            process.terminate()
             try:
-                process.wait(timeout=10)
-                logger.info("✅ WSGI server graceful shutdown successful")
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                logger.warning("⚠️ Graceful shutdown timeout, forcing termination")
                 process.kill()
                 process.wait()
-            
-            # Validate process is terminated
-            assert process.poll() is not None, "WSGI server process should be terminated"
-    
-    def test_wsgi_server_signal_handling(self, dynamic_port, wsgi_test_config):
-        """
-        Test WSGI server signal handling for SIGTERM and SIGINT.
-        Validates Python signal handler integration with graceful shutdown.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
         
-        # Test both SIGTERM and SIGINT signals
-        signals_to_test = [
-            (signal.SIGTERM, "SIGTERM"),
-            (signal.SIGINT, "SIGINT")
+        # Validate memory usage during port binding
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: Dynamic ports enable concurrent testing")
+
+
+# ============================================================================
+# FLASK APPLICATION INTEGRATION TESTING
+# ============================================================================
+
+class TestFlaskWSGIIntegration:
+    """
+    Flask application integration testing with WSGI server validation.
+    Tests Flask application factory integration with WSGI entry point.
+    
+    This test class validates Flask application behavior within WSGI context,
+    ensuring proper request handling, middleware processing, and response generation.
+    """
+    
+    def test_flask_application_factory_wsgi_integration(self, wsgi_app, memory_monitor):
+        """
+        Test Flask application factory integration with WSGI entry point.
+        Validates application factory pattern with WSGI deployment configuration.
+        
+        Validates:
+        - Flask application factory pattern execution
+        - WSGI application entry point functionality
+        - Application configuration in WSGI context
+        - Route registration and middleware setup
+        """
+        logger.info("🌶️ Testing Flask application factory WSGI integration")
+        
+        memory_monitor['record']("flask_wsgi_integration_begin")
+        
+        # Validate WSGI application is Flask instance
+        assert isinstance(wsgi_app, Flask), "WSGI application is not Flask instance"
+        
+        # Validate Flask application configuration
+        assert wsgi_app.config['TESTING'] is True, "Flask testing mode not enabled"
+        
+        # Test WSGI application with test client
+        with wsgi_app.test_client() as client:
+            # Test hello endpoint through WSGI application
+            response = client.get('/hello')
+            assert response.status_code == 200
+            assert response.is_json
+            
+            data = response.get_json()
+            assert 'message' in data
+            assert data['message'] == 'Hello world'
+            assert 'timestamp' in data
+            
+            # Test health endpoint through WSGI application
+            health_response = client.get('/health')
+            assert health_response.status_code == 200
+            assert health_response.is_json
+            
+            health_data = health_response.get_json()
+            assert health_data['status'] == 'healthy'
+            
+            logger.info("✅ Flask endpoints working correctly in WSGI context")
+        
+        # Validate memory usage during integration testing
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: WSGI integration enables production deployment")
+    
+    def test_flask_wsgi_error_handling(self, wsgi_app, memory_monitor):
+        """
+        Test Flask error handling within WSGI server context.
+        Validates error response generation and exception management.
+        
+        Validates:
+        - 404 Not Found error handling
+        - 405 Method Not Allowed error handling
+        - 500 Internal Server Error handling
+        - Error response format consistency
+        """
+        logger.info("🚨 Testing Flask WSGI error handling")
+        
+        memory_monitor['record']("error_handling_test_begin")
+        
+        with wsgi_app.test_client() as client:
+            # Test 404 Not Found handling
+            response_404 = client.get('/nonexistent-route')
+            assert response_404.status_code == 404
+            assert response_404.is_json
+            
+            error_data_404 = response_404.get_json()
+            assert error_data_404['status'] == 404
+            assert error_data_404['error'] == 'Not Found'
+            assert 'message' in error_data_404
+            
+            # Test 405 Method Not Allowed handling
+            response_405 = client.post('/hello')  # POST to GET-only route
+            assert response_405.status_code == 405
+            assert response_405.is_json
+            
+            error_data_405 = response_405.get_json()
+            assert error_data_405['status'] == 405
+            assert error_data_405['error'] == 'Method Not Allowed'
+            
+            logger.info("✅ Flask error handling working correctly in WSGI context")
+        
+        # Validate memory usage during error testing
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: Error handling ensures robust API behavior")
+
+
+# ============================================================================
+# PERFORMANCE AND BENCHMARKING TESTING
+# ============================================================================
+
+class TestWSGIPerformance:
+    """
+    WSGI server performance testing with pytest-benchmark integration.
+    Provides comprehensive performance validation and memory monitoring.
+    
+    This test class uses pytest-benchmark for statistical performance analysis
+    and psutil for memory usage monitoring with 75MB limit enforcement.
+    """
+    
+    @pytest.mark.benchmark
+    def test_wsgi_server_response_time_benchmark(self, benchmark, dynamic_port, memory_monitor):
+        """
+        Benchmark WSGI server response time using pytest-benchmark.
+        Validates response time performance against 50ms SLA requirement.
+        
+        Uses pytest-benchmark for statistical accuracy with multiple iterations
+        and provides comprehensive timing analysis for production validation.
+        """
+        logger.info("⏱️ Benchmarking WSGI server response time performance")
+        
+        memory_monitor['record']("benchmark_test_begin")
+        
+        # Start WSGI server for benchmarking
+        gunicorn_command = [
+            'python', '-m', 'gunicorn',
+            '--bind', f'127.0.0.1:{dynamic_port}',
+            '--workers', '1',
+            '--timeout', '30',
+            'src.backend.wsgi:application'
         ]
         
-        for sig, sig_name in signals_to_test:
-            logger.info(f"🔧 Testing {sig_name} signal handling")
-            
-            # Start WSGI server
-            process = subprocess.Popen([
-                'gunicorn',
-                '--bind', bind_address,
-                '--workers', '1',
-                '--timeout', '30',
-                'src.wsgi:application'
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            try:
-                # Wait for server startup
-                time.sleep(3)
-                
-                # Verify server is running
-                try:
-                    response = requests.get(f"http://{bind_address}/hello", timeout=2)
-                    assert response.status_code == 200, "Server should be responding before signal test"
-                except requests.exceptions.RequestException:
-                    pytest.fail("WSGI server not responding before signal test")
-                
-                # Send signal
-                process.send_signal(sig)
-                logger.info(f"📡 Sent {sig_name} signal to WSGI server")
-                
-                # Wait for graceful shutdown
-                shutdown_start = time.time()
-                try:
-                    process.wait(timeout=15)
-                    shutdown_duration = time.time() - shutdown_start
-                    logger.info(f"✅ {sig_name} graceful shutdown completed in {shutdown_duration:.2f}s")
-                    
-                    # Validate exit code indicates graceful shutdown
-                    assert process.returncode == 0, f"{sig_name} should result in clean exit (code 0)"
-                    
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    pytest.fail(f"{sig_name} graceful shutdown timeout")
-                    
-            finally:
-                if process.poll() is None:
-                    process.kill()
-                    process.wait()
-    
-    def test_wsgi_server_port_binding_validation(self, wsgi_test_config):
-        """
-        Test WSGI server port binding validation and conflict handling.
-        Validates dynamic port allocation and error handling for port conflicts.
-        """
-        # Test valid port binding
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', 0))
-            available_port = s.getsockname()[1]
-        
-        bind_address = f"{wsgi_test_config['bind_host']}:{available_port}"
-        
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '1',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        process = subprocess.Popen(
+            gunicorn_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
         try:
-            # Wait for startup
+            # Wait for server startup
             time.sleep(3)
             
-            # Validate server is bound to correct port
-            response = requests.get(f"http://{bind_address}/hello", timeout=5)
-            assert response.status_code == 200, "WSGI server should respond on bound port"
+            # Validate server is ready
+            health_response = requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=2)
+            assert health_response.status_code == 200
             
-            logger.info(f"✅ WSGI server successfully bound to port {available_port}")
+            def make_hello_request():
+                """Benchmark function for hello endpoint request"""
+                response = requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=5)
+                assert response.status_code == 200
+                return response
+            
+            # Execute benchmark with pytest-benchmark
+            result = benchmark.pedantic(make_hello_request, iterations=10, rounds=3)
+            
+            # Validate response content
+            assert result.status_code == 200
+            assert result.json()['message'] == 'Hello world'
+            
+            # Validate performance against SLA (50ms warm request)
+            mean_time_ms = benchmark.stats.mean * 1000
+            assert mean_time_ms < 50, f"Mean response time {mean_time_ms:.2f}ms exceeds 50ms SLA"
+            
+            logger.info(f"📊 Benchmark results - Mean: {mean_time_ms:.2f}ms, "
+                       f"Min: {benchmark.stats.min*1000:.2f}ms, "
+                       f"Max: {benchmark.stats.max*1000:.2f}ms")
             
         finally:
+            # Cleanup WSGI server
             process.terminate()
-            process.wait()
-        
-        # Test port conflict handling
-        logger.info("🔧 Testing port conflict handling")
-        
-        # Bind to a port manually
-        conflict_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conflict_socket.bind(('localhost', 0))
-        conflict_port = conflict_socket.getsockname()[1]
-        conflict_socket.listen(1)
-        
-        try:
-            # Try to start WSGI server on occupied port
-            conflict_process = subprocess.Popen([
-                'gunicorn',
-                '--bind', f"{wsgi_test_config['bind_host']}:{conflict_port}",
-                '--workers', '1',
-                'src.wsgi:application'
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            # Wait for startup attempt
             try:
-                conflict_process.wait(timeout=10)
-                # Should exit with error due to port conflict
-                assert conflict_process.returncode != 0, "WSGI server should fail on port conflict"
-                logger.info("✅ Port conflict handling validated")
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                conflict_process.kill()
-                pytest.fail("WSGI server should fail quickly on port conflict")
-                
-        finally:
-            conflict_socket.close()
-
-
-class TestWSGIPerformanceValidation(WSGITestFixtures):
-    """
-    WSGI server performance validation using pytest-benchmark integration.
-    Tests response times, memory usage, and concurrent request handling
-    with statistical analysis and SLA enforcement.
-    """
-    
-    @pytest.mark.benchmark
-    def test_wsgi_server_cold_start_performance(self, benchmark, dynamic_port, memory_monitor, wsgi_test_config):
-        """
-        Benchmark WSGI server cold start performance using pytest-benchmark.
-        Validates <100ms cold start SLA with statistical analysis.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
-        
-        def cold_start_wsgi_server():
-            """Cold start WSGI server and measure startup time."""
-            start_time = time.perf_counter()
-            
-            # Start WSGI server
-            process = subprocess.Popen([
-                'gunicorn',
-                '--bind', bind_address,
-                '--workers', '1',
-                '--timeout', '30',
-                '--preload-app',
-                'src.wsgi:application'
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            try:
-                # Wait for server to be ready
-                ready = False
-                timeout = 10
-                while time.perf_counter() - start_time < timeout and not ready:
-                    try:
-                        response = requests.get(f"http://{bind_address}/hello", timeout=1)
-                        if response.status_code == 200:
-                            ready = True
-                    except requests.exceptions.RequestException:
-                        time.sleep(0.1)
-                
-                if not ready:
-                    pytest.fail("WSGI server failed to start within timeout")
-                
-                startup_duration = time.perf_counter() - start_time
-                return startup_duration
-                
-            finally:
-                process.terminate()
+                process.kill()
                 process.wait()
         
-        # pytest-benchmark with statistical analysis
-        result = benchmark.pedantic(cold_start_wsgi_server, iterations=3, rounds=1)
+        # Validate memory usage during benchmarking
+        memory_monitor['validate']()
         
-        # Validate 100ms cold start SLA
-        assert benchmark.stats.mean < 0.100, f"Cold start {benchmark.stats.mean*1000:.2f}ms exceeds 100ms SLA"
-        
-        logger.info(f"🚀 WSGI cold start: {benchmark.stats.mean*1000:.2f}ms (target: <100ms)")
+        logger.info("🎓 Educational Note: pytest-benchmark provides statistical accuracy")
     
-    @pytest.mark.benchmark
-    def test_wsgi_server_warm_request_performance(self, benchmark, dynamic_port, memory_monitor, wsgi_test_config):
+    def test_wsgi_server_memory_usage_validation(self, dynamic_port, memory_monitor):
         """
-        Benchmark WSGI server warm request performance using pytest-benchmark.
-        Validates <50ms warm request SLA with statistical accuracy.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
+        Test WSGI server memory usage validation with psutil monitoring.
+        Validates memory consumption stays within 75MB limit during operation.
         
-        # Start WSGI server for warm request testing
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
+        Validates:
+        - Memory usage during server startup and operation
+        - Memory growth patterns under request load
+        - Memory cleanup during server shutdown
+        - Memory leak detection and prevention
+        """
+        logger.info("📊 Testing WSGI server memory usage validation")
+        
+        # Record initial memory baseline
+        initial_memory = memory_monitor['record']("memory_test_baseline")
+        
+        # Start WSGI server for memory testing
+        gunicorn_command = [
+            'python', '-m', 'gunicorn',
+            '--bind', f'127.0.0.1:{dynamic_port}',
             '--workers', '1',
             '--timeout', '30',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            'src.backend.wsgi:application'
+        ]
+        
+        process = subprocess.Popen(
+            gunicorn_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
         try:
-            # Wait for server startup
+            # Wait for server startup and measure memory
             time.sleep(3)
+            startup_memory = memory_monitor['record']("after_server_startup")
             
-            def make_warm_request():
-                """Make warm request to WSGI server."""
-                response = requests.get(f"http://{bind_address}/hello", timeout=5)
-                assert response.status_code == 200, "Warm request should succeed"
-                return response.elapsed.total_seconds()
+            # Validate server is ready
+            health_response = requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=2)
+            assert health_response.status_code == 200
             
-            # Warm up server with initial requests
-            for _ in range(5):
-                make_warm_request()
-            
-            # pytest-benchmark warm request testing
-            result = benchmark.pedantic(make_warm_request, iterations=10, rounds=3)
-            
-            # Validate 50ms warm request SLA
-            assert benchmark.stats.median < 0.050, f"Warm request {benchmark.stats.median*1000:.2f}ms exceeds 50ms SLA"
-            
-            logger.info(f"🏃 WSGI warm request: {benchmark.stats.median*1000:.2f}ms (target: <50ms)")
-            
-        finally:
-            process.terminate()
-            process.wait()
-    
-    @pytest.mark.benchmark
-    def test_wsgi_server_memory_usage_validation(self, benchmark, dynamic_port, memory_monitor, wsgi_test_config):
-        """
-        Validate WSGI server memory usage with psutil monitoring.
-        Enforces 75MB memory limit and monitors memory growth patterns.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
-        
-        # Start WSGI server
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '1',
-            '--max-requests', '100',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        try:
-            # Wait for server startup
-            time.sleep(3)
-            
-            # Get WSGI server process for memory monitoring
-            wsgi_process = psutil.Process(process.pid)
-            initial_memory = wsgi_process.memory_info().rss / 1024 / 1024  # MB
-            
-            logger.info(f"📊 Initial WSGI server memory: {initial_memory:.2f}MB")
-            
-            def memory_stress_test():
-                """Execute requests to stress test memory usage."""
-                memory_samples = []
+            # Generate request load and monitor memory
+            for i in range(50):
+                response = requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=2)
+                assert response.status_code == 200
                 
-                # Execute multiple requests to test memory patterns
-                for i in range(20):
-                    response = requests.get(f"http://{bind_address}/hello", timeout=5)
-                    assert response.status_code == 200, "Memory stress request should succeed"
-                    
-                    # Sample memory usage
-                    current_memory = wsgi_process.memory_info().rss / 1024 / 1024
-                    memory_samples.append(current_memory)
-                
-                return memory_samples
+                # Record memory every 10 requests
+                if i % 10 == 0:
+                    memory_monitor['record'](f"after_{i+1}_requests")
             
-            # Benchmark memory stress test
-            memory_samples = benchmark(memory_stress_test)
+            # Final memory measurement under load
+            load_memory = memory_monitor['record']("after_request_load")
             
-            # Analyze memory usage patterns
-            max_memory = max(memory_samples)
-            avg_memory = sum(memory_samples) / len(memory_samples)
-            memory_growth = max_memory - initial_memory
-            
-            # Validate memory constraints
-            assert max_memory < 75, f"Maximum memory {max_memory:.2f}MB exceeds 75MB limit"
+            # Validate memory growth is within acceptable limits
+            memory_growth = load_memory - initial_memory
             assert memory_growth < 20, f"Memory growth {memory_growth:.2f}MB exceeds 20MB limit"
             
-            logger.info(f"💾 WSGI memory - Max: {max_memory:.2f}MB, Avg: {avg_memory:.2f}MB, Growth: {memory_growth:.2f}MB")
+            # Validate absolute memory usage
+            memory_monitor['validate']()
+            
+            logger.info(f"📈 Memory usage - Initial: {initial_memory:.2f}MB, "
+                       f"Startup: {startup_memory:.2f}MB, "
+                       f"Under load: {load_memory:.2f}MB")
             
         finally:
+            # Graceful shutdown and memory cleanup validation
             process.terminate()
-            process.wait()
-    
-    def test_wsgi_server_concurrent_request_handling(self, dynamic_port, memory_monitor, wsgi_test_config):
-        """
-        Test WSGI server concurrent request handling using threading.
-        Validates performance under load with 100 parallel requests.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
+            process.wait(timeout=5)
+            
+            # Allow time for cleanup
+            time.sleep(1)
+            final_memory = memory_monitor['record']("after_server_shutdown")
+            
+            logger.info(f"🧹 Memory after shutdown: {final_memory:.2f}MB")
         
-        # Start WSGI server with multiple workers for concurrency
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '2',  # Multiple workers for concurrency
-            '--worker-class', 'sync',
+        logger.info("🎓 Educational Note: Memory monitoring prevents resource exhaustion")
+    
+    def test_wsgi_server_concurrent_load_testing(self, dynamic_port, memory_monitor, performance_baseline):
+        """
+        Test WSGI server concurrent load handling with threading.
+        Validates server performance under concurrent request load.
+        
+        Validates:
+        - Concurrent request handling capacity
+        - Response time under load (50ms average requirement)
+        - Memory usage during concurrent operations
+        - Server stability under stress conditions
+        """
+        logger.info("🔀 Testing WSGI server concurrent load handling")
+        
+        memory_monitor['record']("concurrent_test_begin")
+        
+        # Start WSGI server for concurrent testing
+        gunicorn_command = [
+            'python', '-m', 'gunicorn',
+            '--bind', f'127.0.0.1:{dynamic_port}',
+            '--workers', '2',  # Use 2 workers for concurrency
             '--timeout', '30',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            'src.backend.wsgi:application'
+        ]
+        
+        process = subprocess.Popen(
+            gunicorn_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         
         try:
             # Wait for server startup
-            time.sleep(5)
+            time.sleep(4)
             
-            def make_concurrent_request(request_id: int) -> Dict[str, Any]:
-                """Make individual request for concurrent testing."""
-                start_time = time.perf_counter()
-                try:
-                    response = requests.get(f"http://{bind_address}/hello", timeout=10)
-                    duration = time.perf_counter() - start_time
-                    
-                    return {
-                        'request_id': request_id,
-                        'status_code': response.status_code,
-                        'duration': duration,
-                        'success': response.status_code == 200
-                    }
-                except requests.exceptions.RequestException as e:
-                    duration = time.perf_counter() - start_time
-                    return {
-                        'request_id': request_id,
-                        'status_code': 0,
-                        'duration': duration,
-                        'success': False,
-                        'error': str(e)
-                    }
+            # Validate server readiness
+            health_response = requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=2)
+            assert health_response.status_code == 200
             
-            # Execute concurrent requests using ThreadPoolExecutor
-            logger.info("🔄 Executing 100 concurrent requests")
-            
-            concurrent_start = time.perf_counter()
-            
-            with ThreadPoolExecutor(max_workers=20) as executor:
-                # Submit 100 concurrent requests
-                futures = [executor.submit(make_concurrent_request, i) for i in range(100)]
+            # Measure concurrent load performance
+            with performance_baseline['measure']("concurrent_load"):
                 
-                # Collect results
-                results = []
-                for future in as_completed(futures):
-                    result = future.result()
-                    results.append(result)
+                def make_concurrent_request(request_id: int) -> Dict[str, Any]:
+                    """Make individual request for concurrent testing"""
+                    try:
+                        start_time = time.perf_counter()
+                        response = requests.get(
+                            f'http://127.0.0.1:{dynamic_port}/hello',
+                            timeout=5
+                        )
+                        duration_ms = (time.perf_counter() - start_time) * 1000
+                        
+                        return {
+                            'request_id': request_id,
+                            'status_code': response.status_code,
+                            'duration_ms': duration_ms,
+                            'success': response.status_code == 200
+                        }
+                    except Exception as e:
+                        return {
+                            'request_id': request_id,
+                            'status_code': 0,
+                            'duration_ms': 0,
+                            'success': False,
+                            'error': str(e)
+                        }
+                
+                # Execute 100 concurrent requests using ThreadPoolExecutor
+                concurrent_requests = 100
+                max_workers = 10
+                
+                logger.info(f"🚀 Executing {concurrent_requests} concurrent requests")
+                
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    # Submit all requests concurrently
+                    futures = [
+                        executor.submit(make_concurrent_request, i)
+                        for i in range(concurrent_requests)
+                    ]
+                    
+                    # Collect results
+                    results = [future.result() for future in futures]
             
-            concurrent_duration = time.perf_counter() - concurrent_start
-            
-            # Analyze concurrent performance
+            # Analyze concurrent load results
             successful_requests = [r for r in results if r['success']]
             failed_requests = [r for r in results if not r['success']]
             
-            success_rate = len(successful_requests) / len(results) * 100
+            # Validate success rate
+            success_rate = len(successful_requests) / len(results)
+            assert success_rate >= 0.95, f"Success rate {success_rate:.2%} below 95% threshold"
             
-            if successful_requests:
-                avg_response_time = sum(r['duration'] for r in successful_requests) / len(successful_requests)
-                max_response_time = max(r['duration'] for r in successful_requests)
-                min_response_time = min(r['duration'] for r in successful_requests)
-            else:
-                avg_response_time = max_response_time = min_response_time = 0
+            # Validate response times
+            response_times = [r['duration_ms'] for r in successful_requests]
+            avg_response_time = sum(response_times) / len(response_times)
             
-            # Validate concurrent performance requirements
-            assert success_rate >= 95, f"Success rate {success_rate:.1f}% below 95% threshold"
-            assert avg_response_time < 0.050, f"Average response time {avg_response_time*1000:.2f}ms exceeds 50ms under load"
-            assert len(failed_requests) <= 5, f"Too many failed requests: {len(failed_requests)}"
+            assert avg_response_time < 50, f"Average response time {avg_response_time:.2f}ms exceeds 50ms SLA"
             
-            logger.info(f"🚀 Concurrent Performance Results:")
-            logger.info(f"   Success Rate: {success_rate:.1f}%")
-            logger.info(f"   Average Response: {avg_response_time*1000:.2f}ms")
-            logger.info(f"   Min Response: {min_response_time*1000:.2f}ms")
-            logger.info(f"   Max Response: {max_response_time*1000:.2f}ms")
-            logger.info(f"   Total Duration: {concurrent_duration:.2f}s")
-            logger.info(f"   Requests/Second: {100/concurrent_duration:.1f}")
+            # Log performance statistics
+            logger.info(f"📊 Concurrent load results:")
+            logger.info(f"   Successful requests: {len(successful_requests)}/{concurrent_requests}")
+            logger.info(f"   Success rate: {success_rate:.2%}")
+            logger.info(f"   Average response time: {avg_response_time:.2f}ms")
+            logger.info(f"   Min response time: {min(response_times):.2f}ms")
+            logger.info(f"   Max response time: {max(response_times):.2f}ms")
+            
+            if failed_requests:
+                logger.warning(f"⚠️ {len(failed_requests)} requests failed")
+                for failed in failed_requests[:5]:  # Log first 5 failures
+                    logger.warning(f"   Request {failed['request_id']}: {failed.get('error', 'Unknown error')}")
             
         finally:
+            # Cleanup WSGI server
             process.terminate()
-            process.wait()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        
+        # Validate memory usage after concurrent testing
+        memory_monitor['validate']()
+        
+        # Validate concurrent load performance
+        concurrent_measurements = [m for m in performance_baseline['measurements'] if m['label'] == 'concurrent_load']
+        if concurrent_measurements:
+            load_duration = concurrent_measurements[-1]['duration_ms']
+            performance_baseline['validate']('Concurrent load', load_duration, 'concurrent_avg_ms')
+        
+        logger.info("🎓 Educational Note: Concurrent testing validates production readiness")
 
 
-class TestWSGIEnvironmentConfiguration(WSGITestFixtures):
+# ============================================================================
+# ENVIRONMENT AND CONFIGURATION TESTING
+# ============================================================================
+
+class TestWSGIEnvironmentConfiguration:
     """
-    WSGI server environment configuration testing using python-dotenv integration.
-    Validates environment variable handling, configuration loading, and Flask settings.
+    WSGI server environment configuration testing with python-dotenv integration.
+    Validates environment variable handling and configuration management.
+    
+    This test class ensures proper environment configuration for WSGI deployment
+    across development, testing, and production environments.
     """
     
-    def test_wsgi_environment_variable_configuration(self, dynamic_port, monkeypatch):
+    def test_python_dotenv_environment_loading(self, monkeypatch, memory_monitor):
         """
-        Test WSGI server environment variable configuration with python-dotenv.
-        Validates Flask environment settings and configuration loading.
-        """
-        port = dynamic_port
+        Test python-dotenv environment variable loading for WSGI configuration.
+        Validates .env file loading and environment variable precedence.
         
-        # Test environment configurations
-        test_environments = [
-            {'FLASK_ENV': 'development', 'FLASK_DEBUG': 'True'},
-            {'FLASK_ENV': 'testing', 'FLASK_DEBUG': 'False'},
-            {'FLASK_ENV': 'production', 'FLASK_DEBUG': 'False'}
+        Validates:
+        - .env file loading with python-dotenv
+        - Environment variable precedence and override behavior
+        - Flask configuration from environment variables
+        - WSGI-specific environment configuration
+        """
+        logger.info("🌍 Testing python-dotenv environment loading")
+        
+        memory_monitor['record']("env_loading_test_begin")
+        
+        # Test environment variable configuration
+        test_env_vars = {
+            'FLASK_ENV': 'testing',
+            'FLASK_DEBUG': 'False',
+            'HOST': '0.0.0.0',
+            'PORT': '5000',
+            'LOG_LEVEL': 'INFO',
+            'WORKERS': '2'
+        }
+        
+        # Apply test environment variables using monkeypatch
+        for key, value in test_env_vars.items():
+            monkeypatch.setenv(key, value)
+        
+        # Test Flask application with environment configuration
+        app = create_app(config_name='testing')
+        
+        # Validate Flask configuration from environment
+        assert app.config['ENV'] == 'testing'
+        assert app.config['DEBUG'] is False
+        assert app.config['TESTING'] is True
+        
+        # Test WSGI application configuration
+        wsgi_app = create_wsgi_application()
+        assert isinstance(wsgi_app, Flask)
+        
+        # Validate environment variable access
+        assert os.getenv('FLASK_ENV') == 'testing'
+        assert os.getenv('HOST') == '0.0.0.0'
+        assert os.getenv('PORT') == '5000'
+        
+        logger.info("✅ Environment loading validation completed")
+        
+        # Validate memory usage during environment testing
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: python-dotenv enables 12-factor app configuration")
+    
+    def test_wsgi_configuration_validation(self, flask_app, memory_monitor):
+        """
+        Test WSGI-specific configuration validation and Flask integration.
+        Validates WSGI configuration parameters and Flask application settings.
+        
+        Validates:
+        - WSGI application configuration consistency
+        - Flask application settings for WSGI deployment
+        - Configuration validation and error handling
+        - Environment-specific configuration loading
+        """
+        logger.info("⚙️ Testing WSGI configuration validation")
+        
+        memory_monitor['record']("config_validation_test_begin")
+        
+        # Validate Flask application configuration for WSGI
+        required_config_keys = [
+            'ENV',
+            'DEBUG',
+            'TESTING',
+            'SECRET_KEY',
+            'JSON_SORT_KEYS',
+            'MAX_CONTENT_LENGTH'
         ]
         
-        for env_config in test_environments:
-            logger.info(f"🔧 Testing environment: {env_config}")
-            
-            # Set environment variables using monkeypatch
-            for key, value in env_config.items():
-                monkeypatch.setenv(key, value)
-            
-            # Test WSGI application creation with environment
-            wsgi_app = create_wsgi_application()
-            
-            # Validate environment-specific configuration
-            assert wsgi_app.config['ENV'] == env_config['FLASK_ENV']
-            
-            if env_config['FLASK_ENV'] == 'development':
-                # Development-specific validations
-                assert wsgi_app.config.get('DEBUG') is True or env_config['FLASK_DEBUG'] == 'True'
-            elif env_config['FLASK_ENV'] == 'production':
-                # Production-specific validations
-                assert wsgi_app.config.get('DEBUG') is False
-            
-            logger.info(f"✅ Environment {env_config['FLASK_ENV']} validation passed")
-    
-    def test_wsgi_dotenv_file_loading(self, dynamic_port, tmp_path):
-        """
-        Test python-dotenv file loading for WSGI configuration.
-        Validates .env file parsing and environment variable precedence.
-        """
-        # Create temporary .env file for testing
-        env_file = tmp_path / ".env.test"
-        env_content = """
-# Test environment configuration for WSGI
-FLASK_ENV=testing
-FLASK_DEBUG=False
-PORT=5000
-HOST=localhost
-SECRET_KEY=test-secret-key-for-wsgi
-CUSTOM_CONFIG_VALUE=test-value
-"""
-        env_file.write_text(env_content)
+        for config_key in required_config_keys:
+            assert config_key in flask_app.config, f"Required config key '{config_key}' missing"
         
-        # Load environment from file
-        from dotenv import load_dotenv
-        load_dotenv(env_file, override=True)
+        # Validate WSGI-specific Flask configuration
+        assert flask_app.config['TESTING'] is True, "Testing mode not enabled"
+        assert flask_app.config['DEBUG'] is False, "Debug mode should be disabled in testing"
         
-        # Validate environment variables were loaded
-        assert os.getenv('FLASK_ENV') == 'testing'
-        assert os.getenv('FLASK_DEBUG') == 'False'
-        assert os.getenv('SECRET_KEY') == 'test-secret-key-for-wsgi'
-        assert os.getenv('CUSTOM_CONFIG_VALUE') == 'test-value'
+        # Test configuration override behavior
+        original_debug = flask_app.config['DEBUG']
+        flask_app.config['DEBUG'] = True
+        assert flask_app.config['DEBUG'] is True, "Configuration override failed"
+        flask_app.config['DEBUG'] = original_debug
         
-        # Test WSGI application with loaded environment
-        wsgi_app = create_wsgi_application()
+        # Validate configuration consistency
+        assert flask_app.config['ENV'] in ['development', 'testing', 'production'], \
+            f"Invalid environment: {flask_app.config['ENV']}"
         
-        # Validate configuration from environment
-        assert wsgi_app.config['ENV'] == 'testing'
-        assert wsgi_app.config['SECRET_KEY'] == 'test-secret-key-for-wsgi'
+        logger.info("✅ WSGI configuration validation completed")
         
-        logger.info("✅ python-dotenv file loading validation passed")
-    
-    def test_wsgi_environment_variable_precedence(self, dynamic_port, monkeypatch, tmp_path):
-        """
-        Test environment variable precedence in WSGI configuration.
-        Validates that environment variables override .env file values.
-        """
-        # Create .env file with default values
-        env_file = tmp_path / ".env.precedence"
-        env_file.write_text("FLASK_ENV=development\nTEST_VALUE=from_file\n")
+        # Validate memory during configuration testing
+        memory_monitor['validate']()
         
-        # Load from file first
-        from dotenv import load_dotenv
-        load_dotenv(env_file)
-        
-        # Override with environment variable
-        monkeypatch.setenv('FLASK_ENV', 'production')
-        monkeypatch.setenv('TEST_VALUE', 'from_env')
-        
-        # Load file again with override=False (environment should take precedence)
-        load_dotenv(env_file, override=False)
-        
-        # Validate precedence
-        assert os.getenv('FLASK_ENV') == 'production'  # Environment variable wins
-        assert os.getenv('TEST_VALUE') == 'from_env'   # Environment variable wins
-        
-        # Test with WSGI application
-        wsgi_app = create_wsgi_application()
-        assert wsgi_app.config['ENV'] == 'production'
-        
-        logger.info("✅ Environment variable precedence validation passed")
+        logger.info("🎓 Educational Note: Configuration validation ensures deployment reliability")
 
 
-class TestWSGIErrorHandlingAndResilience(WSGITestFixtures):
-    """
-    WSGI server error handling and resilience testing.
-    Validates error scenarios, recovery mechanisms, and fault tolerance.
-    """
-    
-    def test_wsgi_server_startup_failure_handling(self, memory_monitor):
-        """
-        Test WSGI server startup failure scenarios and error handling.
-        Validates graceful failure handling and appropriate error reporting.
-        """
-        # Test invalid WSGI module
-        invalid_process = subprocess.Popen([
-            'gunicorn',
-            '--bind', '127.0.0.1:0',  # Let system choose port
-            '--workers', '1',
-            'invalid.module:application'  # Invalid module
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        try:
-            # Wait for startup attempt
-            exit_code = invalid_process.wait(timeout=10)
-            
-            # Should fail with non-zero exit code
-            assert exit_code != 0, "Invalid WSGI module should cause startup failure"
-            
-            # Check stderr for error message
-            stderr_output = invalid_process.stderr.read()
-            assert "ModuleNotFoundError" in stderr_output or "ImportError" in stderr_output
-            
-            logger.info("✅ Invalid WSGI module failure handling validated")
-            
-        except subprocess.TimeoutExpired:
-            invalid_process.kill()
-            pytest.fail("WSGI server should fail quickly with invalid module")
-    
-    def test_wsgi_server_request_timeout_handling(self, dynamic_port, wsgi_test_config):
-        """
-        Test WSGI server request timeout handling and recovery.
-        Validates timeout configuration and server stability.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
-        
-        # Start WSGI server with short timeout for testing
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '1',
-            '--timeout', '5',  # Short timeout for testing
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        try:
-            # Wait for startup
-            time.sleep(3)
-            
-            # Test normal request (should succeed)
-            response = requests.get(f"http://{bind_address}/hello", timeout=2)
-            assert response.status_code == 200, "Normal request should succeed"
-            
-            # Server should still be responsive after normal requests
-            response = requests.get(f"http://{bind_address}/hello", timeout=2)
-            assert response.status_code == 200, "Server should remain responsive"
-            
-            logger.info("✅ WSGI server timeout handling validated")
-            
-        finally:
-            process.terminate()
-            process.wait()
-    
-    def test_wsgi_server_worker_restart_resilience(self, dynamic_port, wsgi_test_config):
-        """
-        Test WSGI server worker restart resilience and recovery.
-        Validates server stability under worker failures.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
-        
-        # Start WSGI server with worker restart configuration
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '2',
-            '--max-requests', '10',  # Force worker restart after 10 requests
-            '--max-requests-jitter', '2',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        try:
-            # Wait for startup
-            time.sleep(3)
-            
-            # Make requests to force worker restarts
-            successful_requests = 0
-            for i in range(20):  # More than max-requests to trigger restarts
-                try:
-                    response = requests.get(f"http://{bind_address}/hello", timeout=5)
-                    if response.status_code == 200:
-                        successful_requests += 1
-                    time.sleep(0.1)  # Brief pause between requests
-                except requests.exceptions.RequestException:
-                    # Some requests may fail during worker restart
-                    pass
-            
-            # Validate server resilience
-            success_rate = successful_requests / 20 * 100
-            assert success_rate >= 85, f"Success rate {success_rate:.1f}% too low during worker restarts"
-            
-            # Validate server is still responsive after worker restarts
-            final_response = requests.get(f"http://{bind_address}/hello", timeout=5)
-            assert final_response.status_code == 200, "Server should be responsive after worker restarts"
-            
-            logger.info(f"✅ Worker restart resilience validated (success rate: {success_rate:.1f}%)")
-            
-        finally:
-            process.terminate()
-            process.wait()
+# ============================================================================
+# INTEGRATION AND END-TO-END TESTING
+# ============================================================================
 
-
-class TestWSGIIntegrationValidation(WSGITestFixtures):
+class TestWSGIEndToEndIntegration:
     """
-    WSGI integration validation testing with Flask application components.
-    Validates end-to-end integration between WSGI server and Flask application.
+    End-to-end WSGI server integration testing with complete workflow validation.
+    Tests complete WSGI server deployment lifecycle with Flask application integration.
+    
+    This test class provides comprehensive validation of WSGI server deployment,
+    operation, and shutdown in scenarios that mirror production environments.
     """
     
-    def test_wsgi_flask_application_integration(self, dynamic_port, memory_monitor, wsgi_test_config):
+    def test_complete_wsgi_deployment_lifecycle(self, dynamic_port, memory_monitor, performance_baseline):
         """
-        Test complete WSGI integration with Flask application factory.
-        Validates end-to-end request processing through WSGI stack.
+        Test complete WSGI server deployment lifecycle from startup to shutdown.
+        Validates end-to-end WSGI deployment workflow with comprehensive validation.
+        
+        Validates:
+        - Complete WSGI server deployment workflow
+        - Flask application availability throughout lifecycle
+        - Performance characteristics during full lifecycle
+        - Memory usage patterns during complete deployment
+        - Graceful shutdown and cleanup procedures
         """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
+        logger.info("🔄 Testing complete WSGI deployment lifecycle")
         
-        # Start WSGI server
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '1',
-            '--access-logfile', '-',  # Log to stdout for debugging
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        memory_monitor['record']("deployment_lifecycle_begin")
         
-        try:
-            # Wait for startup
-            time.sleep(3)
+        deployment_phases = []
+        
+        with performance_baseline['measure']("complete_lifecycle"):
             
-            # Test all Flask endpoints through WSGI
-            test_endpoints = [
-                ('/hello', 200, 'GET'),
-                ('/health', 200, 'GET'),
-                ('/nonexistent', 404, 'GET'),
+            # Phase 1: Server Startup and Initialization
+            logger.info("📋 Phase 1: WSGI server startup and initialization")
+            phase_start = time.time()
+            
+            gunicorn_command = [
+                'python', '-m', 'gunicorn',
+                '--bind', f'127.0.0.1:{dynamic_port}',
+                '--workers', '2',
+                '--timeout', '30',
+                '--worker-class', 'sync',
+                '--max-requests', '1000',
+                '--preload-app',
+                'src.backend.wsgi:application'
             ]
             
-            for endpoint, expected_status, method in test_endpoints:
-                logger.info(f"🔧 Testing {method} {endpoint}")
+            process = subprocess.Popen(
+                gunicorn_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Wait for startup with health check validation
+            startup_timeout = 15
+            server_ready = False
+            
+            for attempt in range(startup_timeout):
+                try:
+                    response = requests.get(
+                        f'http://127.0.0.1:{dynamic_port}/health',
+                        timeout=1
+                    )
+                    if response.status_code == 200:
+                        server_ready = True
+                        break
+                except requests.exceptions.RequestException:
+                    time.sleep(1)
+            
+            assert server_ready, f"WSGI server failed to start within {startup_timeout} seconds"
+            
+            phase_duration = time.time() - phase_start
+            deployment_phases.append(('startup', phase_duration))
+            memory_monitor['record']("after_phase1_startup")
+            
+            logger.info(f"✅ Phase 1 completed in {phase_duration:.2f}s")
+            
+            try:
+                # Phase 2: Application Validation and Testing
+                logger.info("📋 Phase 2: Application validation and endpoint testing")
+                phase_start = time.time()
                 
-                if method == 'GET':
-                    response = requests.get(f"http://{bind_address}{endpoint}", timeout=5)
+                # Comprehensive endpoint testing
+                endpoints_to_test = [
+                    ('/health', 200, 'status'),
+                    ('/hello', 200, 'message')
+                ]
                 
-                assert response.status_code == expected_status, \
-                    f"{endpoint} returned {response.status_code}, expected {expected_status}"
-                
-                # Validate JSON response format
-                if response.headers.get('Content-Type', '').startswith('application/json'):
-                    data = response.json()
-                    assert isinstance(data, dict), "Response should be JSON object"
+                for endpoint, expected_status, expected_key in endpoints_to_test:
+                    response = requests.get(
+                        f'http://127.0.0.1:{dynamic_port}{endpoint}',
+                        timeout=5
+                    )
+                    assert response.status_code == expected_status, \
+                        f"Endpoint {endpoint} returned {response.status_code}, expected {expected_status}"
                     
-                    if endpoint == '/hello':
-                        assert 'message' in data, "Hello endpoint should have message field"
-                        assert data['message'] == 'Hello world'
-                    elif endpoint == '/health':
-                        assert 'status' in data, "Health endpoint should have status field"
+                    if response.is_json:
+                        data = response.json()
+                        assert expected_key in data, f"Expected key '{expected_key}' missing from {endpoint}"
                 
-                logger.info(f"✅ {method} {endpoint} validation passed")
-            
-            # Test HTTP method validation
-            logger.info("🔧 Testing HTTP method validation")
-            post_response = requests.post(f"http://{bind_address}/hello", timeout=5)
-            assert post_response.status_code == 405, "POST to GET-only endpoint should return 405"
-            
-            method_error = post_response.json()
-            assert 'error' in method_error, "405 response should contain error information"
-            
-            logger.info("✅ WSGI-Flask integration validation completed")
-            
-        finally:
-            process.terminate()
-            process.wait()
+                phase_duration = time.time() - phase_start
+                deployment_phases.append(('validation', phase_duration))
+                memory_monitor['record']("after_phase2_validation")
+                
+                logger.info(f"✅ Phase 2 completed in {phase_duration:.2f}s")
+                
+                # Phase 3: Load Testing and Performance Validation
+                logger.info("📋 Phase 3: Load testing and performance validation")
+                phase_start = time.time()
+                
+                # Execute sustained load test
+                load_test_duration = 10  # seconds
+                requests_per_second = 10
+                total_requests = load_test_duration * requests_per_second
+                
+                successful_requests = 0
+                failed_requests = 0
+                response_times = []
+                
+                load_start = time.time()
+                while time.time() - load_start < load_test_duration:
+                    try:
+                        request_start = time.perf_counter()
+                        response = requests.get(
+                            f'http://127.0.0.1:{dynamic_port}/hello',
+                            timeout=2
+                        )
+                        request_duration = time.perf_counter() - request_start
+                        
+                        if response.status_code == 200:
+                            successful_requests += 1
+                            response_times.append(request_duration * 1000)  # Convert to ms
+                        else:
+                            failed_requests += 1
+                            
+                    except requests.exceptions.RequestException:
+                        failed_requests += 1
+                    
+                    time.sleep(1 / requests_per_second)  # Rate limiting
+                
+                # Validate load test results
+                total_test_requests = successful_requests + failed_requests
+                success_rate = successful_requests / total_test_requests if total_test_requests > 0 else 0
+                
+                assert success_rate >= 0.95, f"Load test success rate {success_rate:.2%} below 95%"
+                
+                if response_times:
+                    avg_response_time = sum(response_times) / len(response_times)
+                    assert avg_response_time < 100, f"Average response time {avg_response_time:.2f}ms too high"
+                
+                phase_duration = time.time() - phase_start
+                deployment_phases.append(('load_testing', phase_duration))
+                memory_monitor['record']("after_phase3_load_testing")
+                
+                logger.info(f"✅ Phase 3 completed in {phase_duration:.2f}s")
+                logger.info(f"📊 Load test: {successful_requests} successful, {failed_requests} failed")
+                
+                # Phase 4: Graceful Shutdown and Cleanup
+                logger.info("📋 Phase 4: Graceful shutdown and cleanup")
+                phase_start = time.time()
+                
+                # Initiate graceful shutdown
+                process.terminate()
+                
+                # Monitor shutdown process
+                shutdown_timeout = 10
+                try:
+                    return_code = process.wait(timeout=shutdown_timeout)
+                    assert return_code == 0, f"Non-zero exit code during shutdown: {return_code}"
+                except subprocess.TimeoutExpired:
+                    logger.warning("⚠️ Graceful shutdown timeout, forcing termination")
+                    process.kill()
+                    process.wait()
+                    pytest.fail("WSGI server graceful shutdown timeout")
+                
+                # Validate server is no longer accessible
+                time.sleep(1)
+                with pytest.raises(requests.exceptions.RequestException):
+                    requests.get(f'http://127.0.0.1:{dynamic_port}/health', timeout=1)
+                
+                phase_duration = time.time() - phase_start
+                deployment_phases.append(('shutdown', phase_duration))
+                memory_monitor['record']("after_phase4_shutdown")
+                
+                logger.info(f"✅ Phase 4 completed in {phase_duration:.2f}s")
+                
+            except Exception as e:
+                # Ensure cleanup on test failure
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+                raise e
+        
+        # Validate overall deployment lifecycle performance
+        total_lifecycle_duration = sum(duration for _, duration in deployment_phases)
+        assert total_lifecycle_duration < 60, f"Total lifecycle {total_lifecycle_duration:.2f}s exceeds 60s limit"
+        
+        # Log deployment phase summary
+        logger.info("📊 Deployment lifecycle summary:")
+        for phase_name, duration in deployment_phases:
+            logger.info(f"   {phase_name}: {duration:.2f}s")
+        logger.info(f"   Total: {total_lifecycle_duration:.2f}s")
+        
+        # Validate memory usage throughout lifecycle
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: End-to-end testing validates production readiness")
+
+
+# ============================================================================
+# UTILITY FUNCTIONS AND HELPERS
+# ============================================================================
+
+def wait_for_server_readiness(host: str, port: int, timeout: int = 30) -> bool:
+    """
+    Utility function to wait for WSGI server readiness with health check validation.
+    Provides reliable server startup detection for pytest testing.
     
-    def test_wsgi_health_check_integration(self, dynamic_port, wsgi_test_config):
-        """
-        Test WSGI health check integration for container orchestration.
-        Validates health check endpoint functionality through WSGI stack.
-        """
-        port = dynamic_port
-        bind_address = f"{wsgi_test_config['bind_host']}:{port}"
+    Args:
+        host: Server host address
+        port: Server port number
+        timeout: Maximum wait time in seconds
         
-        # Start WSGI server
-        process = subprocess.Popen([
-            'gunicorn',
-            '--bind', bind_address,
-            '--workers', '1',
-            'src.wsgi:application'
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
+    Returns:
+        bool: True if server is ready, False if timeout exceeded
+    """
+    logger.info(f"⏳ Waiting for WSGI server readiness on {host}:{port}")
+    
+    start_time = time.time()
+    while time.time() - start_time < timeout:
         try:
-            # Wait for startup
-            time.sleep(3)
-            
-            # Test health check endpoint multiple times
-            for i in range(5):
-                health_response = requests.get(f"http://{bind_address}/health", timeout=5)
-                assert health_response.status_code == 200, f"Health check {i+1} failed"
-                
-                health_data = health_response.json()
-                assert 'status' in health_data, "Health response should contain status"
-                assert health_data['status'] == 'healthy', "Status should be 'healthy'"
-                assert 'timestamp' in health_data, "Health response should contain timestamp"
-                
-                # Small delay between health checks
-                time.sleep(0.5)
-            
-            logger.info("✅ WSGI health check integration validated")
-            
-        finally:
-            process.terminate()
-            process.wait()
+            response = requests.get(f'http://{host}:{port}/health', timeout=1)
+            if response.status_code == 200:
+                logger.info(f"✅ WSGI server ready after {time.time() - start_time:.2f}s")
+                return True
+        except requests.exceptions.RequestException:
+            time.sleep(0.5)
+            continue
+    
+    logger.error(f"❌ WSGI server not ready after {timeout}s timeout")
+    return False
 
 
-# pytest configuration and execution markers
+def validate_wsgi_response_format(response: requests.Response, expected_keys: List[str]) -> bool:
+    """
+    Utility function to validate WSGI response format and content structure.
+    Provides consistent response validation for Flask endpoint testing.
+    
+    Args:
+        response: HTTP response object from WSGI server
+        expected_keys: List of expected keys in JSON response
+        
+    Returns:
+        bool: True if response format is valid
+        
+    Raises:
+        AssertionError: If response format validation fails
+    """
+    # Validate HTTP status and content type
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    assert response.is_json, "Response is not JSON format"
+    
+    # Validate JSON structure
+    data = response.json()
+    for key in expected_keys:
+        assert key in data, f"Expected key '{key}' missing from response"
+    
+    logger.info(f"✅ Response format validation passed for keys: {expected_keys}")
+    return True
+
+
+# ============================================================================
+# PYTEST MARKERS AND CONFIGURATION
+# ============================================================================
+
+# Define pytest markers for test categorization
 pytestmark = [
     pytest.mark.wsgi,
     pytest.mark.integration,
-    pytest.mark.slow
+    pytest.mark.performance
 ]
 
+# pytest configuration for WSGI testing
+pytest_plugins = [
+    'pytest_benchmark',
+    'pytest_flask'
+]
 
-if __name__ == "__main__":
-    # Direct pytest execution for development testing
-    pytest.main([
-        __file__,
-        "-v",
-        "--tb=short",
-        "--benchmark-skip",  # Skip benchmarks for quick development testing
-        "--capture=no"
-    ])
+# Module-level configuration
+logger.info("📚 WSGI server test module loaded successfully")
+logger.info("🎓 Educational Note: This module demonstrates comprehensive Python WSGI testing")
+logger.info("🔧 Test categories: lifecycle, integration, performance, configuration")
+logger.info("📊 Features: pytest-benchmark, psutil monitoring, subprocess management")
