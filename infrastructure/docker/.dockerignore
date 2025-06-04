@@ -3,7 +3,7 @@
 # =============================================================================
 # Docker build context exclusion patterns for Express.js v5.1.0 hello world server
 # Optimizes container builds, reduces image size, and maintains security best practices
-# Compatible with Node.js v22.16.0 LTS runtime and multi-stage Docker builds
+# Compatible with Python 3.12+ runtime and multi-stage Docker builds
 #
 # Educational Purpose: Demonstrates Docker build optimization and security patterns
 # Learning Objectives: Container security, build performance, file inclusion strategies
