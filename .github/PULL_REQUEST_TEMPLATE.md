@@ -1,7 +1,7 @@
 # Pull Request Template
-## Node.js Hello World Tutorial Application
+## Python Flask Hello World Tutorial Application
 
-**Purpose:** Structured template for submitting contributions to the Node.js tutorial application with comprehensive quality checks, testing requirements, and educational alignment validation for Express.js v5.1.0 and Node.js v22.16.0 LTS compatibility.
+**Purpose:** Structured template for submitting contributions to the Python Flask tutorial application with comprehensive quality checks, testing requirements, and educational alignment validation for Flask v3.1.1 and Python 3.12+ compatibility.
 
 ---
 
@@ -15,10 +15,10 @@
 <!-- Reference any related issues using GitHub issue numbers (#123) -->
 <!-- Include context about the problem being solved or feature being added -->
 
-**Example:** This PR adds health check endpoint to demonstrate additional Express.js routing patterns. The /health endpoint returns server status information including uptime, memory usage, and timestamp. This addresses issue #45 and provides educational value by showing multiple endpoint implementation.
+**Example:** This PR adds health check endpoint to demonstrate additional Flask routing patterns. The /health endpoint returns server status information including uptime, memory usage, and timestamp. This addresses issue #45 and provides educational value by showing multiple endpoint implementation with Flask decorators.
 
 ### Educational Context
-<!-- Focus on how changes enhance learning objectives for Node.js v22.16.0 LTS and Express.js v5.1.0 concepts -->
+<!-- Focus on how changes enhance learning objectives for Python 3.12+ and Flask v3.1.1 concepts -->
 
 **Related Issues:** <!-- Link to GitHub issues using #issue-number format -->
 **Closes:** <!-- If this PR closes an issue, use "Closes #issue-number" -->
@@ -48,7 +48,7 @@
   <!-- Description: Optimizes performance while maintaining educational clarity -->
   
 - [ ] 🧪 **Testing improvements** (adds or improves test coverage)
-  <!-- Description: Enhances test suite with Jest and Supertest improvements -->
+  <!-- Description: Enhances test suite with pytest and Flask testing improvements -->
 
 **Brief explanation for each selected type:**
 <!-- Provide specific explanation for why each selected type applies to your changes -->
@@ -62,40 +62,40 @@
 **Select all applicable learning objectives and provide explanation**
 
 - [ ] **HTTP request-response cycle understanding**
-  <!-- How does this change help learners understand HTTP fundamentals? -->
+  <!-- How does this change help learners understand HTTP fundamentals with Flask? -->
   
-- [ ] **Express.js middleware concepts and patterns**
-  <!-- What Express.js v5.1.0 concepts does this demonstrate? -->
+- [ ] **Flask framework concepts and patterns**
+  <!-- What Flask v3.1.1 concepts does this demonstrate (decorators, application factory, WSGI)? -->
   
-- [ ] **Node.js runtime fundamentals and features**
-  <!-- How does this utilize or teach Node.js v22.16.0 LTS features? -->
+- [ ] **Python runtime fundamentals and features**
+  <!-- How does this utilize or teach Python 3.12+ features and best practices? -->
   
 - [ ] **Basic API development and RESTful principles**
-  <!-- What API design patterns does this demonstrate? -->
+  <!-- What API design patterns does this demonstrate using Flask? -->
   
-- [ ] **Modern JavaScript ES6+ syntax and patterns**
-  <!-- What modern JavaScript features does this showcase? -->
+- [ ] **Modern Python syntax and patterns**
+  <!-- What modern Python features does this showcase (type hints, decorators, context managers)? -->
   
-- [ ] **Testing practices with Jest and Supertest**
-  <!-- How does this improve or demonstrate testing patterns? -->
+- [ ] **Testing practices with pytest and Flask testing**
+  <!-- How does this improve or demonstrate pytest and pytest-flask testing patterns? -->
   
 - [ ] **Error handling and debugging techniques**
-  <!-- What error handling patterns does this teach? -->
+  <!-- What Flask error handling patterns and Python debugging techniques does this teach? -->
   
 - [ ] **Performance optimization and monitoring**
-  <!-- How does this demonstrate performance awareness? -->
+  <!-- How does this demonstrate Flask performance awareness with psutil monitoring? -->
 
 ### Target Audience Impact
 
 **Answer the following questions about educational impact:**
 
-1. **How do these changes benefit beginning Node.js developers?**
-   <!-- Explain impact on developers new to Node.js -->
+1. **How do these changes benefit beginning Python developers?**
+   <!-- Explain impact on developers new to Python and Flask -->
 
 2. **What new concepts or patterns do learners gain exposure to?**
    <!-- Describe new learning opportunities introduced -->
 
-3. **Are the changes accessible to developers new to Express.js?**
+3. **Are the changes accessible to developers new to Flask?**
    <!-- Assess complexity level and accessibility -->
 
 4. **Do the changes maintain appropriate complexity for tutorial scope?**
@@ -106,7 +106,7 @@
 **Confirm educational standards are met:**
 
 - [ ] **Changes demonstrate industry best practices**
-  <!-- Code follows Node.js v22 LTS and Express.js v5.1.0 best practices -->
+  <!-- Code follows Python 3.12+ and Flask v3.1.1 best practices -->
   
 - [ ] **Implementation includes educational comments and explanations**
   <!-- Code includes clear comments explaining concepts for learners -->
@@ -121,37 +121,37 @@
 
 ## Technical Implementation
 
-### Node.js v22.16.0 LTS Compatibility
+### Python 3.12+ Compatibility
 
-**Verify compatibility with Node.js v22.16.0 LTS features:**
+**Verify compatibility with Python 3.12+ features:**
 
-- [ ] **Verify compatibility with Node.js v22.16.0 LTS features**
-  <!-- Confirm code works with LTS version -->
+- [ ] **Verify compatibility with Python 3.12+ language features**
+  <!-- Confirm code works with modern Python version -->
   
-- [ ] **Utilize V8 engine v12.4 capabilities where appropriate**
-  <!-- Leverage modern V8 features when beneficial -->
+- [ ] **Utilize modern Python typing and type hints where appropriate**
+  <!-- Leverage Python typing system for better code documentation -->
   
-- [ ] **Ensure compatibility with npm v11.4.1**
+- [ ] **Ensure compatibility with pip package management**
   <!-- Package management compatibility verified -->
   
-- [ ] **Test with Node.js Active LTS support requirements**
-  <!-- Validated against LTS support standards -->
+- [ ] **Test with Python virtual environment isolation**
+  <!-- Validated against virtual environment standards -->
 
-### Express.js v5.1.0 Implementation
+### Flask v3.1.1 Implementation
 
-**Leverage Express v5 features and enhancements:**
+**Leverage Flask v3.1.1 features and enhancements:**
 
-- [ ] **Leverage Express v5 automatic promise rejection handling**
-  <!-- Utilize built-in async error handling -->
+- [ ] **Use Flask application factory pattern for scalability**
+  <!-- Implement create_app() pattern for configuration management -->
   
-- [ ] **Utilize path-to-regexp@8.x security improvements**
-  <!-- Implement ReDoS protection patterns -->
+- [ ] **Implement Flask decorator-based routing patterns**
+  <!-- Use @app.route() decorators for endpoint definition -->
   
-- [ ] **Implement ReDoS protection patterns**
-  <!-- Security enhancements against regex attacks -->
+- [ ] **Utilize Flask error handler registration**
+  <!-- Implement @app.errorhandler decorators for comprehensive error handling -->
   
-- [ ] **Use Express v5 middleware enhancements**
-  <!-- Take advantage of v5 middleware improvements -->
+- [ ] **Integrate Flask-CORS for security and cross-origin support**
+  <!-- Leverage Flask extensions for security enhancements -->
 
 ### Architecture and Design Decisions
 
@@ -160,7 +160,7 @@
 1. **What architectural patterns or principles were followed?**
    <!-- Describe design patterns and architectural decisions -->
 
-2. **How do changes fit into the existing minimalist architecture?**
+2. **How do changes fit into the existing Flask application factory architecture?**
    <!-- Explain integration with current system design -->
 
 3. **Were any trade-offs made between complexity and educational value?**
@@ -176,7 +176,7 @@
 - [ ] **Identify any security implications of the changes**
   <!-- Assess security impact of modifications -->
   
-- [ ] **Ensure Express v5 security features are properly utilized**
+- [ ] **Ensure Flask security features are properly utilized**
   <!-- Leverage framework security enhancements -->
   
 - [ ] **Validate input handling and error response security**
@@ -208,23 +208,23 @@
 **Validation Commands:**
 ```bash
 # Run these commands to validate coverage
-npm run test:coverage
-npm run test:ci
+pytest --cov=src --cov-report=html --cov-report=term
+pytest --cov=src --cov-fail-under=100
 ```
 
 ### Types of Tests Added/Modified
 
 **Select applicable test types and describe implementation:**
 
-- [ ] **Unit tests** - Jest unit tests for individual functions and components
+- [ ] **Unit tests** - pytest unit tests for individual functions and components
   <!-- Location: tests/unit/ -->
   <!-- Description of unit tests added or modified -->
   
-- [ ] **Integration tests** - Supertest integration tests for HTTP endpoints
+- [ ] **Integration tests** - pytest-flask integration tests for HTTP endpoints
   <!-- Location: tests/integration/ -->
   <!-- Description of integration tests added or modified -->
   
-- [ ] **Performance tests** - Response time and resource usage validation
+- [ ] **Performance tests** - pytest-benchmark response time and resource usage validation
   <!-- Location: tests/performance/ -->
   <!-- Description of performance tests added or modified -->
 
@@ -232,14 +232,14 @@ npm run test:ci
 
 **Confirm all tests pass:**
 
-- [ ] **All tests pass locally: `npm test`**
+- [ ] **All tests pass locally: `pytest`**
   <!-- Verified locally before submitting PR -->
   
-- [ ] **Coverage report generated: `npm run test:coverage`**
+- [ ] **Coverage report generated: `pytest --cov=src --cov-report=html`**
   <!-- Coverage report reviewed and acceptable -->
   
-- [ ] **CI/CD tests pass: `npm run test:ci`**
-  <!-- Automated tests pass in CI environment -->
+- [ ] **Performance tests pass: `pytest --benchmark-only`**
+  <!-- Performance benchmarks meet SLA requirements -->
   
 - [ ] **No test warnings or errors**
   <!-- Clean test execution without issues -->
@@ -248,13 +248,13 @@ npm run test:ci
 
 **Answer questions about testing approach:**
 
-1. **What testing approach was used for new functionality?**
-   <!-- Describe testing methodology and approach -->
+1. **What pytest testing approach was used for new functionality?**
+   <!-- Describe testing methodology and pytest fixtures used -->
 
 2. **How were edge cases and error conditions tested?**
-   <!-- Explain edge case and error testing strategy -->
+   <!-- Explain edge case and error testing strategy with pytest -->
 
-3. **Were any mocking strategies required?**
+3. **Were any mocking strategies required with pytest-flask?**
    <!-- Describe any mocking or stubbing used -->
 
 4. **How do tests support educational objectives?**
@@ -271,8 +271,8 @@ npm run test:ci
 - [ ] **Added educational comments explaining complex logic**
   <!-- Code includes clear educational explanations -->
   
-- [ ] **Updated function and class documentation**
-  <!-- Function documentation is current and clear -->
+- [ ] **Updated function and class documentation with type hints**
+  <!-- Function documentation is current and clear with Python typing -->
   
 - [ ] **Included examples for new functionality**
   <!-- Usage examples provided for new features -->
@@ -284,10 +284,10 @@ npm run test:ci
 
 **Confirm documentation updates:**
 
-- [ ] **Updated setup instructions if needed**
-  <!-- Installation and setup instructions current -->
+- [ ] **Updated setup instructions for Python environment**
+  <!-- Python virtual environment and pip installation instructions current -->
   
-- [ ] **Added usage examples for new features**
+- [ ] **Added usage examples for new Flask features**
   <!-- Examples demonstrate new functionality -->
   
 - [ ] **Updated troubleshooting section if applicable**
@@ -300,13 +300,13 @@ npm run test:ci
 
 **Ensure educational value is maintained:**
 
-- [ ] **Added explanations for new concepts introduced**
+- [ ] **Added explanations for new Python/Flask concepts introduced**
   <!-- New concepts explained clearly -->
   
 - [ ] **Updated learning objectives if applicable**
   <!-- Learning objectives reflect changes -->
   
-- [ ] **Included references to relevant Node.js/Express.js documentation**
+- [ ] **Included references to relevant Python/Flask documentation**
   <!-- External references provided for further learning -->
   
 - [ ] **Considered progressive learning path impact**
@@ -330,48 +330,99 @@ npm run test:ci
 
 ---
 
-## Quality Checklist
+## Python Code Quality Checks
 
-### Code Quality
+### Code Formatting and Style
 
-**Confirm code quality standards:**
+**Confirm Python code quality standards:**
 
-- [ ] **Code follows established JavaScript ES6+ style guidelines**
-  <!-- Modern JavaScript standards followed -->
+- [ ] **Code follows PEP 8 Python style guidelines**
+  <!-- Modern Python standards followed -->
+  
+- [ ] **Code is formatted with Black code formatter**
+  <!-- Consistent formatting with Black -->
+  
+- [ ] **Code passes flake8 linting validation**
+  <!-- Clean linting with flake8 -->
   
 - [ ] **Functions and variables use descriptive, educational names**
   <!-- Naming supports learning objectives -->
   
-- [ ] **Code is properly formatted and consistently styled**
-  <!-- Consistent formatting throughout -->
+- [ ] **Type hints are included where appropriate**
+  <!-- Modern Python typing practices followed -->
   
-- [ ] **No console.log statements left in production code (except educational logging)**
+- [ ] **Error handling follows Flask patterns**
+  <!-- Modern error handling implemented -->
+
+### Security and Quality Validation
+
+**Verify security and code quality:**
+
+- [ ] **Code passes bandit security scanning**
+  <!-- Python security analysis clean -->
+  
+- [ ] **No critical security vulnerabilities detected**
+  <!-- Security assessment completed -->
+  
+- [ ] **Dependencies are up-to-date and secure (pip-audit)**
+  <!-- Python package security verified -->
+  
+- [ ] **Code passes mypy type checking (if applicable)**
+  <!-- Type safety validation completed -->
+
+**Validation Commands:**
+```bash
+# Run these commands to validate code quality
+black --check .
+flake8 .
+bandit -r src/
+pip-audit
+```
+
+---
+
+## Quality Checklist
+
+### Flask Application Quality
+
+**Confirm Flask application standards:**
+
+- [ ] **Flask application factory pattern is properly implemented**
+  <!-- create_app() function correctly structured -->
+  
+- [ ] **WSGI compatibility is maintained**
+  <!-- Application works with Gunicorn/uWSGI -->
+  
+- [ ] **Flask decorators are used appropriately**
+  <!-- @app.route, @app.errorhandler properly implemented -->
+  
+- [ ] **No debug statements left in production code**
   <!-- Clean production code -->
   
-- [ ] **Error handling follows Express v5 patterns**
-  <!-- Modern error handling implemented -->
+- [ ] **Error handling follows Flask best practices**
+  <!-- Flask error handling patterns implemented -->
   
-- [ ] **Async/await is used appropriately for promise handling**
-  <!-- Modern async patterns used -->
+- [ ] **Request/response patterns follow Flask conventions**
+  <!-- Flask patterns used correctly -->
 
 ### Testing Quality
 
-**Verify testing standards:**
+**Verify pytest testing standards:**
 
-- [ ] **All tests pass locally with `npm test`**
+- [ ] **All tests pass locally with `pytest`**
   <!-- Local test execution successful -->
   
 - [ ] **Code coverage meets minimum 95% threshold**
   <!-- Coverage requirements met -->
   
-- [ ] **New functionality is covered by comprehensive tests**
-  <!-- Thorough test coverage -->
+- [ ] **New functionality is covered by comprehensive pytest tests**
+  <!-- Thorough test coverage with pytest -->
   
 - [ ] **Tests include edge cases and error conditions**
   <!-- Edge cases tested -->
   
-- [ ] **Test names are descriptive and educational**
-  <!-- Test descriptions support learning -->
+- [ ] **pytest fixtures are used appropriately**
+  <!-- Fixture usage supports learning -->
   
 - [ ] **No flaky or intermittent test failures**
   <!-- Reliable test execution -->
@@ -380,17 +431,17 @@ npm run test:ci
 
 **Ensure compatibility requirements:**
 
-- [ ] **Changes are compatible with Node.js v22.16.0 LTS**
-  <!-- LTS compatibility verified -->
+- [ ] **Changes are compatible with Python 3.12+**
+  <!-- Python compatibility verified -->
   
-- [ ] **Express.js v5.1.0 features are properly utilized**
+- [ ] **Flask v3.1.1 features are properly utilized**
   <!-- Framework features used correctly -->
   
 - [ ] **No breaking changes to existing API contracts**
   <!-- Backward compatibility maintained -->
   
-- [ ] **Backward compatibility is maintained where applicable**
-  <!-- Existing functionality preserved -->
+- [ ] **Virtual environment compatibility verified**
+  <!-- venv/pip compatibility confirmed -->
   
 - [ ] **Cross-platform compatibility verified (Windows/macOS/Linux)**
   <!-- Multi-platform testing completed -->
@@ -402,7 +453,7 @@ npm run test:ci
 - [ ] **No security vulnerabilities introduced**
   <!-- Security assessment completed -->
   
-- [ ] **Express v5 security features are properly implemented**
+- [ ] **Flask security features are properly implemented**
   <!-- Framework security features utilized -->
   
 - [ ] **Input validation is appropriate for functionality**
@@ -411,7 +462,7 @@ npm run test:ci
 - [ ] **Error responses don't expose sensitive information**
   <!-- Error handling doesn't leak information -->
   
-- [ ] **Dependencies are up-to-date and secure**
+- [ ] **Python dependencies are up-to-date and secure**
   <!-- Dependency security verified -->
 
 ### Educational Standards
@@ -427,7 +478,7 @@ npm run test:ci
 - [ ] **Complexity is appropriate for target audience**
   <!-- Appropriate difficulty level -->
   
-- [ ] **Changes enhance understanding of Node.js/Express.js concepts**
+- [ ] **Changes enhance understanding of Python/Flask concepts**
   <!-- Concepts clearly demonstrated -->
   
 - [ ] **Documentation supports learning progression**
@@ -437,14 +488,14 @@ npm run test:ci
 
 **Verify performance requirements:**
 
-- [ ] **Response times meet educational targets (<100ms for /hello)**
+- [ ] **Response times meet educational targets (<50ms for /hello)**
   <!-- Performance targets met -->
   
-- [ ] **Memory usage remains within educational limits (<50MB)**
-  <!-- Resource usage appropriate -->
+- [ ] **Memory usage remains within educational limits (<75MB)**
+  <!-- Resource usage appropriate with psutil monitoring -->
   
 - [ ] **Server startup time is acceptable (<5 seconds)**
-  <!-- Startup performance maintained -->
+  <!-- Flask application startup performance maintained -->
   
 - [ ] **No performance regressions introduced**
   <!-- Performance not degraded -->
@@ -463,7 +514,7 @@ npm run test:ci
 <!-- If this PR includes breaking changes, describe what breaks and how to migrate -->
 
 ### Deployment Notes
-<!-- Any special considerations for deployment or environment setup -->
+<!-- Any special considerations for deployment or Flask/Gunicorn configuration -->
 
 ### Future Work
 <!-- Any follow-up work or improvements that could be made in future PRs -->
@@ -477,14 +528,16 @@ npm run test:ci
 - [ ] I have read and followed the [Contributing Guidelines](CONTRIBUTING.md)
 - [ ] I have read and agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
 - [ ] All automated CI/CD checks are passing
-- [ ] I have tested these changes locally
+- [ ] I have tested these changes locally with pytest
 - [ ] I have added/updated tests as appropriate
+- [ ] I have validated Python code quality with flake8 and black
+- [ ] I have run security validation with bandit
 - [ ] I have updated documentation as needed
 - [ ] This PR has educational value and aligns with tutorial objectives
 - [ ] The code is ready for collaborative review and learning
 
 ---
 
-**Thank you for contributing to the Node.js Hello World Tutorial! 🎓**
+**Thank you for contributing to the Python Flask Hello World Tutorial! 🐍**
 
-*Your contribution helps create an exceptional learning environment for Node.js v22.16.0 LTS and Express.js v5.1.0 education. We appreciate your commitment to educational excellence and collaborative development.*
+*Your contribution helps create an exceptional learning environment for Python 3.12+ and Flask v3.1.1 education. We appreciate your commitment to educational excellence and collaborative development using modern Python practices.*
