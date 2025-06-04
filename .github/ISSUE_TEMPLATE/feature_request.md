@@ -382,9 +382,6 @@ This feature request template is designed to ensure all proposed enhancements:
 3. Maintain compatibility with the tutorial's simplicity and focus
 4. Include comprehensive implementation and testing considerations with pytest
 5. Facilitate community evaluation and constructive feedback
-6. Demonstrate Python ecosystem best practices and Flask patterns
-7. Include proper virtual environment and dependency management
-8. Support modern Python development workflows and tooling
 
 For questions about this template or the evaluation process, please refer to:
 - Contributing Guidelines: ../../CONTRIBUTING.md
