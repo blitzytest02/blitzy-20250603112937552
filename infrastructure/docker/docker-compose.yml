@@ -1,17 +1,17 @@
 # =============================================================================
 # DOCKER COMPOSE CONFIGURATION - Python Flask Tutorial Application
 # =============================================================================
-# Multi-environment container orchestration for Flask web server with Python 3.12+
-# Educational demonstration of Docker Compose patterns with Flask framework
+# Multi-environment container orchestration for Flask v3.1.1 hello world server
+# Educational demonstration of Docker Compose patterns with Python v3.12+ LTS
 # 
 # Purpose: Containerized deployment orchestration for development and production
 # Learning Objectives: Multi-service configuration, environment management, networking
-# Technical Stack: Docker Compose v3.8, Python 3.12+, Flask 3.1.1+, Gunicorn 21.2.0+
+# Technical Stack: Docker Compose v3.8, Python v3.12+ LTS, Flask v3.1.1
 # 
 # Usage:
 #   Development: docker-compose up flask-tutorial-dev
 #   Production:  docker-compose up flask-tutorial-prod  
-#   Testing:     docker-compose run --rm flask-tutorial-dev pytest
+#   Testing:     docker-compose run --rm flask-tutorial-dev python -m pytest
 #   Both:        docker-compose up flask-tutorial-dev flask-tutorial-prod
 # =============================================================================
 
@@ -21,69 +21,72 @@ version: '3.8'
 # SERVICE DEFINITIONS
 # =============================================================================
 # Defines containerized services for development and production environments
-# Each service uses multi-stage Docker build targets for optimized Python deployment
+# Each service uses multi-stage Docker build targets for optimized deployment
 # Implements container security, resource management, and monitoring best practices
 
 services:
   # ===========================================================================
   # DEVELOPMENT SERVICE CONFIGURATION
   # ===========================================================================
-  # Development service with source code mounting, Python debugging capabilities,
-  # and comprehensive development tooling for educational Flask workflow demonstration
+  # Development service with source code mounting, debugging capabilities,
+  # and comprehensive development tooling for educational workflow demonstration
   
   flask-tutorial-dev:
     # Container identification and metadata
     container_name: flask-tutorial-dev
     hostname: flask-tutorial-dev
     
-    # Multi-stage build configuration targeting Python development stage
+    # Multi-stage build configuration targeting development stage
     build:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile
       target: development
-      # Build arguments for Python development optimization
+      # Build arguments for development optimization
       args:
         - FLASK_ENV=development
-        - PYTHON_VERSION=3.12
         - BUILD_DATE=${BUILD_DATE:-}
         - VCS_REF=${VCS_REF:-}
-      # Build caching strategy for Python development efficiency
+      # Build caching strategy for development efficiency
       cache_from:
         - python:3.12-alpine
         - flask-tutorial:dev-cache
     
-    # Development environment variables for Flask educational transparency
+    # Development environment variables for educational transparency
     environment:
       # Flask runtime configuration
       FLASK_ENV: development
-      FLASK_APP: app.py
-      FLASK_DEBUG: 1
+      FLASK_APP: wsgi.py
+      FLASK_DEBUG: "true"
       PORT: 3000
       HOST: 0.0.0.0
       
       # Python runtime configuration
-      PYTHON_VERSION: 3.12
+      PYTHON_VERSION: "3.12"
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
       PYTHONPATH: /usr/src/app
-      PYTHONUNBUFFERED: 1
-      PYTHONDONTWRITEBYTECODE: 1
       
       # Development-specific logging and debugging
       LOG_LEVEL: debug
       
-      # pip configuration for development workflow
-      PIP_NO_CACHE_DIR: 0
-      PIP_DISABLE_PIP_VERSION_CHECK: 0
+      # Pip configuration for development workflow
+      PIP_NO_CACHE_DIR: "0"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      
+      # Flask development server configuration
+      WERKZEUG_RUN_MAIN: "true"
+      WERKZEUG_DEBUG_PIN: off
       
       # Educational environment metadata
       TUTORIAL_MODE: development
       COMPOSE_SERVICE: flask-tutorial-dev
     
-    # Port mapping for development access and Python debugging
+    # Port mapping for development access and debugging
     ports:
-      - "3000:3000"     # HTTP server port for Flask application access
+      - "3000:3000"     # HTTP server port for application access
       - "5678:5678"     # Python debugpy port for IDE integration
     
-    # Volume configuration for Python development workflow
+    # Volume configuration for development workflow
     volumes:
       # Source code hot-reloading with delegated consistency for macOS performance
       - type: bind
@@ -91,14 +94,15 @@ services:
         target: /usr/src/app
         consistency: delegated
         
-      # Anonymous volume for Python __pycache__ to prevent host override
-      - type: volume
-        target: /usr/src/app/__pycache__
-        
-      # Named volume for persistent Python virtual environment caching
+      # Named volume for persistent virtual environment caching
       - type: volume
         source: venv_cache_dev
         target: /usr/src/app/.venv
+        
+      # Named volume for pip cache optimization
+      - type: volume
+        source: pip_cache_dev
+        target: /home/python/.cache/pip
     
     # Network configuration for service isolation and discovery
     networks:
@@ -107,21 +111,22 @@ services:
     # Restart policy for development stability
     restart: unless-stopped
     
-    # Development startup command with Python debugging and Flask hot-reload capabilities
+    # Development startup command with debugging and hot-reload capabilities
     command: >
       sh -c "
-        echo '🎓 Starting Python Flask Tutorial Development Server...' &&
-        echo '📋 Development Features: Hot-reload, Debug mode, pytest testing, black/flake8 linting' &&
+        echo '🎓 Starting Flask Tutorial Development Server...' &&
+        echo '📋 Development Features: Hot-reload, Debug mode, Comprehensive logging' &&
         echo '🔧 Access: http://localhost:3000/hello' &&
-        echo '🐛 Debug: Configure IDE to connect to debugpy on port 5678' &&
-        echo '🧪 Testing: docker-compose exec flask-tutorial-dev pytest' &&
-        echo '🎨 Format: docker-compose exec flask-tutorial-dev black .' &&
-        echo '🔍 Lint: docker-compose exec flask-tutorial-dev flake8' &&
-        pip install -e . &&
-        python -m debugpy --listen 0.0.0.0:5678 --wait-for-client app.py
+        echo '🐛 Debug: Python debugpy on port 5678 for IDE integration' &&
+        echo '🔄 Installing development dependencies...' &&
+        . venv/bin/activate &&
+        pip install -r requirements-dev.txt &&
+        echo '✅ Dependencies installed' &&
+        echo '🚀 Starting Flask development server with watchdog hot-reload...' &&
+        python -m flask run --host=0.0.0.0 --port=3000 --debug --reload
       "
     
-    # Health check configuration for Flask development monitoring
+    # Health check configuration for development monitoring
     healthcheck:
       test: 
         - CMD
@@ -131,24 +136,24 @@ services:
       interval: 15s      # Frequent checks for development feedback
       timeout: 5s        # Quick timeout for development responsiveness
       retries: 3         # Limited retries for development workflow
-      start_period: 10s  # Allow time for Flask development server startup
+      start_period: 10s  # Allow time for development server startup
     
     # Development-specific labels for container identification
     labels:
       - "tutorial.environment=development"
       - "tutorial.service=flask-tutorial-dev"
-      - "tutorial.version=1.0.0"
+      - "tutorial.version=2.0.0"
       - "tutorial.purpose=educational-development"
       - "tutorial.framework=flask.3.1.1"
       - "tutorial.runtime=python.3.12"
-      - "tutorial.wsgi=gunicorn.21.2.0"
+      - "tutorial.wsgi=gunicorn"
     
     # Security configuration for development environment
     security_opt:
       - no-new-privileges:true
     
     # User configuration for non-root execution
-    user: "1000:1000"  # app user from Dockerfile
+    user: "1000:1000"  # python user from Dockerfile
     
     # Working directory specification
     working_dir: /usr/src/app
@@ -164,61 +169,58 @@ services:
   # ===========================================================================
   # PRODUCTION SERVICE CONFIGURATION  
   # ===========================================================================
-  # Production service with optimized Python container, resource limits, security hardening,
-  # and Gunicorn WSGI server performance tuning for production deployment demonstration
+  # Production service with optimized container, resource limits, security hardening,
+  # and performance tuning for production deployment demonstration
   
   flask-tutorial-prod:
     # Container identification and metadata
     container_name: flask-tutorial-prod
     hostname: flask-tutorial-prod
     
-    # Multi-stage build configuration targeting Python production stage
+    # Multi-stage build configuration targeting production stage
     build:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile
       target: production
-      # Build arguments for Python production optimization
+      # Build arguments for production optimization
       args:
         - FLASK_ENV=production
-        - PYTHON_VERSION=3.12
         - BUILD_DATE=${BUILD_DATE:-}
         - VCS_REF=${VCS_REF:-}
-      # Build caching strategy for Python production efficiency
+      # Build caching strategy for production efficiency
       cache_from:
         - python:3.12-alpine
         - flask-tutorial:prod-cache
     
-    # Production environment variables for optimal Flask performance
+    # Production environment variables for optimal performance
     environment:
       # Flask runtime configuration for production
       FLASK_ENV: production
-      FLASK_APP: wsgi:app
-      FLASK_DEBUG: 0
+      FLASK_APP: wsgi.py
+      FLASK_DEBUG: "false"
       PORT: 3000
       HOST: 0.0.0.0
       
       # Python runtime configuration
-      PYTHON_VERSION: 3.12
+      PYTHON_VERSION: "3.12"
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
       PYTHONPATH: /usr/src/app
-      PYTHONUNBUFFERED: 1
-      PYTHONDONTWRITEBYTECODE: 1
       
       # Production logging configuration
       LOG_LEVEL: info
-      
-      # pip configuration for production
-      PIP_NO_CACHE_DIR: 1
-      PIP_DISABLE_PIP_VERSION_CHECK: 1
+      PIP_NO_CACHE_DIR: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
       
       # Gunicorn WSGI server configuration
-      GUNICORN_WORKERS: 4
-      GUNICORN_THREADS: 2
-      GUNICORN_TIMEOUT: 30
-      GUNICORN_KEEPALIVE: 2
-      GUNICORN_BIND: 0.0.0.0:3000
+      GUNICORN_WORKERS: "4"
+      GUNICORN_TIMEOUT: "30"
+      GUNICORN_KEEPALIVE: "2"
+      GUNICORN_MAX_REQUESTS: "1000"
+      GUNICORN_MAX_REQUESTS_JITTER: "100"
       
-      # Python performance optimization settings
-      PYTHONOPTIMIZE: 2
+      # Security configuration
+      PYTHONHASHSEED: "random"
       
       # Educational environment metadata
       TUTORIAL_MODE: production
@@ -230,10 +232,16 @@ services:
     
     # Volume configuration for production (no source mounting)
     volumes:
-      # Named volume for Python virtual environment caching (read-only)
+      # Named volume for virtual environment caching (read-only)
       - type: volume
         source: venv_cache_prod
         target: /usr/src/app/.venv
+        read_only: true
+        
+      # Named volume for pip cache (read-only in production)
+      - type: volume
+        source: pip_cache_prod
+        target: /home/python/.cache/pip
         read_only: true
     
     # Network configuration for service isolation
@@ -243,18 +251,19 @@ services:
     # Restart policy for production stability
     restart: always
     
-    # Production startup command optimized for Gunicorn WSGI server performance
+    # Production startup command optimized for performance
     command: >
       sh -c "
-        echo '🚀 Starting Python Flask Tutorial Production Server...' &&
-        echo '📋 Production Features: Gunicorn WSGI, Resource limits, Security hardening, Performance optimization' &&
+        echo '🚀 Starting Flask Tutorial Production Server...' &&
+        echo '📋 Production Features: Gunicorn WSGI server, Resource limits, Security hardening' &&
         echo '🔧 Access: http://localhost:3001/hello' &&
         echo '📊 Resource limits: 128MB memory, 0.5 CPU cores' &&
-        echo '⚙️  Gunicorn workers: 4, threads: 2' &&
-        gunicorn wsgi:app --bind 0.0.0.0:3000 --workers 4 --threads 2 --timeout 30 --keepalive 2 --access-logfile - --error-logfile -
+        echo '⚡ Gunicorn workers: 4, timeout: 30s' &&
+        . venv/bin/activate &&
+        exec gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4 --timeout 30 --keepalive 2 --max-requests 1000 --max-requests-jitter 100 --preload --log-level info
       "
     
-    # Health check configuration for Flask production monitoring
+    # Health check configuration for production monitoring
     healthcheck:
       test:
         - CMD
@@ -262,18 +271,18 @@ services:
         - -f
         - http://localhost:3000/hello
       interval: 30s      # Standard production monitoring interval
-      timeout: 10s       # Reasonable timeout for Flask production response
+      timeout: 10s       # Reasonable timeout for production response
       retries: 3         # Standard retry count for production reliability
-      start_period: 15s  # Allow time for Gunicorn server initialization
+      start_period: 15s  # Allow time for production server initialization
     
-    # Resource limits for Python production deployment demonstration
+    # Resource limits for production deployment demonstration
     deploy:
       resources:
         limits:
-          memory: 128M          # Educational memory constraint for Python runtime awareness
+          memory: 128M          # Adjusted memory constraint for Python runtime overhead
           cpus: '0.5'          # Half CPU core limit for performance testing
         reservations:
-          memory: 64M           # Guaranteed memory allocation for Python baseline performance
+          memory: 75M           # Guaranteed memory allocation for Python baseline performance
           cpus: '0.25'         # Quarter CPU core reservation for consistent performance
       
       # Production deployment configuration
@@ -293,11 +302,11 @@ services:
     labels:
       - "tutorial.environment=production"
       - "tutorial.service=flask-tutorial-prod"
-      - "tutorial.version=1.0.0"
+      - "tutorial.version=2.0.0"
       - "tutorial.purpose=educational-production"
       - "tutorial.framework=flask.3.1.1"
       - "tutorial.runtime=python.3.12"
-      - "tutorial.wsgi=gunicorn.21.2.0"
+      - "tutorial.wsgi=gunicorn"
       - "tutorial.optimization=performance"
       - "tutorial.security=hardened"
     
@@ -307,7 +316,7 @@ services:
       - apparmor:unconfined  # Educational: would be configured properly in real production
     
     # User configuration for non-root execution
-    user: "1000:1000"  # app user from Dockerfile
+    user: "1000:1000"  # python user from Dockerfile
     
     # Working directory specification
     working_dir: /usr/src/app
@@ -354,7 +363,7 @@ services:
 # =============================================================================
 # NETWORK CONFIGURATION
 # =============================================================================
-# Custom bridge network for service isolation and educational Flask networking demonstration
+# Custom bridge network for service isolation and educational networking demonstration
 
 networks:
   flask-tutorial-network:
@@ -383,33 +392,48 @@ networks:
       - "tutorial.purpose=service-isolation"
       - "tutorial.driver=bridge"
       - "tutorial.educational=container-networking"
-      - "tutorial.framework=flask"
 
 # =============================================================================
 # VOLUME CONFIGURATION
 # =============================================================================
-# Named volumes for Python virtual environment caching and persistent data management
+# Named volumes for Python virtual environment and dependency caching
 
 volumes:
-  # Development environment Python virtual environment cache
+  # Development environment virtual environment cache
   venv_cache_dev:
     driver: local
-    name: flask-tutorial-venv-dev
+    name: flask-tutorial-venv-dev-cache
     labels:
       - "tutorial.volume=venv-dev-cache"
-      - "tutorial.purpose=python-dependency-caching"
+      - "tutorial.purpose=virtual-environment-caching"
       - "tutorial.environment=development"
-      - "tutorial.framework=flask"
   
-  # Production environment Python virtual environment cache
+  # Production environment virtual environment cache
   venv_cache_prod:
     driver: local
-    name: flask-tutorial-venv-prod
+    name: flask-tutorial-venv-prod-cache
     labels:
       - "tutorial.volume=venv-prod-cache"
-      - "tutorial.purpose=python-dependency-caching"
+      - "tutorial.purpose=virtual-environment-caching"
       - "tutorial.environment=production"
-      - "tutorial.framework=flask"
+      
+  # Development environment pip cache
+  pip_cache_dev:
+    driver: local
+    name: flask-tutorial-pip-dev-cache
+    labels:
+      - "tutorial.volume=pip-dev-cache"
+      - "tutorial.purpose=pip-dependency-caching"
+      - "tutorial.environment=development"
+  
+  # Production environment pip cache
+  pip_cache_prod:
+    driver: local
+    name: flask-tutorial-pip-prod-cache
+    labels:
+      - "tutorial.volume=pip-prod-cache"
+      - "tutorial.purpose=pip-dependency-caching"
+      - "tutorial.environment=production"
   
   # Shared volume for educational data persistence demonstration
   flask_shared_data:
@@ -423,128 +447,117 @@ volumes:
       - "tutorial.volume=shared-data"
       - "tutorial.purpose=educational-persistence"
       - "tutorial.accessibility=cross-service"
-      - "tutorial.framework=flask"
 
 # =============================================================================
-# EDUCATIONAL DOCKER COMPOSE PATTERNS DEMONSTRATION - PYTHON FLASK EDITION
+# EDUCATIONAL DOCKER COMPOSE PATTERNS DEMONSTRATION
 # =============================================================================
-# This Docker Compose configuration demonstrates key concepts for Python Flask container orchestration:
+# This Docker Compose configuration demonstrates key concepts for container orchestration:
 #
-# 1. MULTI-ENVIRONMENT FLASK SERVICES:
-#    - Development service with hot-reloading and Python debugging capabilities
-#    - Production service with Gunicorn WSGI server and optimized performance
+# 1. MULTI-ENVIRONMENT SERVICES:
+#    - Development service with hot-reloading and debugging capabilities
+#    - Production service with Gunicorn WSGI server and resource constraints
 #    - Demonstrates environment-specific Flask configuration patterns
 #
-# 2. PYTHON CONTAINER NETWORKING:
-#    - Custom bridge network for Flask service isolation
+# 2. PYTHON/FLASK CONTAINER PATTERNS:
+#    - Virtual environment isolation for dependency management
+#    - Flask development server with debug mode and hot-reload
+#    - Gunicorn WSGI server for production deployment
+#    - Python debugpy integration for IDE debugging
+#
+# 3. CONTAINER NETWORKING:
+#    - Custom bridge network for service isolation
 #    - Service discovery through container names
 #    - Network security through isolated communication
 #
-# 3. PYTHON VOLUME MANAGEMENT:
-#    - Source code mounting for Flask development workflow
-#    - Virtual environment caching for pip performance optimization
-#    - Anonymous volumes to prevent Python __pycache__ host interference
+# 4. VOLUME MANAGEMENT:
+#    - Source code mounting for development workflow
+#    - Virtual environment caching for performance optimization
+#    - Pip cache volumes for faster dependency installation
 #
-# 4. PYTHON SECURITY IMPLEMENTATION:
-#    - Non-root user execution in all Python containers
+# 5. SECURITY IMPLEMENTATION:
+#    - Non-root user execution in all containers
 #    - Security options and capability management
-#    - Read-only filesystem for Flask production hardening
+#    - Read-only filesystem for production hardening
 #
-# 5. RESOURCE MANAGEMENT FOR PYTHON:
-#    - Memory and CPU limits for Python production deployment
-#    - Resource reservations for guaranteed Flask performance
-#    - Educational resource constraints for Python runtime learning
+# 6. RESOURCE MANAGEMENT:
+#    - Memory and CPU limits adjusted for Python runtime overhead
+#    - Resource reservations for guaranteed performance
+#    - Educational resource constraints for learning
 #
-# 6. FLASK HEALTH MONITORING:
-#    - HTTP endpoint health checks for Flask service availability
+# 7. HEALTH MONITORING:
+#    - HTTP endpoint health checks for Flask application availability
 #    - Environment-specific health check configurations
-#    - Container restart policies based on Flask health status
+#    - Container restart policies based on health status
 #
-# 7. PYTHON BUILD OPTIMIZATION:
-#    - Multi-stage Docker builds with different Python targets
-#    - Build caching strategies for faster Python rebuilds
-#    - Context optimization through .dockerignore patterns
+# 8. BUILD OPTIMIZATION:
+#    - Multi-stage Docker builds with Python-specific targets
+#    - Build caching strategies for faster rebuilds
+#    - Virtual environment optimization for container efficiency
 #
-# 8. OPERATIONAL PATTERNS FOR FLASK:
-#    - Service dependencies and startup ordering
-#    - Graceful shutdown handling for Gunicorn WSGI server
-#    - Educational logging and transparency for Python applications
+# 9. FLASK DEVELOPMENT PATTERNS:
+#    - Flask application factory pattern integration
+#    - Environment variable configuration with python-dotenv
+#    - WSGI deployment patterns with Gunicorn
 #
-# LEARNING COMMANDS FOR PYTHON FLASK:
-# ===================================
+# LEARNING COMMANDS:
+# ==================
 # View service status:     docker-compose ps
 # Follow service logs:     docker-compose logs -f [service-name]
 # Execute into container:  docker-compose exec [service-name] sh
 # Scale services:          docker-compose up --scale flask-tutorial-dev=2
 # Network inspection:      docker network inspect flask-tutorial-network
-# Volume inspection:       docker volume inspect flask-tutorial-venv-dev
+# Volume inspection:       docker volume inspect flask-tutorial-venv-dev-cache
 # Resource monitoring:     docker stats $(docker-compose ps -q)
 # Clean shutdown:          docker-compose down --volumes --remove-orphans
 #
-# PYTHON DEVELOPMENT WORKFLOW:
-# ============================
+# DEVELOPMENT WORKFLOW:
+# ====================
 # 1. Start development:    docker-compose up flask-tutorial-dev
 # 2. View application:     http://localhost:3000/hello
-# 3. Edit source code:     Files in src/backend/ automatically reload with Flask debug mode
-# 4. Run tests:            docker-compose exec flask-tutorial-dev pytest
-# 5. Format code:          docker-compose exec flask-tutorial-dev black .
-# 6. Lint code:            docker-compose exec flask-tutorial-dev flake8
-# 7. Security scan:        docker-compose exec flask-tutorial-dev bandit -r .
-# 8. Debug application:    Configure IDE to connect to debugpy on port 5678
+# 3. Edit source code:     Files in src/backend/ automatically reload
+# 4. Run tests:            docker-compose run --rm flask-tutorial-dev python -m pytest
+# 5. Debug application:    Configure IDE to connect to debugpy on port 5678
+# 6. Code formatting:      docker-compose exec flask-tutorial-dev python -m black .
+# 7. Linting:              docker-compose exec flask-tutorial-dev python -m flake8
+# 8. Security scan:        docker-compose exec flask-tutorial-dev python -m bandit -r .
 #
-# FLASK PRODUCTION TESTING:
-# =========================
+# PRODUCTION TESTING:
+# ===================
 # 1. Start production:     docker-compose up flask-tutorial-prod
 # 2. View application:     http://localhost:3001/hello
 # 3. Monitor resources:    docker stats flask-tutorial-prod
 # 4. Check health:         docker-compose exec flask-tutorial-prod curl localhost:3000/hello
 # 5. Scale testing:        docker-compose up --scale flask-tutorial-prod=3
-# 6. Gunicorn workers:     Check logs for worker process management
+# 6. Performance test:     docker-compose exec flask-tutorial-prod ab -n 1000 -c 10 http://localhost:3000/hello
 #
-# PYTHON SECURITY VERIFICATION:
-# ==============================
+# PYTHON DEVELOPMENT COMMANDS:
+# =============================
+# 1. Install dependencies: docker-compose exec flask-tutorial-dev pip install -r requirements-dev.txt
+# 2. Run tests:            docker-compose exec flask-tutorial-dev python -m pytest -v
+# 3. Test coverage:        docker-compose exec flask-tutorial-dev python -m pytest --cov=app --cov-report=html
+# 4. Format code:          docker-compose exec flask-tutorial-dev python -m black app.py wsgi.py
+# 5. Lint code:            docker-compose exec flask-tutorial-dev python -m flake8 app.py wsgi.py
+# 6. Type checking:        docker-compose exec flask-tutorial-dev python -m mypy app.py wsgi.py
+# 7. Security scan:        docker-compose exec flask-tutorial-dev python -m bandit -r app.py wsgi.py
+# 8. Dependency audit:     docker-compose exec flask-tutorial-dev python -m pip-audit
+# 9. Interactive shell:    docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print('Flask app created')"
+# 10. Flask shell:         docker-compose exec flask-tutorial-dev python -m flask shell
+#
+# SECURITY VERIFICATION:
+# ======================
 # 1. User verification:    docker-compose exec flask-tutorial-prod whoami
 # 2. Capability check:     docker-compose exec flask-tutorial-prod cat /proc/self/status | grep Cap
 # 3. Filesystem check:     docker-compose exec flask-tutorial-prod touch /test-readonly
 # 4. Network isolation:    docker-compose exec flask-tutorial-prod ping flask-tutorial-dev
-# 5. Python packages:      docker-compose exec flask-tutorial-prod pip list
-# 6. Flask configuration:  docker-compose exec flask-tutorial-dev python -c "from app import create_app; print(create_app().config)"
+# 5. Python security:      docker-compose exec flask-tutorial-dev python -m bandit -r .
+# 6. Dependency security:  docker-compose exec flask-tutorial-dev python -m safety check
 #
-# PYTHON TESTING AND QUALITY COMMANDS:
-# ====================================
-# 1. Run all tests:        docker-compose exec flask-tutorial-dev pytest
-# 2. Test with coverage:   docker-compose exec flask-tutorial-dev pytest --cov=app --cov-report=html
-# 3. Performance tests:    docker-compose exec flask-tutorial-dev pytest -k "performance"
-# 4. Security analysis:    docker-compose exec flask-tutorial-dev bandit -r . -f json
-# 5. Dependency check:     docker-compose exec flask-tutorial-dev safety check
-# 6. Type checking:        docker-compose exec flask-tutorial-dev mypy app.py
-# 7. Import sorting:       docker-compose exec flask-tutorial-dev isort . --check-only
-#
-# GUNICORN WSGI SERVER CONFIGURATION:
-# ===================================
-# Workers: 4 (optimal for educational CPU constraints)
-# Threads: 2 per worker (balance between concurrency and memory)
-# Timeout: 30s (reasonable for educational response times)
-# Keepalive: 2s (efficient connection reuse)
-# Bind: 0.0.0.0:3000 (container-internal binding)
-#
-# FLASK DEBUGGING AND DEVELOPMENT:
-# ================================
-# - Flask debug mode enabled in development with FLASK_DEBUG=1
-# - Python debugpy server on port 5678 for IDE integration
-# - Hot-reload capability through Flask's built-in development server
-# - Comprehensive error pages with stack traces in development
-# - Real-time code reloading without container restart
-#
-# PYTHON EDUCATIONAL PATTERNS:
-# ============================
-# - Virtual environment management and caching patterns
-# - Python package management with pip and requirements.txt
-# - Flask application factory pattern demonstration
-# - WSGI server deployment with Gunicorn
-# - Python-specific containerization best practices
-# - pytest testing framework integration
-# - Python code quality tools (black, flake8, bandit, safety)
-# - Python performance monitoring and optimization techniques
+# FLASK-SPECIFIC DEBUGGING:
+# =========================
+# 1. Flask routes:         docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print(app.url_map)"
+# 2. Flask config:         docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print(dict(app.config))"
+# 3. Environment check:    docker-compose exec flask-tutorial-dev python -c "import os; print('FLASK_ENV:', os.getenv('FLASK_ENV')); print('FLASK_DEBUG:', os.getenv('FLASK_DEBUG'))"
+# 4. Import verification:  docker-compose exec flask-tutorial-dev python -c "import flask, flask_cors, dotenv; print('All imports successful')"
+# 5. WSGI check:           docker-compose exec flask-tutorial-prod python -c "from wsgi import application; print('WSGI application loaded:', type(application))"
 #
 # =============================================================================
