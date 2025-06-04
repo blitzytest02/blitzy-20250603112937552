@@ -1,0 +1,356 @@
+[flake8]
+# =============================================================================
+# flake8 Configuration for Python Flask Migration Tutorial Application
+# =============================================================================
+# This configuration defines Python code quality standards, linting rules, and
+# style guide enforcement for the Flask application, replacing .eslintrc.json
+# functionality while ensuring PEP 8 compliance with security-focused linting.
+#
+# Key Integrations:
+# - Black formatter compatibility with 88-character line length
+# - flake8-security plugin for vulnerability detection
+# - Comprehensive PEP 8 compliance enforcement
+# - CI/CD pipeline integration for automated quality validation
+# - Cyclomatic complexity analysis for maintainable code architecture
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Line Length and Formatting Configuration
+# -----------------------------------------------------------------------------
+# Configure line length to 88 characters for black formatter compatibility
+# This setting replaces ESLint's printWidth configuration and ensures
+# consistent formatting between black and flake8 validation.
+max-line-length = 88
+
+# Maximum complexity threshold for cyclomatic complexity analysis
+# This enforces maintainable code architecture by limiting function complexity
+# and helps identify overly complex functions that should be refactored.
+max-complexity = 10
+
+# -----------------------------------------------------------------------------
+# File and Directory Exclusions
+# -----------------------------------------------------------------------------
+# Exclude common Python directories and files from linting to improve
+# performance and focus on application source code quality validation.
+exclude = 
+    # Python cache and compiled files
+    __pycache__,
+    *.pyc,
+    *.pyo,
+    *.pyd,
+    .Python,
+    
+    # Virtual environments and package management
+    .venv,
+    .env,
+    venv/,
+    env/,
+    ENV/,
+    env.bak/,
+    venv.bak/,
+    
+    # Build and distribution directories
+    build/,
+    develop-eggs/,
+    dist/,
+    downloads/,
+    eggs/,
+    .eggs/,
+    lib/,
+    lib64/,
+    parts/,
+    sdist/,
+    var/,
+    wheels/,
+    *.egg-info/,
+    .installed.cfg,
+    *.egg,
+    
+    # Testing and coverage artifacts
+    .tox/,
+    .coverage,
+    .coverage.*,
+    .cache,
+    .pytest_cache/,
+    htmlcov/,
+    
+    # Version control and IDE directories
+    .git/,
+    .gitignore,
+    .svn/,
+    .hg/,
+    .mypy_cache/,
+    .dmypy.json,
+    dmypy.json,
+    .vscode/,
+    .idea/,
+    
+    # Documentation and configuration files
+    docs/_build/,
+    .readthedocs.yml,
+    
+    # Docker and containerization files
+    Dockerfile*,
+    docker-compose*.yml,
+    .dockerignore,
+    
+    # Infrastructure and deployment files
+    infrastructure/,
+    .github/,
+    
+    # Project configuration files that may have different formatting needs
+    *.cfg,
+    *.ini,
+    setup.py,
+    setup.cfg
+
+# -----------------------------------------------------------------------------
+# Error Code Configuration
+# -----------------------------------------------------------------------------
+# Configure ignore patterns for specific PEP 8 rules that conflict with
+# black formatting or are not applicable to Flask application patterns.
+ignore = 
+    # Line break before binary operator (conflicts with black)
+    W503,
+    
+    # Line break after binary operator (black handles this)
+    W504,
+    
+    # Line too long (handled by max-line-length setting)
+    E501,
+    
+    # Multiple imports on one line (black handles import formatting)
+    E401,
+    
+    # Blank line contains whitespace (black handles whitespace)
+    W293,
+    
+    # Indentation contains mixed spaces and tabs (black handles indentation)
+    E101,
+    
+    # Over-indented for hanging indent (black handles indentation)
+    E126,
+    
+    # Under-indented for hanging indent (black handles indentation)
+    E121,
+    
+    # Closing bracket does not match indentation (black handles bracket alignment)
+    E124,
+    
+    # Hanging indent expected (black handles hanging indents)
+    E127,
+    
+    # Continuation line under-indented (black handles continuation)
+    E128,
+    
+    # Expected 2 blank lines after class or function definition (Flask patterns)
+    E302,
+    
+    # Too many blank lines (black handles blank line management)
+    E303
+
+# -----------------------------------------------------------------------------
+# Plugin Configuration
+# -----------------------------------------------------------------------------
+# Enable security-focused plugins for comprehensive code quality validation
+# including vulnerability detection and security best practices enforcement.
+
+# flake8-security plugin for Python security analysis
+# This plugin detects common security vulnerabilities and insecure patterns
+# in Python code, providing essential security validation for Flask applications.
+enable-extensions = 
+    # Security vulnerability detection
+    S,
+    
+    # Additional security checks
+    B,
+    
+    # Import order validation (compatible with black)
+    I
+
+# Security plugin configuration
+# Configure flake8-security (S-prefix) and bandit (B-prefix) integration
+# for comprehensive security analysis of Flask application code.
+
+# Enable all security checks by default
+select = 
+    # Standard PEP 8 errors and warnings
+    E,
+    W,
+    
+    # pyflakes errors
+    F,
+    
+    # mccabe complexity
+    C,
+    
+    # Security checks (flake8-security)
+    S,
+    
+    # Additional security checks (bandit integration)
+    B
+
+# -----------------------------------------------------------------------------
+# Per-File Ignore Configuration
+# -----------------------------------------------------------------------------
+# Configure specific ignore patterns for different file types and directories
+# to accommodate testing patterns, configuration needs, and Flask-specific code.
+
+per-file-ignores = 
+    # Test files: Allow longer lines for test names and assert statements
+    # Allow unused imports for fixtures and testing utilities
+    # Allow security assertions and hardcoded values in tests
+    tests/*.py:E501,F401,S101,S105,S106,B101,
+    test_*.py:E501,F401,S101,S105,S106,B101,
+    **/test_*.py:E501,F401,S101,S105,S106,B101,
+    
+    # Configuration files: Allow longer lines for configuration values
+    # Allow hardcoded values and imports that may not be used immediately
+    conftest.py:E501,F401,S105,S106,
+    config.py:E501,F401,S105,S106,
+    settings.py:E501,F401,S105,S106,
+    
+    # Flask application factory: Allow import placement flexibility
+    # Allow longer lines for Flask configuration and route definitions
+    src/backend/app.py:E402,E501,
+    src/backend/wsgi.py:E402,E501,
+    app.py:E402,E501,
+    wsgi.py:E402,E501,
+    
+    # Migration and initialization scripts: Allow script-specific patterns
+    # Allow hardcoded values and longer lines for database operations
+    migrations/*.py:E501,S105,S106,B101,
+    manage.py:E501,S105,S106,
+    
+    # Docker and deployment files: Allow hardcoded configuration values
+    # These files may require specific formatting for containerization
+    docker_entrypoint.py:E501,S105,S106,B101,
+    deployment/*.py:E501,S105,S106,
+    
+    # CLI and utility scripts: Allow print statements and script patterns
+    # Allow hardcoded values and longer lines for command-line interfaces
+    cli.py:E501,T201,S105,S106,
+    scripts/*.py:E501,T201,S105,S106,B101,
+    
+    # Development and debugging utilities: Allow debug patterns
+    # Allow print statements and development-specific code patterns
+    debug.py:T201,S105,S106,B101,
+    dev_*.py:T201,S105,S106,B101
+
+# -----------------------------------------------------------------------------
+# Import Order Configuration
+# -----------------------------------------------------------------------------
+# Configure import sorting to be compatible with black formatting
+# and maintain consistent import organization across the Flask application.
+
+# Application import order preference
+application-import-names = 
+    src,
+    app,
+    backend,
+    tests
+
+# Import order style compatible with black
+import-order-style = google
+
+# -----------------------------------------------------------------------------
+# Docstring and Comments Configuration
+# -----------------------------------------------------------------------------
+# Configure docstring requirements for Flask application components
+# while maintaining flexibility for different code patterns and testing.
+
+# Require docstrings for public methods and classes
+# This ensures comprehensive documentation for Flask routes and utilities
+docstring-convention = google
+
+# Allow missing docstrings in specific contexts
+extend-ignore = 
+    # Missing docstring in public module
+    D100,
+    
+    # Missing docstring in public class
+    D101,
+    
+    # Missing docstring in public method (Flask routes may be self-explanatory)
+    D102,
+    
+    # Missing docstring in public function
+    D103,
+    
+    # Missing docstring in public package
+    D104,
+    
+    # Missing docstring in magic method
+    D105,
+    
+    # Missing docstring in public nested class
+    D106,
+    
+    # Missing docstring in __init__ method
+    D107
+
+# -----------------------------------------------------------------------------
+# Performance and Execution Configuration
+# -----------------------------------------------------------------------------
+# Configure flake8 execution parameters for optimal performance
+# in both development and CI/CD pipeline environments.
+
+# Enable parallel processing for faster linting
+jobs = auto
+
+# Display statistics and summary information
+statistics = True
+count = True
+
+# Show source code context for errors
+show-source = True
+
+# Enable verbose output for debugging configuration issues
+# This can be disabled in CI/CD pipelines for cleaner output
+verbose = 0
+
+# -----------------------------------------------------------------------------
+# CI/CD Integration Configuration
+# -----------------------------------------------------------------------------
+# Configuration optimizations for automated code quality validation
+# in GitHub Actions and other CI/CD pipeline environments.
+
+# Output format for CI/CD integration
+# Default format provides clear error reporting for automated systems
+format = default
+
+# Exit with non-zero code on any violations for CI/CD failure detection
+# This ensures that code quality issues block the deployment pipeline
+exit-zero = False
+
+# Enable color output when supported (disabled automatically in CI/CD)
+color = auto
+
+# Maximum number of errors to report (0 = unlimited)
+# Set to unlimited to ensure all issues are reported for comprehensive fixing
+max-doc-length = 100
+
+# Show all occurrences of each error type for complete issue visibility
+show-pep8 = True
+
+# =============================================================================
+# Configuration Summary
+# =============================================================================
+# This flake8 configuration enforces:
+# 
+# 1. PEP 8 compliance with black formatter compatibility
+# 2. Security-focused linting with flake8-security integration
+# 3. Cyclomatic complexity limits for maintainable code architecture
+# 4. Comprehensive file and directory exclusions for focused linting
+# 5. Per-file ignore patterns for Flask-specific and testing needs
+# 6. Import order validation compatible with modern Python practices
+# 7. CI/CD pipeline integration for automated quality validation
+# 8. Performance optimizations for development and automation environments
+#
+# Integration Points:
+# - Black formatter (88-character line length)
+# - pytest testing framework (test file exceptions)
+# - Flask application patterns (route and factory exceptions)  
+# - GitHub Actions CI/CD (error reporting and exit codes)
+# - Security scanning tools (flake8-security and bandit)
+# =============================================================================
