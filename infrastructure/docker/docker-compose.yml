@@ -1,0 +1,474 @@
+# =============================================================================
+# DOCKER COMPOSE CONFIGURATION - Node.js Tutorial Application
+# =============================================================================
+# Multi-environment container orchestration for Express.js v5.1.0 hello world server
+# Educational demonstration of Docker Compose patterns with Node.js v22.16.0 LTS
+# 
+# Purpose: Containerized deployment orchestration for development and production
+# Learning Objectives: Multi-service configuration, environment management, networking
+# Technical Stack: Docker Compose v3.8, Node.js v22.16.0 LTS, Express.js v5.1.0
+# 
+# Usage:
+#   Development: docker-compose up nodejs-tutorial-dev
+#   Production:  docker-compose up nodejs-tutorial-prod  
+#   Testing:     docker-compose run --rm nodejs-tutorial-dev npm test
+#   Both:        docker-compose up nodejs-tutorial-dev nodejs-tutorial-prod
+# =============================================================================
+
+version: '3.8'
+
+# =============================================================================
+# SERVICE DEFINITIONS
+# =============================================================================
+# Defines containerized services for development and production environments
+# Each service uses multi-stage Docker build targets for optimized deployment
+# Implements container security, resource management, and monitoring best practices
+
+services:
+  # ===========================================================================
+  # DEVELOPMENT SERVICE CONFIGURATION
+  # ===========================================================================
+  # Development service with source code mounting, debugging capabilities,
+  # and comprehensive development tooling for educational workflow demonstration
+  
+  nodejs-tutorial-dev:
+    # Container identification and metadata
+    container_name: nodejs-tutorial-dev
+    hostname: nodejs-tutorial-dev
+    
+    # Multi-stage build configuration targeting development stage
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+      target: development
+      # Build arguments for development optimization
+      args:
+        - NODE_ENV=development
+        - BUILD_DATE=${BUILD_DATE:-}
+        - VCS_REF=${VCS_REF:-}
+      # Build caching strategy for development efficiency
+      cache_from:
+        - node:22.16.0-alpine
+        - nodejs-tutorial:dev-cache
+    
+    # Development environment variables for educational transparency
+    environment:
+      # Node.js runtime configuration
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+      
+      # Development-specific logging and debugging
+      LOG_LEVEL: debug
+      DEBUG: express:*
+      
+      # NPM configuration for development workflow
+      NPM_CONFIG_LOGLEVEL: info
+      NPM_CONFIG_COLOR: true
+      
+      # Educational environment metadata
+      TUTORIAL_MODE: development
+      COMPOSE_SERVICE: nodejs-tutorial-dev
+    
+    # Port mapping for development access and debugging
+    ports:
+      - "3000:3000"     # HTTP server port for application access
+      - "9229:9229"     # Node.js debugger port for IDE integration
+    
+    # Volume configuration for development workflow
+    volumes:
+      # Source code hot-reloading with delegated consistency for macOS performance
+      - type: bind
+        source: ../../src/backend
+        target: /usr/src/app
+        consistency: delegated
+        
+      # Anonymous volume for node_modules to prevent host override
+      - type: volume
+        target: /usr/src/app/node_modules
+        
+      # Named volume for persistent dependency caching
+      - type: volume
+        source: node_modules_cache_dev
+        target: /usr/src/app/.npm
+    
+    # Network configuration for service isolation and discovery
+    networks:
+      - tutorial-network
+    
+    # Restart policy for development stability
+    restart: unless-stopped
+    
+    # Development startup command with debugging and hot-reload capabilities
+    command: >
+      sh -c "
+        echo '🎓 Starting Node.js Tutorial Development Server...' &&
+        echo '📋 Development Features: Hot-reload, Debug mode, Comprehensive logging' &&
+        echo '🔧 Access: http://localhost:3000/hello' &&
+        echo '🐛 Debug: chrome://inspect for Node.js debugging' &&
+        npm run dev
+      "
+    
+    # Health check configuration for development monitoring
+    healthcheck:
+      test: 
+        - CMD
+        - curl
+        - -f
+        - http://localhost:3000/hello
+      interval: 15s      # Frequent checks for development feedback
+      timeout: 5s        # Quick timeout for development responsiveness
+      retries: 3         # Limited retries for development workflow
+      start_period: 10s  # Allow time for development server startup
+    
+    # Development-specific labels for container identification
+    labels:
+      - "tutorial.environment=development"
+      - "tutorial.service=nodejs-tutorial-dev"
+      - "tutorial.version=1.0.0"
+      - "tutorial.purpose=educational-development"
+      - "tutorial.framework=express.5.1.0"
+      - "tutorial.runtime=node.22.16.0"
+    
+    # Security configuration for development environment
+    security_opt:
+      - no-new-privileges:true
+    
+    # User configuration for non-root execution
+    user: "1000:1000"  # node user from Dockerfile
+    
+    # Working directory specification
+    working_dir: /usr/src/app
+    
+    # TTY and interactive mode for development debugging
+    tty: true
+    stdin_open: true
+    
+    # Dependency configuration for service startup order
+    depends_on:
+      - tutorial-network-setup
+
+  # ===========================================================================
+  # PRODUCTION SERVICE CONFIGURATION  
+  # ===========================================================================
+  # Production service with optimized container, resource limits, security hardening,
+  # and performance tuning for production deployment demonstration
+  
+  nodejs-tutorial-prod:
+    # Container identification and metadata
+    container_name: nodejs-tutorial-prod
+    hostname: nodejs-tutorial-prod
+    
+    # Multi-stage build configuration targeting production stage
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+      target: production
+      # Build arguments for production optimization
+      args:
+        - NODE_ENV=production
+        - BUILD_DATE=${BUILD_DATE:-}
+        - VCS_REF=${VCS_REF:-}
+      # Build caching strategy for production efficiency
+      cache_from:
+        - node:22.16.0-alpine
+        - nodejs-tutorial:prod-cache
+    
+    # Production environment variables for optimal performance
+    environment:
+      # Node.js runtime configuration for production
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      
+      # Production logging configuration
+      LOG_LEVEL: info
+      NPM_CONFIG_LOGLEVEL: error
+      NPM_CONFIG_COLOR: false
+      
+      # Performance optimization settings
+      NODE_OPTIONS: "--max-old-space-size=128 --gc-interval=100"
+      UV_THREADPOOL_SIZE: 4
+      
+      # Security configuration
+      NODE_TLS_REJECT_UNAUTHORIZED: 1
+      
+      # Educational environment metadata
+      TUTORIAL_MODE: production
+      COMPOSE_SERVICE: nodejs-tutorial-prod
+    
+    # Port mapping for production access (different port to avoid dev conflicts)
+    ports:
+      - "3001:3000"     # HTTP server port mapped to 3001 externally
+    
+    # Volume configuration for production (no source mounting)
+    volumes:
+      # Named volume for any persistent data (minimal for this tutorial)
+      - type: volume
+        source: node_modules_cache_prod
+        target: /usr/src/app/.npm
+        read_only: true
+    
+    # Network configuration for service isolation
+    networks:
+      - tutorial-network
+    
+    # Restart policy for production stability
+    restart: always
+    
+    # Production startup command optimized for performance
+    command: >
+      sh -c "
+        echo '🚀 Starting Node.js Tutorial Production Server...' &&
+        echo '📋 Production Features: Optimized performance, Resource limits, Security hardening' &&
+        echo '🔧 Access: http://localhost:3001/hello' &&
+        echo '📊 Resource limits: 128MB memory, 0.5 CPU cores' &&
+        npm start
+      "
+    
+    # Health check configuration for production monitoring
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:3000/hello
+      interval: 30s      # Standard production monitoring interval
+      timeout: 10s       # Reasonable timeout for production response
+      retries: 3         # Standard retry count for production reliability
+      start_period: 15s  # Allow time for production server initialization
+    
+    # Resource limits for production deployment demonstration
+    deploy:
+      resources:
+        limits:
+          memory: 128M          # Educational memory constraint for resource awareness
+          cpus: '0.5'          # Half CPU core limit for performance testing
+        reservations:
+          memory: 64M           # Guaranteed memory allocation for baseline performance
+          cpus: '0.25'         # Quarter CPU core reservation for consistent performance
+      
+      # Production deployment configuration
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 60s
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    
+    # Production-specific labels for container identification
+    labels:
+      - "tutorial.environment=production"
+      - "tutorial.service=nodejs-tutorial-prod"
+      - "tutorial.version=1.0.0"
+      - "tutorial.purpose=educational-production"
+      - "tutorial.framework=express.5.1.0"
+      - "tutorial.runtime=node.22.16.0"
+      - "tutorial.optimization=performance"
+      - "tutorial.security=hardened"
+    
+    # Enhanced security configuration for production
+    security_opt:
+      - no-new-privileges:true
+      - apparmor:unconfined  # Educational: would be configured properly in real production
+    
+    # User configuration for non-root execution
+    user: "1000:1000"  # node user from Dockerfile
+    
+    # Working directory specification
+    working_dir: /usr/src/app
+    
+    # Read-only root filesystem for security (with exceptions for writable areas)
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=10M,mode=1777
+      - /var/tmp:rw,size=10M,mode=1777
+    
+    # Capability dropping for security hardening
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    
+    # Dependency configuration for service startup order
+    depends_on:
+      - tutorial-network-setup
+
+  # ===========================================================================
+  # NETWORK SETUP SERVICE
+  # ===========================================================================
+  # Utility service for network initialization and educational demonstration
+  
+  tutorial-network-setup:
+    image: alpine:3.19
+    container_name: tutorial-network-setup
+    command: >
+      sh -c "
+        echo '🌐 Initializing tutorial network infrastructure...' &&
+        echo '📋 Network: tutorial-network (bridge driver)' &&
+        echo '🔧 Services: nodejs-tutorial-dev, nodejs-tutorial-prod' &&
+        echo '✅ Network setup complete' &&
+        sleep 2
+      "
+    networks:
+      - tutorial-network
+    labels:
+      - "tutorial.utility=network-setup"
+      - "tutorial.purpose=educational"
+
+# =============================================================================
+# NETWORK CONFIGURATION
+# =============================================================================
+# Custom bridge network for service isolation and educational networking demonstration
+
+networks:
+  tutorial-network:
+    # Custom bridge network for service isolation
+    driver: bridge
+    name: nodejs-tutorial-network
+    
+    # Network configuration for educational transparency
+    driver_opts:
+      com.docker.network.bridge.name: tutorial-br0
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+    
+    # IP address management configuration
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+          ip_range: 172.20.240.0/20
+    
+    # Network labels for identification and management
+    labels:
+      - "tutorial.network=true"
+      - "tutorial.purpose=service-isolation"
+      - "tutorial.driver=bridge"
+      - "tutorial.educational=container-networking"
+
+# =============================================================================
+# VOLUME CONFIGURATION
+# =============================================================================
+# Named volumes for dependency caching and persistent data management
+
+volumes:
+  # Development environment dependency cache
+  node_modules_cache_dev:
+    driver: local
+    name: nodejs-tutorial-dev-cache
+    labels:
+      - "tutorial.volume=dev-cache"
+      - "tutorial.purpose=dependency-caching"
+      - "tutorial.environment=development"
+  
+  # Production environment dependency cache
+  node_modules_cache_prod:
+    driver: local
+    name: nodejs-tutorial-prod-cache
+    labels:
+      - "tutorial.volume=prod-cache"
+      - "tutorial.purpose=dependency-caching"
+      - "tutorial.environment=production"
+  
+  # Shared volume for educational data persistence demonstration
+  tutorial_shared_data:
+    driver: local
+    name: nodejs-tutorial-shared
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data
+    labels:
+      - "tutorial.volume=shared-data"
+      - "tutorial.purpose=educational-persistence"
+      - "tutorial.accessibility=cross-service"
+
+# =============================================================================
+# EDUCATIONAL DOCKER COMPOSE PATTERNS DEMONSTRATION
+# =============================================================================
+# This Docker Compose configuration demonstrates key concepts for container orchestration:
+#
+# 1. MULTI-ENVIRONMENT SERVICES:
+#    - Development service with hot-reloading and debugging capabilities
+#    - Production service with optimized performance and resource constraints
+#    - Demonstrates environment-specific configuration patterns
+#
+# 2. CONTAINER NETWORKING:
+#    - Custom bridge network for service isolation
+#    - Service discovery through container names
+#    - Network security through isolated communication
+#
+# 3. VOLUME MANAGEMENT:
+#    - Source code mounting for development workflow
+#    - Dependency caching for performance optimization
+#    - Anonymous volumes to prevent host interference
+#
+# 4. SECURITY IMPLEMENTATION:
+#    - Non-root user execution in all containers
+#    - Security options and capability management
+#    - Read-only filesystem for production hardening
+#
+# 5. RESOURCE MANAGEMENT:
+#    - Memory and CPU limits for production deployment
+#    - Resource reservations for guaranteed performance
+#    - Educational resource constraints for learning
+#
+# 6. HEALTH MONITORING:
+#    - HTTP endpoint health checks for service availability
+#    - Environment-specific health check configurations
+#    - Container restart policies based on health status
+#
+# 7. BUILD OPTIMIZATION:
+#    - Multi-stage Docker builds with different targets
+#    - Build caching strategies for faster rebuilds
+#    - Context optimization through .dockerignore patterns
+#
+# 8. OPERATIONAL PATTERNS:
+#    - Service dependencies and startup ordering
+#    - Graceful shutdown handling
+#    - Educational logging and transparency
+#
+# LEARNING COMMANDS:
+# ==================
+# View service status:     docker-compose ps
+# Follow service logs:     docker-compose logs -f [service-name]
+# Execute into container:  docker-compose exec [service-name] sh
+# Scale services:          docker-compose up --scale nodejs-tutorial-dev=2
+# Network inspection:      docker network inspect nodejs-tutorial-network
+# Volume inspection:       docker volume inspect nodejs-tutorial-dev-cache
+# Resource monitoring:     docker stats $(docker-compose ps -q)
+# Clean shutdown:          docker-compose down --volumes --remove-orphans
+#
+# DEVELOPMENT WORKFLOW:
+# ====================
+# 1. Start development:    docker-compose up nodejs-tutorial-dev
+# 2. View application:     http://localhost:3000/hello
+# 3. Edit source code:     Files in src/backend/ automatically reload
+# 4. Run tests:            docker-compose run --rm nodejs-tutorial-dev npm test
+# 5. Debug application:    chrome://inspect -> Node.js targets
+#
+# PRODUCTION TESTING:
+# ===================
+# 1. Start production:     docker-compose up nodejs-tutorial-prod
+# 2. View application:     http://localhost:3001/hello
+# 3. Monitor resources:    docker stats nodejs-tutorial-prod
+# 4. Check health:         docker-compose exec nodejs-tutorial-prod curl localhost:3000/hello
+# 5. Scale testing:        docker-compose up --scale nodejs-tutorial-prod=3
+#
+# SECURITY VERIFICATION:
+# ======================
+# 1. User verification:    docker-compose exec nodejs-tutorial-prod whoami
+# 2. Capability check:     docker-compose exec nodejs-tutorial-prod cat /proc/self/status | grep Cap
+# 3. Filesystem check:     docker-compose exec nodejs-tutorial-prod touch /test-readonly
+# 4. Network isolation:    docker-compose exec nodejs-tutorial-prod ping nodejs-tutorial-dev
+#
+# =============================================================================

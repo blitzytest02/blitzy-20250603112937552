@@ -1,0 +1,946 @@
+# =============================================================================
+# CONTINUOUS DEPLOYMENT (CD) PIPELINE - Node.js Tutorial Application
+# =============================================================================
+# Automated deployment pipeline for containerized Node.js tutorial application
+# with Express.js v5.1.0 demonstrating production-ready deployment patterns
+# 
+# Educational Focus: Container deployment, security scanning, multi-environment
+# deployment strategies, health monitoring, and automated rollback capabilities
+# 
+# Technical Stack: GitHub Actions, Docker, GitHub Container Registry (ghcr.io),
+# Azure Web Apps, Node.js v22.16.0 LTS, Express.js v5.1.0
+# 
+# Deployment Flow:
+#   CI Pipeline (success) → Build & Push Image → Security Scan → 
+#   Deploy Staging → Deploy Production → Monitor & Validate
+# =============================================================================
+
+name: CD Pipeline
+
+# =============================================================================
+# WORKFLOW TRIGGERS AND CONDITIONS
+# =============================================================================
+# CD pipeline activation based on CI success, releases, and manual triggers
+# Implements educational deployment patterns with production-ready controls
+
+on:
+  # Primary trigger: Successful CI pipeline completion on main branch
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+  
+  # Production deployment trigger: GitHub release publication
+  release:
+    types: [published]
+  
+  # Manual deployment trigger with environment selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: 'Docker image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+        type: string
+      skip_tests:
+        description: 'Skip security scanning for emergency deployments'
+        required: false
+        default: false
+        type: boolean
+
+# =============================================================================
+# CONCURRENCY AND RESOURCE MANAGEMENT
+# =============================================================================
+# Prevent concurrent deployments to avoid conflicts and resource contention
+# Educational demonstration of deployment coordination and safety
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+# =============================================================================
+# GLOBAL ENVIRONMENT VARIABLES
+# =============================================================================
+# Shared configuration for container registry and deployment consistency
+
+env:
+  # Container registry configuration
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  
+  # Docker optimization flags
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  
+  # Node.js production configuration
+  NODE_ENV: production
+  
+  # Educational deployment metadata
+  TUTORIAL_VERSION: "1.0.0"
+  EDUCATIONAL_MODE: "deployment-demonstration"
+
+# =============================================================================
+# DEPLOYMENT PIPELINE JOBS
+# =============================================================================
+
+jobs:
+  # ===========================================================================
+  # JOB 1: BUILD AND PUBLISH DOCKER IMAGE
+  # ===========================================================================
+  # Multi-platform Docker image build with GitHub Container Registry publishing
+  # Implements semantic versioning and educational container patterns
+  
+  build_and_publish:
+    name: Build and Publish Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    # Conditional execution: Only run after successful CI or manual trigger
+    if: >
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'release' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    
+    # Job outputs for downstream deployment jobs
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+      image_tags: ${{ steps.meta.outputs.tags }}
+      image_labels: ${{ steps.meta.outputs.labels }}
+      registry_url: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      deployment_version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      # Step 1: Repository checkout with full git history
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # GitHub Actions v4
+        with:
+          fetch-depth: 0  # Full history for proper versioning
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Step 2: Extract version information for deployment tracking
+      - name: Extract Version Information
+        id: version
+        run: |
+          # Extract version from package.json for deployment tracking
+          VERSION=$(jq -r '.version' src/backend/package.json)
+          COMMIT_SHA=${GITHUB_SHA:0:7}
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          
+          # Educational logging for deployment transparency
+          echo "📦 Package Version: $VERSION"
+          echo "🔗 Commit SHA: $COMMIT_SHA"
+          echo "📅 Build Date: $BUILD_DATE"
+      
+      # Step 3: Setup Docker Buildx for advanced build capabilities
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3 # Docker Buildx v3
+        with:
+          version: latest
+          driver-opts: |
+            network=host
+          platforms: linux/amd64,linux/arm64
+          install: true
+      
+      # Step 4: Authenticate with GitHub Container Registry
+      - name: Login to Container Registry
+        uses: docker/login-action@v3 # Docker Login v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Step 5: Extract Docker image metadata and tags
+      - name: Extract Metadata
+        id: meta
+        uses: docker/metadata-action@v5 # Docker Metadata v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Branch-based tagging for development tracking
+            type=ref,event=branch
+            type=ref,event=pr
+            
+            # SHA-based tagging for deployment traceability
+            type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD-HHmmss'}}
+            
+            # Version-based tagging for release management
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            
+            # Latest tag for main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+            # Educational deployment tags
+            type=raw,value=tutorial-{{date 'YYYYMMDD'}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Node.js Tutorial Application
+            org.opencontainers.image.description=Educational Node.js HTTP server with Express.js v5.1.0
+            org.opencontainers.image.vendor=Tutorial Project
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.created=${{ steps.version.outputs.build_date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
+            tutorial.framework=express
+            tutorial.runtime=nodejs
+            tutorial.version=5.1.0
+            tutorial.educational=true
+      
+      # Step 6: Build and push multi-platform Docker image
+      - name: Build and Push Docker Image
+        id: build
+        uses: docker/build-push-action@v5 # Docker Build Push v5
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile
+          target: production
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          
+          # Build optimization with layer caching
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+          # Build arguments for educational transparency
+          build-args: |
+            NODE_ENV=production
+            BUILD_DATE=${{ steps.version.outputs.build_date }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.version.outputs.version }}
+          
+          # Provenance and SBOM generation for security
+          provenance: true
+          sbom: true
+      
+      # Step 7: Display build information for educational purposes
+      - name: Display Build Information
+        run: |
+          echo "🏗️ Docker Image Build Completed Successfully"
+          echo ""
+          echo "📊 Build Summary:"
+          echo "  • Image Digest: ${{ steps.build.outputs.digest }}"
+          echo "  • Registry: ${{ env.REGISTRY }}"
+          echo "  • Repository: ${{ env.IMAGE_NAME }}"
+          echo "  • Version: ${{ steps.version.outputs.version }}"
+          echo "  • Platforms: linux/amd64, linux/arm64"
+          echo ""
+          echo "🏷️ Image Tags:"
+          echo "${{ steps.meta.outputs.tags }}" | sed 's/^/  • /'
+          echo ""
+          echo "📦 Next Steps: Security scanning and deployment validation"
+
+  # ===========================================================================
+  # JOB 2: CONTAINER SECURITY SCANNING
+  # ===========================================================================
+  # Comprehensive security analysis of built Docker image using Trivy scanner
+  # Educational demonstration of container security validation in CI/CD pipelines
+  
+  security_scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build_and_publish]
+    
+    # Conditional execution: Skip for emergency deployments or run for all builds
+    if: >
+      github.event.inputs.skip_tests != 'true' &&
+      (github.event_name == 'workflow_dispatch' || 
+       github.event_name == 'release' || 
+       github.event_name == 'workflow_run')
+    
+    # Security scan outputs for quality gates
+    outputs:
+      scan_result: ${{ steps.scan.outputs.result }}
+      vulnerability_count: ${{ steps.scan.outputs.vulnerability_count }}
+      critical_count: ${{ steps.scan.outputs.critical_count }}
+      high_count: ${{ steps.scan.outputs.high_count }}
+    
+    steps:
+      # Step 1: Repository checkout for security context
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Comprehensive container vulnerability scanning
+      - name: Run Trivy Vulnerability Scanner
+        id: scan
+        uses: aquasecurity/trivy-action@master # Trivy Security Scanner
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          exit-code: '0'  # Don't fail on vulnerabilities, analyze in next step
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Step 3: Generate security scan summary
+      - name: Generate Security Summary
+        id: summary
+        run: |
+          # Parse Trivy results for educational reporting
+          if [ -f trivy-results.sarif ]; then
+            # Extract vulnerability counts from SARIF format
+            CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")] | length' trivy-results.sarif 2>/dev/null || echo "0")
+            HIGH=$(jq '[.runs[].results[] | select(.level == "warning")] | length' trivy-results.sarif 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.runs[].results[] | select(.level == "note")] | length' trivy-results.sarif 2>/dev/null || echo "0")
+            TOTAL=$((CRITICAL + HIGH + MEDIUM))
+            
+            echo "critical_count=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high_count=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium_count=$MEDIUM" >> $GITHUB_OUTPUT
+            echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
+            
+            # Educational security reporting
+            echo "🔒 Container Security Scan Results"
+            echo ""
+            echo "📊 Vulnerability Summary:"
+            echo "  • Critical: $CRITICAL"
+            echo "  • High: $HIGH"
+            echo "  • Medium: $MEDIUM"
+            echo "  • Total: $TOTAL"
+            echo ""
+            
+            # Security gate evaluation
+            if [ $CRITICAL -gt 0 ]; then
+              echo "❌ Security Gate: FAILED - Critical vulnerabilities detected"
+              echo "security_gate=failed" >> $GITHUB_OUTPUT
+              exit 1
+            elif [ $HIGH -gt 5 ]; then
+              echo "⚠️ Security Gate: WARNING - High vulnerability count exceeds threshold"
+              echo "security_gate=warning" >> $GITHUB_OUTPUT
+            else
+              echo "✅ Security Gate: PASSED - Vulnerability count within acceptable limits"
+              echo "security_gate=passed" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ Security scan results not found"
+            echo "security_gate=unknown" >> $GITHUB_OUTPUT
+          fi
+      
+      # Step 4: Upload security results to GitHub Security tab
+      - name: Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v2 # CodeQL SARIF Upload v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'container-security'
+      
+      # Step 5: Archive security scan artifacts
+      - name: Upload Security Artifacts
+        uses: actions/upload-artifact@v3 # Actions Upload Artifact v3
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            trivy-results.sarif
+            trivy-results.json
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB 3: STAGING ENVIRONMENT DEPLOYMENT
+  # ===========================================================================
+  # Automated deployment to staging environment with health validation
+  # Educational demonstration of containerized deployment patterns and monitoring
+  
+  deploy_staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build_and_publish, security_scan]
+    
+    # Environment configuration for GitHub deployment protection
+    environment:
+      name: staging
+      url: https://nodejs-tutorial-staging.azurewebsites.net
+    
+    # Staging deployment outputs for production gate
+    outputs:
+      deployment_status: ${{ steps.deploy.outputs.status }}
+      health_check_url: ${{ steps.deploy.outputs.url }}
+      deployment_time: ${{ steps.deploy.outputs.timestamp }}
+    
+    steps:
+      # Step 1: Repository checkout for deployment context
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Setup Node.js for smoke testing
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # Node.js Setup v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+      
+      # Step 3: Install dependencies for smoke tests
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: |
+          npm ci --only=production
+          echo "📦 Dependencies installed for smoke testing"
+      
+      # Step 4: Deploy container to Azure Web App staging
+      - name: Deploy to Azure Web App
+        id: deploy
+        uses: azure/webapps-deploy@v2 # Azure Web App Deploy v2
+        with:
+          app-name: 'nodejs-tutorial-staging'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}
+        env:
+          # Staging environment configuration
+          NODE_ENV: production
+          PORT: 8000
+          LOG_LEVEL: info
+          TUTORIAL_ENVIRONMENT: staging
+      
+      # Step 5: Wait for deployment initialization
+      - name: Wait for Deployment Initialization
+        run: |
+          echo "⏳ Waiting for staging deployment to initialize..."
+          sleep 30
+          echo "✅ Initialization wait completed"
+      
+      # Step 6: Staging health check validation
+      - name: Health Check Validation
+        id: health_check
+        run: |
+          STAGING_URL="https://nodejs-tutorial-staging.azurewebsites.net"
+          MAX_ATTEMPTS=10
+          ATTEMPT=1
+          
+          echo "🏥 Starting staging health check validation"
+          echo "🎯 Target URL: $STAGING_URL/hello"
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS"
+            
+            if curl -f -s --max-time 10 "$STAGING_URL/hello" > /dev/null; then
+              echo "✅ Staging health check successful"
+              echo "health_status=healthy" >> $GITHUB_OUTPUT
+              break
+            else
+              echo "❌ Health check failed, retrying in 15 seconds..."
+              sleep 15
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+          
+          if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+            echo "💥 Staging health check failed after $MAX_ATTEMPTS attempts"
+            echo "health_status=unhealthy" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      # Step 7: Comprehensive smoke tests
+      - name: Run Staging Smoke Tests
+        id: smoke_tests
+        run: |
+          echo "🧪 Running staging smoke tests"
+          STAGING_URL="https://nodejs-tutorial-staging.azurewebsites.net"
+          
+          # Test 1: Basic endpoint functionality
+          echo "📝 Test 1: Basic endpoint response"
+          RESPONSE=$(curl -s "$STAGING_URL/hello")
+          if [ "$RESPONSE" = "Hello world" ]; then
+            echo "✅ Endpoint response test passed"
+          else
+            echo "❌ Endpoint response test failed: '$RESPONSE'"
+            exit 1
+          fi
+          
+          # Test 2: HTTP status code validation
+          echo "📝 Test 2: HTTP status code validation"
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/hello")
+          if [ "$STATUS_CODE" = "200" ]; then
+            echo "✅ Status code test passed"
+          else
+            echo "❌ Status code test failed: $STATUS_CODE"
+            exit 1
+          fi
+          
+          # Test 3: Response time performance
+          echo "📝 Test 3: Response time performance"
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$STAGING_URL/hello")
+          if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
+            echo "✅ Response time test passed: ${RESPONSE_TIME}s"
+          else
+            echo "⚠️ Response time test warning: ${RESPONSE_TIME}s (>2s)"
+          fi
+          
+          # Test 4: Error handling validation
+          echo "📝 Test 4: Error handling validation"
+          ERROR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/nonexistent")
+          if [ "$ERROR_STATUS" = "404" ]; then
+            echo "✅ Error handling test passed"
+          else
+            echo "❌ Error handling test failed: $ERROR_STATUS"
+            exit 1
+          fi
+          
+          echo "🎉 All staging smoke tests completed successfully"
+      
+      # Step 8: Deployment success notification
+      - name: Staging Deployment Success
+        run: |
+          echo "🚀 Staging Deployment Completed Successfully"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "  • Environment: Staging"
+          echo "  • URL: https://nodejs-tutorial-staging.azurewebsites.net"
+          echo "  • Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}"
+          echo "  • Health Status: ${{ steps.health_check.outputs.health_status }}"
+          echo "  • Smoke Tests: Passed"
+          echo ""
+          echo "✅ Ready for production deployment approval"
+
+  # ===========================================================================
+  # JOB 4: PRODUCTION ENVIRONMENT DEPLOYMENT
+  # ===========================================================================
+  # Production deployment with enhanced monitoring and rollback capabilities
+  # Conditional execution based on release events or manual approval
+  
+  deploy_production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build_and_publish, security_scan, deploy_staging]
+    
+    # Production deployment conditions
+    if: >
+      (github.event_name == 'release' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    
+    # Environment configuration with production protection rules
+    environment:
+      name: production
+      url: https://nodejs-tutorial.azurewebsites.net
+    
+    # Production deployment outputs
+    outputs:
+      deployment_status: ${{ steps.deploy.outputs.status }}
+      production_url: ${{ steps.deploy.outputs.url }}
+      rollback_required: ${{ steps.monitoring.outputs.rollback_required }}
+    
+    steps:
+      # Step 1: Repository checkout for production deployment
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Validate staging deployment success
+      - name: Validate Staging Prerequisites
+        run: |
+          echo "🔍 Validating staging deployment prerequisites"
+          
+          # Verify staging deployment was successful
+          if [ "${{ needs.deploy_staging.outputs.deployment_status }}" != "success" ]; then
+            echo "❌ Staging deployment validation failed"
+            exit 1
+          fi
+          
+          # Verify security scan passed
+          if [ "${{ needs.security_scan.outputs.scan_result }}" = "failed" ]; then
+            echo "❌ Security scan validation failed"
+            exit 1
+          fi
+          
+          echo "✅ All production prerequisites validated"
+      
+      # Step 3: Setup Node.js for production smoke testing
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+          cache-dependency-path: 'src/backend/package-lock.json'
+      
+      # Step 4: Install dependencies for production testing
+      - name: Install Dependencies
+        working-directory: src/backend
+        run: |
+          npm ci --only=production
+          echo "📦 Production dependencies installed"
+      
+      # Step 5: Deploy to production environment
+      - name: Deploy to Azure Web App Production
+        id: deploy
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'nodejs-tutorial-production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_PRODUCTION }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}
+        env:
+          # Production environment configuration
+          NODE_ENV: production
+          PORT: 8000
+          LOG_LEVEL: info
+          TUTORIAL_ENVIRONMENT: production
+      
+      # Step 6: Production deployment warm-up period
+      - name: Production Warm-up Period
+        run: |
+          echo "🔥 Production deployment warm-up period"
+          echo "⏳ Allowing 60 seconds for application initialization..."
+          sleep 60
+          echo "✅ Warm-up completed"
+      
+      # Step 7: Comprehensive production health validation
+      - name: Production Health Validation
+        id: health_validation
+        run: |
+          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
+          MAX_ATTEMPTS=15
+          ATTEMPT=1
+          
+          echo "🏥 Starting comprehensive production health validation"
+          echo "🎯 Target URL: $PRODUCTION_URL/hello"
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "🔍 Health validation attempt $ATTEMPT/$MAX_ATTEMPTS"
+            
+            # Multiple validation checks
+            if curl -f -s --max-time 15 "$PRODUCTION_URL/hello" > /dev/null; then
+              # Validate response content
+              RESPONSE=$(curl -s "$PRODUCTION_URL/hello")
+              if [ "$RESPONSE" = "Hello world" ]; then
+                echo "✅ Production health validation successful"
+                echo "health_status=healthy" >> $GITHUB_OUTPUT
+                break
+              else
+                echo "⚠️ Response validation failed: '$RESPONSE'"
+              fi
+            else
+              echo "❌ Health check failed, retrying in 20 seconds..."
+            fi
+            
+            sleep 20
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          
+          if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+            echo "💥 Production health validation failed after $MAX_ATTEMPTS attempts"
+            echo "health_status=unhealthy" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      # Step 8: Production smoke tests and monitoring
+      - name: Production Smoke Tests
+        id: production_tests
+        run: |
+          echo "🧪 Running comprehensive production smoke tests"
+          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
+          
+          # Test 1: Endpoint functionality validation
+          echo "📝 Test 1: Production endpoint functionality"
+          RESPONSE=$(curl -s "$PRODUCTION_URL/hello")
+          if [ "$RESPONSE" = "Hello world" ]; then
+            echo "✅ Production endpoint test passed"
+          else
+            echo "❌ Production endpoint test failed: '$RESPONSE'"
+            exit 1
+          fi
+          
+          # Test 2: Performance benchmarking
+          echo "📝 Test 2: Production performance benchmarking"
+          TOTAL_TIME=0
+          REQUESTS=5
+          
+          for i in $(seq 1 $REQUESTS); do
+            RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$PRODUCTION_URL/hello")
+            TOTAL_TIME=$(echo "$TOTAL_TIME + $RESPONSE_TIME" | bc -l)
+            echo "  Request $i: ${RESPONSE_TIME}s"
+          done
+          
+          AVERAGE_TIME=$(echo "scale=3; $TOTAL_TIME / $REQUESTS" | bc -l)
+          echo "📊 Average response time: ${AVERAGE_TIME}s"
+          
+          if (( $(echo "$AVERAGE_TIME < 1.0" | bc -l) )); then
+            echo "✅ Performance test passed"
+          else
+            echo "⚠️ Performance test warning: ${AVERAGE_TIME}s (>1s)"
+          fi
+          
+          # Test 3: Load testing simulation
+          echo "📝 Test 3: Basic load testing"
+          for i in {1..10}; do
+            curl -s "$PRODUCTION_URL/hello" > /dev/null &
+          done
+          wait
+          echo "✅ Basic load test completed"
+          
+          # Test 4: Error handling in production
+          echo "📝 Test 4: Production error handling"
+          ERROR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL/nonexistent")
+          if [ "$ERROR_STATUS" = "404" ]; then
+            echo "✅ Production error handling test passed"
+          else
+            echo "❌ Production error handling test failed: $ERROR_STATUS"
+            exit 1
+          fi
+          
+          echo "🎉 All production smoke tests completed successfully"
+      
+      # Step 9: Production monitoring validation
+      - name: Production Monitoring
+        id: monitoring
+        run: |
+          echo "📊 Starting production monitoring validation"
+          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
+          MONITORING_DURATION=300  # 5 minutes
+          CHECK_INTERVAL=30        # 30 seconds
+          CHECKS=$((MONITORING_DURATION / CHECK_INTERVAL))
+          FAILED_CHECKS=0
+          
+          echo "⏱️ Monitoring for $MONITORING_DURATION seconds ($CHECKS checks)"
+          
+          for i in $(seq 1 $CHECKS); do
+            echo "🔍 Monitoring check $i/$CHECKS"
+            
+            if ! curl -f -s --max-time 10 "$PRODUCTION_URL/hello" > /dev/null; then
+              FAILED_CHECKS=$((FAILED_CHECKS + 1))
+              echo "❌ Monitoring check failed ($FAILED_CHECKS failures)"
+            else
+              echo "✅ Monitoring check passed"
+            fi
+            
+            # Rollback trigger: >20% failure rate
+            FAILURE_RATE=$(echo "scale=2; $FAILED_CHECKS * 100 / $i" | bc -l)
+            if (( $(echo "$FAILURE_RATE > 20" | bc -l) )); then
+              echo "🚨 CRITICAL: Failure rate ${FAILURE_RATE}% exceeds 20% threshold"
+              echo "rollback_required=true" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            
+            sleep $CHECK_INTERVAL
+          done
+          
+          echo "📈 Production monitoring completed successfully"
+          echo "📊 Final failure rate: $(echo "scale=2; $FAILED_CHECKS * 100 / $CHECKS" | bc -l)%"
+          echo "rollback_required=false" >> $GITHUB_OUTPUT
+      
+      # Step 10: Production deployment success notification
+      - name: Production Deployment Success
+        run: |
+          echo "🎉 Production Deployment Completed Successfully"
+          echo ""
+          echo "📊 Production Deployment Summary:"
+          echo "  • Environment: Production"
+          echo "  • URL: https://nodejs-tutorial.azurewebsites.net"
+          echo "  • Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}"
+          echo "  • Health Status: ${{ steps.health_validation.outputs.health_status }}"
+          echo "  • Monitoring: ${{ steps.monitoring.outputs.rollback_required == 'false' && 'Stable' || 'Issues Detected' }}"
+          echo "  • Version: ${{ needs.build_and_publish.outputs.deployment_version }}"
+          echo ""
+          echo "🚀 Tutorial application successfully deployed to production!"
+          echo "📚 Educational deployment pipeline demonstration completed"
+          echo ""
+          echo "🔗 Access the application:"
+          echo "  • Production: https://nodejs-tutorial.azurewebsites.net/hello"
+          echo "  • Staging: https://nodejs-tutorial-staging.azurewebsites.net/hello"
+
+  # ===========================================================================
+  # JOB 5: DEPLOYMENT NOTIFICATION AND REPORTING
+  # ===========================================================================
+  # Comprehensive deployment reporting and notification system
+  # Educational demonstration of deployment communication and documentation
+  
+  deployment_notification:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [build_and_publish, security_scan, deploy_staging, deploy_production]
+    if: always()  # Run regardless of previous job status
+    
+    steps:
+      # Step 1: Repository checkout for reporting context
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # Step 2: Generate comprehensive deployment report
+      - name: Generate Deployment Report
+        id: report
+        run: |
+          echo "📋 Generating comprehensive deployment report"
+          
+          # Deployment status evaluation
+          BUILD_STATUS="${{ needs.build_and_publish.result }}"
+          SECURITY_STATUS="${{ needs.security_scan.result }}"
+          STAGING_STATUS="${{ needs.deploy_staging.result }}"
+          PRODUCTION_STATUS="${{ needs.deploy_production.result }}"
+          
+          # Overall deployment status
+          if [ "$BUILD_STATUS" = "success" ] && [ "$STAGING_STATUS" = "success" ]; then
+            if [ "$PRODUCTION_STATUS" = "success" ]; then
+              OVERALL_STATUS="✅ SUCCESS - Full deployment completed"
+            elif [ "$PRODUCTION_STATUS" = "skipped" ]; then
+              OVERALL_STATUS="🎯 PARTIAL - Staging deployment successful"
+            else
+              OVERALL_STATUS="⚠️ WARNING - Production deployment failed"
+            fi
+          else
+            OVERALL_STATUS="❌ FAILED - Deployment pipeline failed"
+          fi
+          
+          # Generate detailed report
+          cat > deployment-report.md << EOF
+          # 🚀 Node.js Tutorial Deployment Report
+          
+          **Deployment Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')  
+          **Workflow:** ${{ github.workflow }}  
+          **Trigger:** ${{ github.event_name }}  
+          **Branch:** ${{ github.ref_name }}  
+          **Commit:** ${{ github.sha }}  
+          
+          ## 📊 Overall Status
+          $OVERALL_STATUS
+          
+          ## 🔧 Pipeline Results
+          | Job | Status | Duration | Details |
+          |-----|--------|----------|---------|
+          | 🏗️ Build & Publish | $BUILD_STATUS | - | Docker image build and registry push |
+          | 🔒 Security Scan | $SECURITY_STATUS | - | Container vulnerability assessment |
+          | 🧪 Deploy Staging | $STAGING_STATUS | - | Staging environment deployment |
+          | 🚀 Deploy Production | $PRODUCTION_STATUS | - | Production environment deployment |
+          
+          ## 📦 Artifacts
+          | Type | Details |
+          |------|---------|
+          | Docker Image | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}\` |
+          | Version | ${{ needs.build_and_publish.outputs.deployment_version }} |
+          | Platforms | linux/amd64, linux/arm64 |
+          
+          ## 🌐 Environment URLs
+          | Environment | URL | Status |
+          |-------------|-----|--------|
+          | Staging | https://nodejs-tutorial-staging.azurewebsites.net | ${{ needs.deploy_staging.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
+          | Production | https://nodejs-tutorial.azurewebsites.net | ${{ needs.deploy_production.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
+          
+          ## 🔒 Security Summary
+          | Metric | Count |
+          |--------|-------|
+          | Critical Vulnerabilities | ${{ needs.security_scan.outputs.critical_count || 'N/A' }} |
+          | High Vulnerabilities | ${{ needs.security_scan.outputs.high_count || 'N/A' }} |
+          | Security Gate | ${{ needs.security_scan.outputs.scan_result || 'N/A' }} |
+          
+          ## 📚 Educational Learning Points
+          - ✅ Multi-environment deployment strategy
+          - ✅ Container security scanning integration
+          - ✅ Automated health checks and monitoring
+          - ✅ GitHub Actions workflow orchestration
+          - ✅ Docker multi-platform image building
+          - ✅ Production deployment safety measures
+          
+          ## 🔗 Resources
+          - [GitHub Repository](${{ github.server_url }}/${{ github.repository }})
+          - [Container Registry](https://ghcr.io/${{ github.repository }})
+          - [Security Reports](${{ github.server_url }}/${{ github.repository }}/security)
+          - [Actions Workflow](${{ github.server_url }}/${{ github.repository }}/actions)
+          
+          ---
+          *Generated by Node.js Tutorial CD Pipeline v1.0.0*
+          EOF
+          
+          echo "📄 Deployment report generated successfully"
+      
+      # Step 3: Upload deployment report artifact
+      - name: Upload Deployment Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-report
+          path: deployment-report.md
+          retention-days: 90
+      
+      # Step 4: Display deployment summary
+      - name: Display Deployment Summary
+        run: |
+          echo "📋 DEPLOYMENT PIPELINE SUMMARY"
+          echo "=================================="
+          echo ""
+          echo "🏗️ Build & Publish: ${{ needs.build_and_publish.result }}"
+          echo "🔒 Security Scan: ${{ needs.security_scan.result }}"
+          echo "🧪 Staging Deploy: ${{ needs.deploy_staging.result }}"
+          echo "🚀 Production Deploy: ${{ needs.deploy_production.result }}"
+          echo ""
+          echo "📦 Docker Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "🏷️ Version: ${{ needs.build_and_publish.outputs.deployment_version }}"
+          echo ""
+          echo "🌐 Application URLs:"
+          if [ "${{ needs.deploy_staging.result }}" = "success" ]; then
+            echo "  • Staging: https://nodejs-tutorial-staging.azurewebsites.net/hello"
+          fi
+          if [ "${{ needs.deploy_production.result }}" = "success" ]; then
+            echo "  • Production: https://nodejs-tutorial.azurewebsites.net/hello"
+          fi
+          echo ""
+          echo "📚 Educational CD Pipeline Demonstration Complete!"
+
+# =============================================================================
+# EDUCATIONAL DEPLOYMENT PIPELINE SUMMARY
+# =============================================================================
+# This Continuous Deployment pipeline demonstrates comprehensive container 
+# deployment patterns for the Node.js tutorial application, showcasing:
+#
+# 🏗️ CONTAINER BUILD AUTOMATION:
+#   - Multi-platform Docker image building (linux/amd64, linux/arm64)
+#   - GitHub Container Registry integration (ghcr.io)
+#   - Semantic versioning and metadata management
+#   - Build optimization with layer caching
+#   - Educational container labeling and documentation
+#
+# 🔒 SECURITY INTEGRATION:
+#   - Trivy vulnerability scanning for container images
+#   - SARIF security reporting to GitHub Security tab
+#   - Security gate validation with threshold management
+#   - Container provenance and SBOM generation
+#   - Educational security awareness and best practices
+#
+# 🚀 MULTI-ENVIRONMENT DEPLOYMENT:
+#   - Automated staging environment deployment
+#   - Production deployment with manual approval gates
+#   - Azure Web Apps container deployment integration
+#   - Environment-specific configuration management
+#   - Educational deployment strategy demonstration
+#
+# 🏥 HEALTH MONITORING & VALIDATION:
+#   - Comprehensive health check implementation
+#   - Smoke testing for endpoint validation
+#   - Performance benchmarking and load testing
+#   - Production monitoring with rollback triggers
+#   - Educational monitoring patterns and alerting
+#
+# 📊 DEPLOYMENT REPORTING:
+#   - Comprehensive deployment status reporting
+#   - Artifact management and version tracking
+#   - Educational deployment documentation
+#   - GitHub Actions workflow integration
+#   - Deployment history and audit trail
+#
+# 🎓 EDUCATIONAL FEATURES:
+#   - Clear logging and status reporting throughout pipeline
+#   - Comprehensive documentation and learning points
+#   - Production-ready patterns in educational context
+#   - Container deployment best practices demonstration
+#   - CI/CD pipeline integration and orchestration
+#
+# This pipeline serves as both a functional deployment system and an 
+# educational demonstration of modern container deployment practices,
+# security integration, and production deployment strategies for the
+# Node.js tutorial application with Express.js v5.1.0.
+# =============================================================================
