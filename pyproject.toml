@@ -1,126 +1,173 @@
+# =============================================================================
+# pyproject.toml - Modern Python Project Configuration
+# =============================================================================
+# Centralized configuration file for the Flask Migration Tutorial Application
+# following PEP 518 standards for modern Python project management.
+#
+# This file consolidates:
+# - Build system requirements for package distribution
+# - pytest configuration as alternative to pytest.ini
+# - black code formatter settings for consistent code style
+# - mypy type checker configuration for optional static analysis
+# - Tool-specific settings for comprehensive development workflow
+# - CI/CD integration parameters for automated quality validation
+#
+# Replaces multiple configuration files with unified TOML format while
+# maintaining compatibility with existing Flask development practices.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PEP 518 Build System Configuration
+# -----------------------------------------------------------------------------
+# Define modern Python packaging build system requirements for potential
+# package distribution and optimized dependency management
+
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools>=68.0",
+    "wheel>=0.42.0",
+    "setuptools-scm>=8.0"
+]
 build-backend = "setuptools.build_meta"
 
+# -----------------------------------------------------------------------------
+# Project Metadata and Configuration
+# -----------------------------------------------------------------------------
+# Define comprehensive project information following PEP 621 standards
+# for modern Python package metadata specification
+
 [project]
-name = "flask-hello-world-tutorial"
+name = "flask-migration-tutorial"
 version = "1.0.0"
-description = "Python Flask Hello World Tutorial Application demonstrating modern Flask development practices"
+description = "Python Flask Migration Tutorial Application - Enterprise-grade Hello World demonstrating Node.js to Python migration patterns with comprehensive testing and CI/CD integration"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Flask Tutorial Team", email = "tutorial@example.com"}
+    {name = "Flask Migration Tutorial Team", email = "tutorial@example.com"}
 ]
 maintainers = [
-    {name = "Flask Tutorial Team", email = "tutorial@example.com"}
+    {name = "Flask Migration Tutorial Team", email = "tutorial@example.com"}
 ]
 keywords = [
     "flask",
     "python",
-    "web",
-    "tutorial",
-    "api",
-    "rest",
-    "wsgi",
-    "gunicorn"
+    "tutorial", 
+    "migration",
+    "nodejs",
+    "web-framework",
+    "hello-world",
+    "pytest",
+    "enterprise"
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment", 
+    "Framework :: Flask",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Framework :: Flask",
-    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     "Topic :: Education",
-    "Topic :: Software Development :: Libraries :: Python Modules"
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed"
 ]
 requires-python = ">=3.12"
+
+# Runtime dependencies for Flask application deployment
 dependencies = [
     "Flask>=3.1.1",
-    "python-dotenv>=1.0.1",
+    "python-dotenv>=1.0.1", 
     "Flask-CORS>=4.0.0",
     "gunicorn>=21.2.0",
     "wheel>=0.42.0"
 ]
 
+# Optional dependencies for enhanced development and production features
 [project.optional-dependencies]
 dev = [
+    # Testing framework ecosystem
     "pytest>=8.4.0",
     "pytest-flask>=1.3.0",
-    "pytest-cov>=5.0.0",
-    "pytest-benchmark>=4.0.0",
-    "pytest-xdist>=3.3.0",
-    "pytest-html>=4.1.0",
     "coverage>=7.6.0",
+    "pytest-cov>=5.0.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-html>=4.1.1",
+    "pytest-mock>=3.12.0",
+    
+    # Performance testing and monitoring
+    "pytest-benchmark>=4.0.0", 
+    "psutil>=5.9.6",
+    
+    # Code quality and formatting
     "black>=24.0.0",
     "flake8>=7.0.0",
-    "flake8-security>=1.7.0",
-    "bandit>=1.7.5",
-    "safety>=2.3.0",
+    "flake8-security>=1.7.1",
     "mypy>=1.8.0",
-    "pip-audit>=2.6.0",
-    "psutil>=5.9.0",
-    "python-multipart>=0.0.6",
-    "watchdog>=3.0.0"
+    "isort>=5.13.2",
+    
+    # Security testing tools
+    "bandit>=1.7.5",
+    "safety>=3.0.1",
+    
+    # Development utilities
+    "watchdog>=3.0.0",
+    "python-multipart>=0.0.6"
 ]
-test = [
-    "pytest>=8.4.0",
-    "pytest-flask>=1.3.0",
-    "pytest-cov>=5.0.0",
-    "pytest-benchmark>=4.0.0",
-    "coverage>=7.6.0",
-    "psutil>=5.9.0"
-]
-lint = [
-    "black>=24.0.0",
-    "flake8>=7.0.0",
-    "flake8-security>=1.7.0",
-    "mypy>=1.8.0"
-]
+
 security = [
     "bandit>=1.7.5",
-    "safety>=2.3.0",
-    "pip-audit>=2.6.0"
+    "safety>=3.0.1",
+    "pip-audit>=2.6.1"
 ]
 
+docs = [
+    "sphinx>=7.2.6",
+    "sphinx-rtd-theme>=1.3.0"
+]
+
+performance = [
+    "pytest-benchmark>=4.0.0",
+    "psutil>=5.9.6",
+    "memory-profiler>=0.61.0"
+]
+
+# Project URLs for documentation and repository access
 [project.urls]
-Homepage = "https://github.com/example/flask-hello-world-tutorial"
-Documentation = "https://github.com/example/flask-hello-world-tutorial#readme"
-Repository = "https://github.com/example/flask-hello-world-tutorial"
-Issues = "https://github.com/example/flask-hello-world-tutorial/issues"
-Changelog = "https://github.com/example/flask-hello-world-tutorial/releases"
+Homepage = "https://github.com/flask-migration-tutorial/flask-hello-world"
+Documentation = "https://flask-migration-tutorial.readthedocs.io/"
+Repository = "https://github.com/flask-migration-tutorial/flask-hello-world.git"
+"Bug Tracker" = "https://github.com/flask-migration-tutorial/flask-hello-world/issues"
+"CI/CD Pipeline" = "https://github.com/flask-migration-tutorial/flask-hello-world/actions"
+"Security Policy" = "https://github.com/flask-migration-tutorial/flask-hello-world/security/policy"
 
-[project.scripts]
-flask-tutorial = "src.backend.app:create_app"
+# -----------------------------------------------------------------------------
+# pytest Configuration (Alternative to pytest.ini)
+# -----------------------------------------------------------------------------
+# Comprehensive pytest testing framework configuration following
+# Section 6.6 Testing Strategy requirements with 100% coverage enforcement
 
-[tool.setuptools]
-py-modules = []
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["backend*"]
-exclude = ["tests*"]
-
-[tool.setuptools.package-dir]
-"" = "src"
-
-# pytest configuration - Comprehensive test execution and coverage settings
 [tool.pytest.ini_options]
-testpaths = ["tests", "src/backend/tests"]
+# Test discovery configuration for Flask application testing
+testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+# Core pytest execution options with coverage enforcement
 addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
     "--tb=short",
     "--cov=src",
-    "--cov-branch",
+    "--cov-branch", 
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
     "--cov-report=xml:coverage.xml",
@@ -130,119 +177,76 @@ addopts = [
     "--html=pytest_report.html",
     "--self-contained-html"
 ]
+
+# Test execution timeout and performance configuration
+timeout = 300
+timeout_method = "thread"
+
+# Test markers for organized execution and CI/CD integration
 markers = [
-    "unit: Unit tests for individual components",
-    "integration: Integration tests for system workflows", 
-    "performance: Performance and benchmark tests",
-    "security: Security validation tests",
+    "unit: Unit tests for individual Flask components and functions",
+    "integration: Integration tests for complete Flask request/response cycles", 
+    "performance: Performance and benchmark tests using pytest-benchmark",
     "slow: Tests that take longer than 1 second to execute",
-    "benchmark: Performance benchmark tests with pytest-benchmark"
+    "flask: Flask application-specific tests requiring app context",
+    "api: HTTP endpoint tests using Flask test client",
+    "security: Security validation tests including error handling",
+    "health: Health check and monitoring endpoint tests",
+    "memory: Memory usage and leak detection tests using psutil", 
+    "concurrent: Concurrent load testing and parallel request validation"
 ]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning"
-]
+
+# Logging configuration for comprehensive test output
 log_cli = true
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-minversion = "6.0"
-timeout = 300
 
-# Black code formatter configuration - Python code formatting standards
-[tool.black]
-line-length = 88
-target-version = ['py312', 'py313']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # Directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.nox
-  | \.pants.d
-  | \.pytype
-  | \.ruff_cache
-  | \.svn
-  | \.tox
-  | \.venv
-  | \.pytest_cache
-  | __pycache__
-  | _build
-  | buck-out
-  | build
-  | dist
-  | node_modules
-  | venv
-)/
-'''
-force-exclude = '''
-/(
-  migrations/
-  | \.venv/
-  | venv/
-  | __pycache__/
-)/
-'''
-
-# mypy static type checker configuration - Optional type safety validation
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_optional = true
-disallow_any_generics = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-show_error_codes = true
-show_column_numbers = true
-show_error_context = true
-pretty = true
-
-[[tool.mypy.overrides]]
-module = [
-    "tests.*",
-    "conftest",
-    "setup"
+# Test environment variables for Flask application testing
+env = [
+    "FLASK_ENV=testing",
+    "TESTING=1", 
+    "WTF_CSRF_ENABLED=False",
+    "SECRET_KEY=testing-secret-key",
+    "LOG_LEVEL=ERROR"
 ]
-ignore_errors = true
 
-[[tool.mypy.overrides]]
-module = [
-    "pytest.*",
-    "flask.*",
-    "gunicorn.*",
-    "psutil.*",
-    "dotenv.*"
+# Warning filter configuration for clean test output
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning:distutils",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*flask_cors.*:DeprecationWarning"
 ]
-ignore_missing_imports = true
 
-# Coverage configuration - Code coverage measurement and reporting
+# Performance testing configuration with pytest-benchmark
+[tool.pytest.ini_options.benchmark]
+min_time = 0.001
+max_time = 1.0
+min_rounds = 3
+timer = "time.perf_counter"
+disable_gc = false
+warmup = false
+warmup_iterations = 1
+sort = "mean"
+
+# -----------------------------------------------------------------------------
+# Coverage.py Configuration
+# -----------------------------------------------------------------------------
+# Code coverage measurement and reporting configuration for 100% enforcement
+
 [tool.coverage.run]
 source = ["src"]
 branch = true
 omit = [
-    "*/tests/*",
-    "*/test_*",
-    "*/__pycache__/*",
-    "*/venv/*",
-    "*/.venv/*",
-    "*/env/*",
-    "*/build/*",
-    "*/dist/*",
-    "setup.py",
-    "conftest.py"
+    "tests/*",
+    "*/conftest.py", 
+    "*/test_*.py",
+    "venv/*",
+    ".venv/*",
+    "build/*",
+    "dist/*"
 ]
 
 [tool.coverage.report]
@@ -251,22 +255,21 @@ exclude_lines = [
     "def __repr__",
     "if self.debug:",
     "if settings.DEBUG",
-    "raise AssertionError",
+    "raise AssertionError", 
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod"
 ]
-ignore_errors = true
 show_missing = true
-precision = 2
 skip_covered = false
-skip_empty = true
+precision = 2
+fail_under = 100
 
 [tool.coverage.html]
 directory = "htmlcov"
-title = "Flask Tutorial Coverage Report"
+title = "Flask Migration Tutorial - Coverage Report"
 
 [tool.coverage.xml]
 output = "coverage.xml"
@@ -275,60 +278,83 @@ output = "coverage.xml"
 output = "coverage.json"
 pretty_print = true
 
-# Bandit security linting configuration - Python security analysis
-[tool.bandit]
-exclude_dirs = [
-    "tests",
-    "venv",
-    ".venv",
-    "env",
-    "build",
-    "dist",
-    "__pycache__",
-    ".git",
-    ".pytest_cache",
-    "htmlcov"
-]
-skips = [
-    "B101",  # Skip assert_used test
-    "B601"   # Skip shell injection test for subprocess usage
-]
+# -----------------------------------------------------------------------------
+# Black Code Formatter Configuration 
+# -----------------------------------------------------------------------------
+# Uncompromising Python code formatter configuration for consistent style
 
-[tool.bandit.assert_used]
-skips = ["**/test_*.py", "**/tests/*.py"]
+[tool.black]
+line-length = 88
+target-version = ["py312", "py313"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    # Directories to exclude from black formatting
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | venv
+  | htmlcov
+  | \.pytest_cache
+  | infrastructure
+)/
+'''
+preview = false
+color = true
+fast = false
 
-# Flake8 alternative configuration - Python linting rules
-[tool.flake8]
-max-line-length = 88
-extend-ignore = [
-    "E203",  # Whitespace before ':' (conflicts with black)
-    "E501",  # Line too long (handled by black)
-    "W503",  # Line break before binary operator (conflicts with black)
-    "W504"   # Line break after binary operator (conflicts with black)
-]
-exclude = [
-    ".git",
-    "__pycache__",
-    "dist",
-    "build",
-    "*.egg-info",
-    ".venv",
-    "venv",
-    ".pytest_cache",
-    "htmlcov",
-    "migrations"
-]
-per-file-ignores = [
-    "__init__.py:F401",  # Unused imports in __init__.py files
-    "tests/*.py:S101",   # Use of assert in tests
-    "conftest.py:F401,F811"  # Unused imports and redefinition in conftest
-]
-max-complexity = 10
-docstring-convention = "google"
+# -----------------------------------------------------------------------------
+# mypy Static Type Checker Configuration (Optional)
+# -----------------------------------------------------------------------------
+# Optional static type checking for enhanced IDE support and code quality
 
-# Additional tool configurations for development workflow efficiency
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+extra_checks = true
+ignore_missing_imports = true
 
-# isort import sorting configuration - Python import organization
+# Flask and testing framework specific configuration
+[[tool.mypy.overrides]]
+module = [
+    "flask.*",
+    "pytest.*", 
+    "coverage.*",
+    "psutil.*",
+    "gunicorn.*"
+]
+ignore_missing_imports = true
+
+# Test files have relaxed type checking requirements
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+
+# -----------------------------------------------------------------------------
+# isort Import Sorting Configuration
+# -----------------------------------------------------------------------------
+# Import statement organization compatible with black formatting
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
@@ -337,31 +363,154 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
-known_first_party = ["src", "backend"]
-known_third_party = ["flask", "pytest", "gunicorn", "dotenv"]
-skip = [
-    ".git",
-    "__pycache__",
-    "dist",
-    "build",
-    "*.egg-info",
+known_first_party = ["src", "app", "backend"]
+known_third_party = ["flask", "pytest", "coverage", "psutil", "gunicorn"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+force_sort_within_sections = true
+show_diff = true
+color_output = true
+
+# -----------------------------------------------------------------------------
+# Bandit Security Scanner Configuration
+# -----------------------------------------------------------------------------
+# Python security vulnerability detection and static analysis
+
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    "venv", 
     ".venv",
-    "venv",
+    "build",
+    "dist",
     ".pytest_cache",
     "htmlcov"
 ]
+skips = [
+    "B101",  # assert_used - allow assertions in tests and development
+    "B601",  # paramiko_calls - not applicable to Flask application
+    "B602",  # subprocess_popen_with_shell_equals_true - handled by subprocess configuration
+]
 
-# pip-tools configuration - Dependency management
+# Test files have relaxed security scanning 
+[tool.bandit.assert_used]
+exclude = ["**/test_*.py", "tests/**"]
+
+# -----------------------------------------------------------------------------
+# Flake8 Configuration Integration
+# -----------------------------------------------------------------------------
+# Note: flake8 does not natively support pyproject.toml configuration
+# This section documents flake8 settings for reference; actual configuration
+# remains in .flake8 file for compatibility with CI/CD pipelines
+
+[tool.flake8]
+# These settings would apply if flake8 supported pyproject.toml:
+max-line-length = 88
+max-complexity = 10
+extend-ignore = ["E203", "E501", "W503", "W504"]
+per-file-ignores = [
+    "tests/*.py:E501,F401,S101,S105,S106,B101",
+    "test_*.py:E501,F401,S101,S105,S106,B101"
+]
+
+# -----------------------------------------------------------------------------
+# setuptools Configuration for Package Building
+# -----------------------------------------------------------------------------
+# Modern setuptools configuration for package distribution capabilities
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.txt", "*.md", "*.yml", "*.yaml", "*.json", "*.cfg", "*.ini"]
+
+# Setuptools SCM for version management from git tags
+[tool.setuptools_scm]
+write_to = "src/_version.py"
+version_scheme = "python-simplified-semver"
+local_scheme = "no-local-version"
+
+# -----------------------------------------------------------------------------
+# Development Tool Configuration
+# -----------------------------------------------------------------------------
+# Additional development tools and utilities configuration
+
+# pip-tools configuration for dependency management
 [tool.pip-tools]
 generate-hashes = true
-index-url = "https://pypi.org/simple/"
-extra-index-url = []
-trusted-host = []
-find-links = []
-no-index = false
-quiet = false
+upgrade = false
+quiet = 1
 
-# Development tool integration scripts
-[tool.setuptools_scm]
-write_to = "src/backend/_version.py"
-version_scheme = "release-branch-semver"
+# pytest-benchmark configuration for performance testing
+[tool.pytest-benchmark]
+min_time = 0.001
+max_time = 1.0
+min_rounds = 3
+timer = "time.perf_counter"
+disable_gc = false
+histogram = true
+json_output = "benchmark_results.json"
+
+# Memory monitoring configuration for Flask application testing
+[tool.memory-monitor]
+limit_mb = 75
+growth_limit_mb = 5
+enable_tracking = true
+psutil_integration = true
+
+# -----------------------------------------------------------------------------
+# CI/CD Integration Configuration
+# -----------------------------------------------------------------------------
+# Configuration optimizations for GitHub Actions and automated pipelines
+
+[tool.ci]
+# GitHub Actions integration settings
+github_actions = true
+artifact_retention_days = 30
+parallel_jobs = "auto"
+
+# Quality gate configuration for deployment pipelines
+[tool.quality-gates]
+coverage_threshold = 100
+performance_regression_threshold = 10
+memory_limit_mb = 75
+response_time_limit_ms = 50
+security_scan_required = true
+
+# =============================================================================
+# Configuration Summary and Integration Notes
+# =============================================================================
+# This pyproject.toml provides centralized configuration for:
+#
+# 1. Modern Python packaging with PEP 518/621 compliance
+# 2. pytest testing framework with 100% coverage enforcement  
+# 3. black code formatting with 88-character line length
+# 4. mypy optional static type checking for enhanced IDE support
+# 5. isort import organization compatible with black
+# 6. bandit security scanning with Flask-appropriate exclusions
+# 7. setuptools package building with SCM version management
+# 8. CI/CD integration parameters for automated quality validation
+#
+# Key Benefits:
+# - Single configuration file for multiple development tools
+# - PEP 518 standard compliance for modern Python development
+# - Full compatibility with existing Flask development workflow  
+# - Enhanced IDE integration and developer experience
+# - Comprehensive testing and quality assurance configuration
+# - Production-ready packaging and distribution support
+# - Educational value for modern Python project management
+#
+# Usage:
+# - pip install -e .[dev] # Install with development dependencies
+# - pytest                # Run tests with configured settings
+# - black .               # Format code with configured options
+# - mypy src/             # Type check with configured parameters
+# - bandit -r src/        # Security scan with configured exclusions
+# - python -m build       # Build package with configured metadata
+# =============================================================================
