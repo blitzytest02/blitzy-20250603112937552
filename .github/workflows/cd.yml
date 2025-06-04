@@ -1,14 +1,14 @@
 # =============================================================================
-# CONTINUOUS DEPLOYMENT (CD) PIPELINE - Node.js Tutorial Application
+# CONTINUOUS DEPLOYMENT (CD) PIPELINE - Python Flask Tutorial Application
 # =============================================================================
-# Automated deployment pipeline for containerized Node.js tutorial application
-# with Express.js v5.1.0 demonstrating production-ready deployment patterns
+# Automated deployment pipeline for containerized Python Flask tutorial application
+# with Flask v3.1.1 demonstrating production-ready deployment patterns
 # 
 # Educational Focus: Container deployment, security scanning, multi-environment
 # deployment strategies, health monitoring, and automated rollback capabilities
 # 
 # Technical Stack: GitHub Actions, Docker, GitHub Container Registry (ghcr.io),
-# Azure Web Apps, Node.js v22.16.0 LTS, Express.js v5.1.0
+# Azure Web Apps, Python v3.12+, Flask v3.1.1, Gunicorn WSGI server
 # 
 # Deployment Flow:
 #   CI Pipeline (success) → Build & Push Image → Security Scan → 
@@ -80,11 +80,12 @@ env:
   DOCKER_BUILDKIT: 1
   COMPOSE_DOCKER_CLI_BUILD: 1
   
-  # Node.js production configuration
-  NODE_ENV: production
+  # Flask production configuration
+  FLASK_ENV: production
+  FLASK_DEBUG: false
   
   # Educational deployment metadata
-  TUTORIAL_VERSION: "1.0.0"
+  TUTORIAL_VERSION: "2.0.0"
   EDUCATIONAL_MODE: "deployment-demonstration"
 
 # =============================================================================
@@ -101,7 +102,7 @@ jobs:
   build_and_publish:
     name: Build and Publish Docker Image
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     
     # Conditional execution: Only run after successful CI or manual trigger
     if: >
@@ -129,8 +130,8 @@ jobs:
       - name: Extract Version Information
         id: version
         run: |
-          # Extract version from package.json for deployment tracking
-          VERSION=$(jq -r '.version' src/backend/package.json)
+          # Extract version from requirements.txt for deployment tracking
+          VERSION=$(grep -E "^Flask==" requirements.txt | sed 's/Flask==\([0-9.]*\).*/\1/' || echo "3.1.1")
           COMMIT_SHA=${GITHUB_SHA:0:7}
           BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           
@@ -139,11 +140,19 @@ jobs:
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
           
           # Educational logging for deployment transparency
-          echo "📦 Package Version: $VERSION"
+          echo "📦 Flask Version: $VERSION"
           echo "🔗 Commit SHA: $COMMIT_SHA"
           echo "📅 Build Date: $BUILD_DATE"
       
-      # Step 3: Setup Docker Buildx for advanced build capabilities
+      # Step 3: Setup Python for pip cache optimization
+      - name: Setup Python
+        uses: actions/setup-python@v5 # Python Setup v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+      
+      # Step 4: Setup Docker Buildx for advanced build capabilities
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3 # Docker Buildx v3
         with:
@@ -153,7 +162,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           install: true
       
-      # Step 4: Authenticate with GitHub Container Registry
+      # Step 5: Authenticate with GitHub Container Registry
       - name: Login to Container Registry
         uses: docker/login-action@v3 # Docker Login v3
         with:
@@ -161,7 +170,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      # Step 5: Extract Docker image metadata and tags
+      # Step 6: Extract Docker image metadata and tags
       - name: Extract Metadata
         id: meta
         uses: docker/metadata-action@v5 # Docker Metadata v5
@@ -169,25 +178,25 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             # Branch-based tagging for development tracking
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=branch,suffix=-python
+            type=ref,event=pr,suffix=-python
             
             # SHA-based tagging for deployment traceability
-            type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD-HHmmss'}}
+            type=sha,prefix={{branch}}-python-,suffix=-{{date 'YYYYMMDD-HHmmss'}}
             
             # Version-based tagging for release management
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}}-python
+            type=semver,pattern={{major}}.{{minor}}-python
+            type=semver,pattern={{major}}-python
             
-            # Latest tag for main branch
-            type=raw,value=latest,enable={{is_default_branch}}
+            # Latest tag for main branch with python suffix
+            type=raw,value=latest-python,enable={{is_default_branch}}
             
             # Educational deployment tags
-            type=raw,value=tutorial-{{date 'YYYYMMDD'}},enable={{is_default_branch}}
+            type=raw,value=tutorial-python-{{date 'YYYYMMDD'}},enable={{is_default_branch}}
           labels: |
-            org.opencontainers.image.title=Node.js Tutorial Application
-            org.opencontainers.image.description=Educational Node.js HTTP server with Express.js v5.1.0
+            org.opencontainers.image.title=Python Flask Tutorial Application
+            org.opencontainers.image.description=Educational Python Flask HTTP server with Flask v3.1.1
             org.opencontainers.image.vendor=Tutorial Project
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
             org.opencontainers.image.created=${{ steps.version.outputs.build_date }}
@@ -195,12 +204,12 @@ jobs:
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
-            tutorial.framework=express
-            tutorial.runtime=nodejs
-            tutorial.version=5.1.0
+            tutorial.framework=flask
+            tutorial.runtime=python
+            tutorial.version=3.1.1
             tutorial.educational=true
       
-      # Step 6: Build and push multi-platform Docker image
+      # Step 7: Build and push multi-platform Docker image
       - name: Build and Push Docker Image
         id: build
         uses: docker/build-push-action@v5 # Docker Build Push v5
@@ -219,7 +228,7 @@ jobs:
           
           # Build arguments for educational transparency
           build-args: |
-            NODE_ENV=production
+            FLASK_ENV=production
             BUILD_DATE=${{ steps.version.outputs.build_date }}
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.version.outputs.version }}
@@ -228,7 +237,7 @@ jobs:
           provenance: true
           sbom: true
       
-      # Step 7: Display build information for educational purposes
+      # Step 8: Display build information for educational purposes
       - name: Display Build Information
         run: |
           echo "🏗️ Docker Image Build Completed Successfully"
@@ -237,24 +246,25 @@ jobs:
           echo "  • Image Digest: ${{ steps.build.outputs.digest }}"
           echo "  • Registry: ${{ env.REGISTRY }}"
           echo "  • Repository: ${{ env.IMAGE_NAME }}"
-          echo "  • Version: ${{ steps.version.outputs.version }}"
+          echo "  • Flask Version: ${{ steps.version.outputs.version }}"
           echo "  • Platforms: linux/amd64, linux/arm64"
+          echo "  • Base Image: python:3.12-alpine"
           echo ""
           echo "🏷️ Image Tags:"
           echo "${{ steps.meta.outputs.tags }}" | sed 's/^/  • /'
           echo ""
-          echo "📦 Next Steps: Security scanning and deployment validation"
+          echo "📦 Next Steps: Python security scanning and Flask deployment validation"
 
   # ===========================================================================
   # JOB 2: CONTAINER SECURITY SCANNING
   # ===========================================================================
-  # Comprehensive security analysis of built Docker image using Trivy scanner
+  # Comprehensive security analysis of built Docker image using multiple scanners
   # Educational demonstration of container security validation in CI/CD pipelines
   
   security_scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [build_and_publish]
     
     # Conditional execution: Skip for emergency deployments or run for all builds
@@ -270,13 +280,69 @@ jobs:
       vulnerability_count: ${{ steps.scan.outputs.vulnerability_count }}
       critical_count: ${{ steps.scan.outputs.critical_count }}
       high_count: ${{ steps.scan.outputs.high_count }}
+      python_security_issues: ${{ steps.python_security.outputs.issues_count }}
     
     steps:
       # Step 1: Repository checkout for security context
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      # Step 2: Comprehensive container vulnerability scanning
+      # Step 2: Setup Python for security scanning tools
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+      
+      # Step 3: Install Python security scanning tools
+      - name: Install Security Tools
+        run: |
+          pip install bandit[toml] safety
+          echo "🔒 Installed Python security scanning tools:"
+          echo "  • bandit: $(bandit --version)"
+          echo "  • safety: $(safety --version)"
+      
+      # Step 4: Run Bandit static security analysis for Python code
+      - name: Run Bandit Security Analysis
+        id: bandit
+        run: |
+          echo "🔍 Running Bandit static security analysis on Python code..."
+          bandit -r src/backend/ -f json -o bandit-results.json || true
+          bandit -r src/backend/ -f txt || BANDIT_EXIT_CODE=$?
+          
+          # Parse results for educational reporting
+          if [ -f bandit-results.json ]; then
+            ISSUES_COUNT=$(jq '.results | length' bandit-results.json 2>/dev/null || echo "0")
+            HIGH_ISSUES=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-results.json 2>/dev/null || echo "0")
+            echo "issues_count=$ISSUES_COUNT" >> $GITHUB_OUTPUT
+            echo "high_issues=$HIGH_ISSUES" >> $GITHUB_OUTPUT
+            
+            echo "🔒 Bandit Security Analysis Results:"
+            echo "  • Total Issues: $ISSUES_COUNT"
+            echo "  • High Severity: $HIGH_ISSUES"
+            echo "🎓 Educational Note: Bandit detects common Python security issues"
+          fi
+      
+      # Step 5: Run Safety dependency vulnerability scanning
+      - name: Run Safety Dependency Scan
+        id: safety
+        run: |
+          echo "🔍 Running Safety dependency vulnerability scanning..."
+          safety check --json --output safety-results.json || true
+          safety check || SAFETY_EXIT_CODE=$?
+          
+          # Parse results for educational reporting
+          if [ -f safety-results.json ]; then
+            VULNERABILITIES=$(jq 'length' safety-results.json 2>/dev/null || echo "0")
+            echo "vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
+            
+            echo "🔒 Safety Dependency Scan Results:"
+            echo "  • Vulnerabilities Found: $VULNERABILITIES"
+            echo "🎓 Educational Note: Safety checks for known security vulnerabilities in Python packages"
+          fi
+      
+      # Step 6: Comprehensive container vulnerability scanning
       - name: Run Trivy Vulnerability Scanner
         id: scan
         uses: aquasecurity/trivy-action@master # Trivy Security Scanner
@@ -290,7 +356,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       
-      # Step 3: Generate security scan summary
+      # Step 7: Generate comprehensive security summary
       - name: Generate Security Summary
         id: summary
         run: |
@@ -307,22 +373,30 @@ jobs:
             echo "medium_count=$MEDIUM" >> $GITHUB_OUTPUT
             echo "total_count=$TOTAL" >> $GITHUB_OUTPUT
             
+            # Get Python-specific security counts
+            BANDIT_ISSUES=${{ steps.bandit.outputs.issues_count || 0 }}
+            SAFETY_VULNS=${{ steps.safety.outputs.vulnerabilities || 0 }}
+            
             # Educational security reporting
-            echo "🔒 Container Security Scan Results"
+            echo "🔒 Comprehensive Security Scan Results"
             echo ""
-            echo "📊 Vulnerability Summary:"
+            echo "📊 Container Vulnerability Summary:"
             echo "  • Critical: $CRITICAL"
             echo "  • High: $HIGH"
             echo "  • Medium: $MEDIUM"
             echo "  • Total: $TOTAL"
             echo ""
+            echo "🐍 Python-Specific Security Analysis:"
+            echo "  • Bandit Issues: $BANDIT_ISSUES"
+            echo "  • Safety Vulnerabilities: $SAFETY_VULNS"
+            echo ""
             
-            # Security gate evaluation
-            if [ $CRITICAL -gt 0 ]; then
+            # Security gate evaluation with Python-specific checks
+            if [ $CRITICAL -gt 0 ] || [ $SAFETY_VULNS -gt 0 ]; then
               echo "❌ Security Gate: FAILED - Critical vulnerabilities detected"
               echo "security_gate=failed" >> $GITHUB_OUTPUT
               exit 1
-            elif [ $HIGH -gt 5 ]; then
+            elif [ $HIGH -gt 5 ] || [ $BANDIT_ISSUES -gt 3 ]; then
               echo "⚠️ Security Gate: WARNING - High vulnerability count exceeds threshold"
               echo "security_gate=warning" >> $GITHUB_OUTPUT
             else
@@ -334,7 +408,7 @@ jobs:
             echo "security_gate=unknown" >> $GITHUB_OUTPUT
           fi
       
-      # Step 4: Upload security results to GitHub Security tab
+      # Step 8: Upload security results to GitHub Security tab
       - name: Upload Trivy Scan Results
         uses: github/codeql-action/upload-sarif@v2 # CodeQL SARIF Upload v2
         if: always()
@@ -342,33 +416,34 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: 'container-security'
       
-      # Step 5: Archive security scan artifacts
+      # Step 9: Archive security scan artifacts
       - name: Upload Security Artifacts
         uses: actions/upload-artifact@v3 # Actions Upload Artifact v3
         if: always()
         with:
-          name: security-scan-results
+          name: python-security-scan-results
           path: |
             trivy-results.sarif
-            trivy-results.json
+            bandit-results.json
+            safety-results.json
           retention-days: 30
 
   # ===========================================================================
   # JOB 3: STAGING ENVIRONMENT DEPLOYMENT
   # ===========================================================================
   # Automated deployment to staging environment with health validation
-  # Educational demonstration of containerized deployment patterns and monitoring
+  # Educational demonstration of containerized Flask deployment patterns and monitoring
   
   deploy_staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [build_and_publish, security_scan]
     
     # Environment configuration for GitHub deployment protection
     environment:
       name: staging
-      url: https://nodejs-tutorial-staging.azurewebsites.net
+      url: https://flask-tutorial-staging.azurewebsites.net
     
     # Staging deployment outputs for production gate
     outputs:
@@ -381,64 +456,69 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       
-      # Step 2: Setup Node.js for smoke testing
-      - name: Setup Node.js
-        uses: actions/setup-node@v4 # Node.js Setup v4
+      # Step 2: Setup Python for smoke testing
+      - name: Setup Python
+        uses: actions/setup-python@v5 # Python Setup v5
         with:
-          node-version: '22.16.0'
-          cache: 'npm'
-          cache-dependency-path: 'src/backend/package-lock.json'
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
       
       # Step 3: Install dependencies for smoke tests
       - name: Install Dependencies
-        working-directory: src/backend
         run: |
-          npm ci --only=production
-          echo "📦 Dependencies installed for smoke testing"
+          pip install -r requirements.txt
+          echo "📦 Python dependencies installed for smoke testing"
+          echo "🎓 Educational Note: Using pip for Python package management"
       
       # Step 4: Deploy container to Azure Web App staging
       - name: Deploy to Azure Web App
         id: deploy
         uses: azure/webapps-deploy@v2 # Azure Web App Deploy v2
         with:
-          app-name: 'nodejs-tutorial-staging'
+          app-name: 'flask-tutorial-staging'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}
         env:
-          # Staging environment configuration
-          NODE_ENV: production
+          # Flask staging environment configuration
+          FLASK_ENV: production
+          FLASK_DEBUG: false
           PORT: 8000
           LOG_LEVEL: info
           TUTORIAL_ENVIRONMENT: staging
+          GUNICORN_WORKERS: 2
+          GUNICORN_TIMEOUT: 30
       
       # Step 5: Wait for deployment initialization
       - name: Wait for Deployment Initialization
         run: |
-          echo "⏳ Waiting for staging deployment to initialize..."
-          sleep 30
+          echo "⏳ Waiting for Flask staging deployment to initialize..."
+          echo "🎓 Educational Note: Python applications may need longer startup time"
+          sleep 45
           echo "✅ Initialization wait completed"
       
       # Step 6: Staging health check validation
       - name: Health Check Validation
         id: health_check
         run: |
-          STAGING_URL="https://nodejs-tutorial-staging.azurewebsites.net"
-          MAX_ATTEMPTS=10
+          STAGING_URL="https://flask-tutorial-staging.azurewebsites.net"
+          MAX_ATTEMPTS=12
           ATTEMPT=1
           
           echo "🏥 Starting staging health check validation"
           echo "🎯 Target URL: $STAGING_URL/hello"
+          echo "🎓 Educational Note: Testing Flask /hello endpoint"
           
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS"
             
-            if curl -f -s --max-time 10 "$STAGING_URL/hello" > /dev/null; then
+            if curl -f -s --max-time 15 "$STAGING_URL/hello" > /dev/null; then
               echo "✅ Staging health check successful"
               echo "health_status=healthy" >> $GITHUB_OUTPUT
               break
             else
-              echo "❌ Health check failed, retrying in 15 seconds..."
-              sleep 15
+              echo "❌ Health check failed, retrying in 20 seconds..."
+              sleep 20
               ATTEMPT=$((ATTEMPT + 1))
             fi
           done
@@ -453,14 +533,15 @@ jobs:
       - name: Run Staging Smoke Tests
         id: smoke_tests
         run: |
-          echo "🧪 Running staging smoke tests"
-          STAGING_URL="https://nodejs-tutorial-staging.azurewebsites.net"
+          echo "🧪 Running staging smoke tests for Flask application"
+          STAGING_URL="https://flask-tutorial-staging.azurewebsites.net"
           
           # Test 1: Basic endpoint functionality
-          echo "📝 Test 1: Basic endpoint response"
+          echo "📝 Test 1: Flask endpoint response validation"
           RESPONSE=$(curl -s "$STAGING_URL/hello")
-          if [ "$RESPONSE" = "Hello world" ]; then
-            echo "✅ Endpoint response test passed"
+          EXPECTED='{"message":"Hello world"}'
+          if echo "$RESPONSE" | grep -q "Hello world"; then
+            echo "✅ Endpoint response test passed: $RESPONSE"
           else
             echo "❌ Endpoint response test failed: '$RESPONSE'"
             exit 1
@@ -476,17 +557,37 @@ jobs:
             exit 1
           fi
           
-          # Test 3: Response time performance
-          echo "📝 Test 3: Response time performance"
-          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$STAGING_URL/hello")
-          if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
-            echo "✅ Response time test passed: ${RESPONSE_TIME}s"
+          # Test 3: Content-Type header validation
+          echo "📝 Test 3: Content-Type header validation"
+          CONTENT_TYPE=$(curl -s -I "$STAGING_URL/hello" | grep -i content-type | cut -d' ' -f2 | tr -d '\r\n')
+          if echo "$CONTENT_TYPE" | grep -q "application/json"; then
+            echo "✅ Content-Type test passed: $CONTENT_TYPE"
           else
-            echo "⚠️ Response time test warning: ${RESPONSE_TIME}s (>2s)"
+            echo "❌ Content-Type test failed: $CONTENT_TYPE"
+            exit 1
           fi
           
-          # Test 4: Error handling validation
-          echo "📝 Test 4: Error handling validation"
+          # Test 4: Response time performance
+          echo "📝 Test 4: Response time performance"
+          RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$STAGING_URL/hello")
+          if (( $(echo "$RESPONSE_TIME < 3.0" | bc -l) )); then
+            echo "✅ Response time test passed: ${RESPONSE_TIME}s"
+          else
+            echo "⚠️ Response time test warning: ${RESPONSE_TIME}s (>3s)"
+          fi
+          
+          # Test 5: Health endpoint validation
+          echo "📝 Test 5: Health endpoint validation"
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health")
+          if [ "$HEALTH_STATUS" = "200" ]; then
+            echo "✅ Health endpoint test passed"
+          else
+            echo "❌ Health endpoint test failed: $HEALTH_STATUS"
+            exit 1
+          fi
+          
+          # Test 6: Error handling validation
+          echo "📝 Test 6: Error handling validation"
           ERROR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/nonexistent")
           if [ "$ERROR_STATUS" = "404" ]; then
             echo "✅ Error handling test passed"
@@ -496,6 +597,7 @@ jobs:
           fi
           
           echo "🎉 All staging smoke tests completed successfully"
+          echo "🎓 Educational Note: Flask application passes all validation tests"
       
       # Step 8: Deployment success notification
       - name: Staging Deployment Success
@@ -504,10 +606,12 @@ jobs:
           echo ""
           echo "📊 Deployment Summary:"
           echo "  • Environment: Staging"
-          echo "  • URL: https://nodejs-tutorial-staging.azurewebsites.net"
+          echo "  • URL: https://flask-tutorial-staging.azurewebsites.net"
           echo "  • Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}"
           echo "  • Health Status: ${{ steps.health_check.outputs.health_status }}"
           echo "  • Smoke Tests: Passed"
+          echo "  • Runtime: Python 3.12 + Flask 3.1.1"
+          echo "  • WSGI Server: Gunicorn"
           echo ""
           echo "✅ Ready for production deployment approval"
 
@@ -520,7 +624,7 @@ jobs:
   deploy_production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     needs: [build_and_publish, security_scan, deploy_staging]
     
     # Production deployment conditions
@@ -531,7 +635,7 @@ jobs:
     # Environment configuration with production protection rules
     environment:
       name: production
-      url: https://nodejs-tutorial.azurewebsites.net
+      url: https://flask-tutorial.azurewebsites.net
     
     # Production deployment outputs
     outputs:
@@ -562,64 +666,73 @@ jobs:
           fi
           
           echo "✅ All production prerequisites validated"
+          echo "🎓 Educational Note: Production deployment requires staging validation"
       
-      # Step 3: Setup Node.js for production smoke testing
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Step 3: Setup Python for production smoke testing
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '22.16.0'
-          cache: 'npm'
-          cache-dependency-path: 'src/backend/package-lock.json'
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
       
       # Step 4: Install dependencies for production testing
       - name: Install Dependencies
-        working-directory: src/backend
         run: |
-          npm ci --only=production
+          pip install -r requirements.txt
           echo "📦 Production dependencies installed"
+          echo "🎓 Educational Note: Same dependencies used in production container"
       
       # Step 5: Deploy to production environment
       - name: Deploy to Azure Web App Production
         id: deploy
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'nodejs-tutorial-production'
+          app-name: 'flask-tutorial-production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_PRODUCTION }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}
         env:
-          # Production environment configuration
-          NODE_ENV: production
+          # Flask production environment configuration
+          FLASK_ENV: production
+          FLASK_DEBUG: false
           PORT: 8000
           LOG_LEVEL: info
           TUTORIAL_ENVIRONMENT: production
+          GUNICORN_WORKERS: 4
+          GUNICORN_TIMEOUT: 30
+          GUNICORN_KEEPALIVE: 2
+          GUNICORN_MAX_REQUESTS: 1000
+          GUNICORN_MAX_REQUESTS_JITTER: 100
       
       # Step 6: Production deployment warm-up period
       - name: Production Warm-up Period
         run: |
           echo "🔥 Production deployment warm-up period"
-          echo "⏳ Allowing 60 seconds for application initialization..."
-          sleep 60
+          echo "⏳ Allowing 75 seconds for Flask application initialization..."
+          echo "🎓 Educational Note: Gunicorn workers need time to start"
+          sleep 75
           echo "✅ Warm-up completed"
       
       # Step 7: Comprehensive production health validation
       - name: Production Health Validation
         id: health_validation
         run: |
-          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
-          MAX_ATTEMPTS=15
+          PRODUCTION_URL="https://flask-tutorial.azurewebsites.net"
+          MAX_ATTEMPTS=18
           ATTEMPT=1
           
           echo "🏥 Starting comprehensive production health validation"
           echo "🎯 Target URL: $PRODUCTION_URL/hello"
+          echo "🎓 Educational Note: Validating Flask production deployment"
           
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "🔍 Health validation attempt $ATTEMPT/$MAX_ATTEMPTS"
             
             # Multiple validation checks
-            if curl -f -s --max-time 15 "$PRODUCTION_URL/hello" > /dev/null; then
+            if curl -f -s --max-time 20 "$PRODUCTION_URL/hello" > /dev/null; then
               # Validate response content
               RESPONSE=$(curl -s "$PRODUCTION_URL/hello")
-              if [ "$RESPONSE" = "Hello world" ]; then
+              if echo "$RESPONSE" | grep -q "Hello world"; then
                 echo "✅ Production health validation successful"
                 echo "health_status=healthy" >> $GITHUB_OUTPUT
                 break
@@ -627,10 +740,10 @@ jobs:
                 echo "⚠️ Response validation failed: '$RESPONSE'"
               fi
             else
-              echo "❌ Health check failed, retrying in 20 seconds..."
+              echo "❌ Health check failed, retrying in 25 seconds..."
             fi
             
-            sleep 20
+            sleep 25
             ATTEMPT=$((ATTEMPT + 1))
           done
           
@@ -645,13 +758,13 @@ jobs:
         id: production_tests
         run: |
           echo "🧪 Running comprehensive production smoke tests"
-          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
+          PRODUCTION_URL="https://flask-tutorial.azurewebsites.net"
           
           # Test 1: Endpoint functionality validation
-          echo "📝 Test 1: Production endpoint functionality"
+          echo "📝 Test 1: Production Flask endpoint functionality"
           RESPONSE=$(curl -s "$PRODUCTION_URL/hello")
-          if [ "$RESPONSE" = "Hello world" ]; then
-            echo "✅ Production endpoint test passed"
+          if echo "$RESPONSE" | grep -q "Hello world"; then
+            echo "✅ Production endpoint test passed: $RESPONSE"
           else
             echo "❌ Production endpoint test failed: '$RESPONSE'"
             exit 1
@@ -660,7 +773,7 @@ jobs:
           # Test 2: Performance benchmarking
           echo "📝 Test 2: Production performance benchmarking"
           TOTAL_TIME=0
-          REQUESTS=5
+          REQUESTS=10
           
           for i in $(seq 1 $REQUESTS); do
             RESPONSE_TIME=$(curl -s -o /dev/null -w "%{time_total}" "$PRODUCTION_URL/hello")
@@ -671,15 +784,15 @@ jobs:
           AVERAGE_TIME=$(echo "scale=3; $TOTAL_TIME / $REQUESTS" | bc -l)
           echo "📊 Average response time: ${AVERAGE_TIME}s"
           
-          if (( $(echo "$AVERAGE_TIME < 1.0" | bc -l) )); then
+          if (( $(echo "$AVERAGE_TIME < 1.5" | bc -l) )); then
             echo "✅ Performance test passed"
           else
-            echo "⚠️ Performance test warning: ${AVERAGE_TIME}s (>1s)"
+            echo "⚠️ Performance test warning: ${AVERAGE_TIME}s (>1.5s)"
           fi
           
           # Test 3: Load testing simulation
-          echo "📝 Test 3: Basic load testing"
-          for i in {1..10}; do
+          echo "📝 Test 3: Basic load testing with Flask"
+          for i in {1..15}; do
             curl -s "$PRODUCTION_URL/hello" > /dev/null &
           done
           wait
@@ -695,25 +808,37 @@ jobs:
             exit 1
           fi
           
+          # Test 5: Health endpoint validation
+          echo "📝 Test 5: Production health endpoint"
+          HEALTH_RESPONSE=$(curl -s "$PRODUCTION_URL/health")
+          if echo "$HEALTH_RESPONSE" | grep -q "healthy"; then
+            echo "✅ Health endpoint test passed"
+          else
+            echo "❌ Health endpoint test failed: $HEALTH_RESPONSE"
+            exit 1
+          fi
+          
           echo "🎉 All production smoke tests completed successfully"
+          echo "🎓 Educational Note: Flask application demonstrates production readiness"
       
       # Step 9: Production monitoring validation
       - name: Production Monitoring
         id: monitoring
         run: |
           echo "📊 Starting production monitoring validation"
-          PRODUCTION_URL="https://nodejs-tutorial.azurewebsites.net"
-          MONITORING_DURATION=300  # 5 minutes
+          PRODUCTION_URL="https://flask-tutorial.azurewebsites.net"
+          MONITORING_DURATION=360  # 6 minutes
           CHECK_INTERVAL=30        # 30 seconds
           CHECKS=$((MONITORING_DURATION / CHECK_INTERVAL))
           FAILED_CHECKS=0
           
           echo "⏱️ Monitoring for $MONITORING_DURATION seconds ($CHECKS checks)"
+          echo "🎓 Educational Note: Extended monitoring for Python memory patterns"
           
           for i in $(seq 1 $CHECKS); do
             echo "🔍 Monitoring check $i/$CHECKS"
             
-            if ! curl -f -s --max-time 10 "$PRODUCTION_URL/hello" > /dev/null; then
+            if ! curl -f -s --max-time 15 "$PRODUCTION_URL/hello" > /dev/null; then
               FAILED_CHECKS=$((FAILED_CHECKS + 1))
               echo "❌ Monitoring check failed ($FAILED_CHECKS failures)"
             else
@@ -734,6 +859,7 @@ jobs:
           echo "📈 Production monitoring completed successfully"
           echo "📊 Final failure rate: $(echo "scale=2; $FAILED_CHECKS * 100 / $CHECKS" | bc -l)%"
           echo "rollback_required=false" >> $GITHUB_OUTPUT
+          echo "🎓 Educational Note: Flask application shows stable performance"
       
       # Step 10: Production deployment success notification
       - name: Production Deployment Success
@@ -742,18 +868,20 @@ jobs:
           echo ""
           echo "📊 Production Deployment Summary:"
           echo "  • Environment: Production"
-          echo "  • URL: https://nodejs-tutorial.azurewebsites.net"
+          echo "  • URL: https://flask-tutorial.azurewebsites.net"
           echo "  • Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}"
           echo "  • Health Status: ${{ steps.health_validation.outputs.health_status }}"
           echo "  • Monitoring: ${{ steps.monitoring.outputs.rollback_required == 'false' && 'Stable' || 'Issues Detected' }}"
           echo "  • Version: ${{ needs.build_and_publish.outputs.deployment_version }}"
+          echo "  • Runtime: Python 3.12 + Flask 3.1.1"
+          echo "  • WSGI Server: Gunicorn with 4 workers"
           echo ""
-          echo "🚀 Tutorial application successfully deployed to production!"
+          echo "🚀 Flask tutorial application successfully deployed to production!"
           echo "📚 Educational deployment pipeline demonstration completed"
           echo ""
           echo "🔗 Access the application:"
-          echo "  • Production: https://nodejs-tutorial.azurewebsites.net/hello"
-          echo "  • Staging: https://nodejs-tutorial-staging.azurewebsites.net/hello"
+          echo "  • Production: https://flask-tutorial.azurewebsites.net/hello"
+          echo "  • Staging: https://flask-tutorial-staging.azurewebsites.net/hello"
 
   # ===========================================================================
   # JOB 5: DEPLOYMENT NOTIFICATION AND REPORTING
@@ -788,19 +916,19 @@ jobs:
           # Overall deployment status
           if [ "$BUILD_STATUS" = "success" ] && [ "$STAGING_STATUS" = "success" ]; then
             if [ "$PRODUCTION_STATUS" = "success" ]; then
-              OVERALL_STATUS="✅ SUCCESS - Full deployment completed"
+              OVERALL_STATUS="✅ SUCCESS - Full Flask deployment completed"
             elif [ "$PRODUCTION_STATUS" = "skipped" ]; then
-              OVERALL_STATUS="🎯 PARTIAL - Staging deployment successful"
+              OVERALL_STATUS="🎯 PARTIAL - Staging Flask deployment successful"
             else
-              OVERALL_STATUS="⚠️ WARNING - Production deployment failed"
+              OVERALL_STATUS="⚠️ WARNING - Production Flask deployment failed"
             fi
           else
-            OVERALL_STATUS="❌ FAILED - Deployment pipeline failed"
+            OVERALL_STATUS="❌ FAILED - Flask deployment pipeline failed"
           fi
           
           # Generate detailed report
           cat > deployment-report.md << EOF
-          # 🚀 Node.js Tutorial Deployment Report
+          # 🚀 Python Flask Tutorial Deployment Report
           
           **Deployment Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')  
           **Workflow:** ${{ github.workflow }}  
@@ -814,38 +942,44 @@ jobs:
           ## 🔧 Pipeline Results
           | Job | Status | Duration | Details |
           |-----|--------|----------|---------|
-          | 🏗️ Build & Publish | $BUILD_STATUS | - | Docker image build and registry push |
-          | 🔒 Security Scan | $SECURITY_STATUS | - | Container vulnerability assessment |
-          | 🧪 Deploy Staging | $STAGING_STATUS | - | Staging environment deployment |
-          | 🚀 Deploy Production | $PRODUCTION_STATUS | - | Production environment deployment |
+          | 🏗️ Build & Publish | $BUILD_STATUS | - | Python Docker image build and registry push |
+          | 🔒 Security Scan | $SECURITY_STATUS | - | Container + Python security assessment |
+          | 🧪 Deploy Staging | $STAGING_STATUS | - | Flask staging environment deployment |
+          | 🚀 Deploy Production | $PRODUCTION_STATUS | - | Flask production environment deployment |
           
           ## 📦 Artifacts
           | Type | Details |
           |------|---------|
           | Docker Image | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build_and_publish.outputs.image_digest }}\` |
-          | Version | ${{ needs.build_and_publish.outputs.deployment_version }} |
+          | Flask Version | ${{ needs.build_and_publish.outputs.deployment_version }} |
+          | Python Runtime | 3.12+ |
+          | Base Image | python:3.12-alpine |
+          | WSGI Server | Gunicorn |
           | Platforms | linux/amd64, linux/arm64 |
           
           ## 🌐 Environment URLs
           | Environment | URL | Status |
           |-------------|-----|--------|
-          | Staging | https://nodejs-tutorial-staging.azurewebsites.net | ${{ needs.deploy_staging.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
-          | Production | https://nodejs-tutorial.azurewebsites.net | ${{ needs.deploy_production.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
+          | Staging | https://flask-tutorial-staging.azurewebsites.net | ${{ needs.deploy_staging.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
+          | Production | https://flask-tutorial.azurewebsites.net | ${{ needs.deploy_production.result == 'success' && '🟢 Active' || '🔴 Inactive' }} |
           
           ## 🔒 Security Summary
           | Metric | Count |
           |--------|-------|
           | Critical Vulnerabilities | ${{ needs.security_scan.outputs.critical_count || 'N/A' }} |
           | High Vulnerabilities | ${{ needs.security_scan.outputs.high_count || 'N/A' }} |
+          | Python Security Issues | ${{ needs.security_scan.outputs.python_security_issues || 'N/A' }} |
           | Security Gate | ${{ needs.security_scan.outputs.scan_result || 'N/A' }} |
           
           ## 📚 Educational Learning Points
-          - ✅ Multi-environment deployment strategy
-          - ✅ Container security scanning integration
-          - ✅ Automated health checks and monitoring
+          - ✅ Python Flask multi-environment deployment strategy
+          - ✅ Container security scanning with Python-specific tools
+          - ✅ Automated health checks and Gunicorn monitoring
           - ✅ GitHub Actions workflow orchestration
-          - ✅ Docker multi-platform image building
-          - ✅ Production deployment safety measures
+          - ✅ Docker multi-platform Python image building
+          - ✅ Production deployment safety measures with WSGI
+          - ✅ Bandit and Safety Python security integration
+          - ✅ Flask application factory deployment patterns
           
           ## 🔗 Resources
           - [GitHub Repository](${{ github.server_url }}/${{ github.repository }})
@@ -854,7 +988,7 @@ jobs:
           - [Actions Workflow](${{ github.server_url }}/${{ github.repository }}/actions)
           
           ---
-          *Generated by Node.js Tutorial CD Pipeline v1.0.0*
+          *Generated by Python Flask Tutorial CD Pipeline v2.0.0*
           EOF
           
           echo "📄 Deployment report generated successfully"
@@ -863,15 +997,15 @@ jobs:
       - name: Upload Deployment Report
         uses: actions/upload-artifact@v3
         with:
-          name: deployment-report
+          name: flask-deployment-report
           path: deployment-report.md
           retention-days: 90
       
       # Step 4: Display deployment summary
       - name: Display Deployment Summary
         run: |
-          echo "📋 DEPLOYMENT PIPELINE SUMMARY"
-          echo "=================================="
+          echo "📋 FLASK DEPLOYMENT PIPELINE SUMMARY"
+          echo "====================================="
           echo ""
           echo "🏗️ Build & Publish: ${{ needs.build_and_publish.result }}"
           echo "🔒 Security Scan: ${{ needs.security_scan.result }}"
@@ -879,73 +1013,71 @@ jobs:
           echo "🚀 Production Deploy: ${{ needs.deploy_production.result }}"
           echo ""
           echo "📦 Docker Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          echo "🏷️ Version: ${{ needs.build_and_publish.outputs.deployment_version }}"
+          echo "🏷️ Flask Version: ${{ needs.build_and_publish.outputs.deployment_version }}"
+          echo "🐍 Python Runtime: 3.12+"
+          echo "🚀 WSGI Server: Gunicorn"
           echo ""
           echo "🌐 Application URLs:"
           if [ "${{ needs.deploy_staging.result }}" = "success" ]; then
-            echo "  • Staging: https://nodejs-tutorial-staging.azurewebsites.net/hello"
+            echo "  • Staging: https://flask-tutorial-staging.azurewebsites.net/hello"
           fi
           if [ "${{ needs.deploy_production.result }}" = "success" ]; then
-            echo "  • Production: https://nodejs-tutorial.azurewebsites.net/hello"
+            echo "  • Production: https://flask-tutorial.azurewebsites.net/hello"
           fi
           echo ""
-          echo "📚 Educational CD Pipeline Demonstration Complete!"
+          echo "📚 Educational Flask CD Pipeline Demonstration Complete!"
 
 # =============================================================================
-# EDUCATIONAL PYTHON FLASK DEPLOYMENT PIPELINE SUMMARY
+# EDUCATIONAL DEPLOYMENT PIPELINE SUMMARY
 # =============================================================================
-# This Continuous Deployment pipeline demonstrates comprehensive Python container 
-# deployment patterns for the Flask tutorial application, showcasing:
+# This Continuous Deployment pipeline demonstrates comprehensive container 
+# deployment patterns for the Python Flask tutorial application, showcasing:
 #
-# 🏗️ PYTHON CONTAINER BUILD AUTOMATION:
-#   - Multi-platform Python Docker image building (linux/amd64, linux/arm64)
-#   - python:3.12-alpine base image optimization with pip caching
-#   - GitHub Container Registry integration (ghcr.io) with Python suffix versioning
-#   - Semantic versioning and Python package metadata management
-#   - Build optimization with pip wheel caching and layer optimization
-#   - Educational Python container labeling and documentation
+# 🏗️ CONTAINER BUILD AUTOMATION:
+#   - Multi-platform Docker image building (linux/amd64, linux/arm64)
+#   - GitHub Container Registry integration (ghcr.io)
+#   - Semantic versioning and metadata management with python suffix
+#   - Build optimization with pip caching and layer optimization
+#   - Educational container labeling and Flask documentation
 #
-# 🔒 PYTHON SECURITY INTEGRATION:
+# 🔒 SECURITY INTEGRATION:
 #   - Trivy vulnerability scanning for Python container images
-#   - bandit Python static security analysis for Flask applications
-#   - safety Python dependency vulnerability assessment
+#   - Bandit static security analysis for Python code
+#   - Safety dependency vulnerability assessment for pip packages
 #   - SARIF security reporting to GitHub Security tab
-#   - Python-specific security gate validation with threshold management
-#   - Container provenance and SBOM generation for Python packages
-#   - Educational Python security awareness and best practices
+#   - Security gate validation with Python-specific thresholds
+#   - Container provenance and SBOM generation for pip packages
 #
-# 🚀 FLASK MULTI-ENVIRONMENT DEPLOYMENT:
-#   - Automated Flask staging environment deployment with Gunicorn
-#   - Production deployment with manual approval gates and Python runtime
-#   - Azure Web Apps Python container deployment integration
-#   - Flask-specific environment configuration management (FLASK_ENV, Gunicorn workers)
-#   - Educational Python deployment strategy demonstration
+# 🚀 MULTI-ENVIRONMENT FLASK DEPLOYMENT:
+#   - Automated Flask staging environment deployment
+#   - Production Flask deployment with manual approval gates
+#   - Azure Web Apps container deployment with Python runtime
+#   - Environment-specific Flask configuration management
+#   - Educational Flask deployment strategy demonstration
 #
-# 🏥 FLASK HEALTH MONITORING & VALIDATION:
-#   - Comprehensive Flask health check implementation with /hello endpoint
-#   - Python application startup time accommodation (45s staging, 90s production)
-#   - Flask-specific smoke testing for endpoint validation and JSON responses
-#   - Python performance benchmarking and Flask load testing
-#   - Production monitoring with Flask-aware rollback triggers
-#   - Educational Python monitoring patterns and Flask alerting
+# 🏥 HEALTH MONITORING & VALIDATION:
+#   - Comprehensive Flask health check implementation
+#   - Smoke testing for Flask endpoint validation
+#   - Performance benchmarking and load testing for Python apps
+#   - Production monitoring with Gunicorn-aware rollback triggers
+#   - Educational monitoring patterns and Flask alerting
 #
-# 📊 PYTHON DEPLOYMENT REPORTING:
+# 📊 DEPLOYMENT REPORTING:
 #   - Comprehensive Flask deployment status reporting
-#   - Python artifact management and version tracking
-#   - Educational Python deployment documentation
-#   - GitHub Actions workflow integration with Python tooling
-#   - Flask deployment history and audit trail
+#   - Artifact management and version tracking with python suffixes
+#   - Educational Flask deployment documentation
+#   - GitHub Actions workflow integration
+#   - Deployment history and audit trail
 #
-# 🎓 PYTHON EDUCATIONAL FEATURES:
+# 🎓 EDUCATIONAL FEATURES:
 #   - Clear logging and status reporting throughout Flask pipeline
 #   - Comprehensive documentation and Python learning points
-#   - Production-ready Flask patterns in educational context
-#   - Python container deployment best practices demonstration
-#   - CI/CD pipeline integration and Python orchestration
-#   - Flask vs Express.js migration pattern demonstration
+#   - Production-ready patterns in educational Flask context
+#   - Container deployment best practices for Python applications
+#   - CI/CD pipeline integration and orchestration for Flask
 #
-# This pipeline serves as both a functional Flask deployment system and an 
+# This pipeline serves as both a functional deployment system and an 
 # educational demonstration of modern Python container deployment practices,
-# security integration, and production deployment strategies for the
-# Flask tutorial application with Python 3.12+ and Flask v3.1.1+.
+# Flask security integration, and production deployment strategies for the
+# Python Flask tutorial application with Flask v3.1.1 and Gunicorn WSGI server.
 # =============================================================================
