@@ -27,12 +27,12 @@ pie title "Project Completion Status"
 
 | Task | Description | Priority | Estimated Hours |
 |------|-------------|----------|-----------------|
-| QA/Bug Fixes | Examine generated code for compilation errors, fix package dependency issues, validate Express.js v5.1.0 compatibility, ensure all imports are correct | High | 5 |
-| Environment Configuration | Set up environment variables for production deployment, configure PORT and HOST settings, create .env.example file, validate environment-specific configurations | High | 2 |
-| Dependency Updates | Run npm audit and fix vulnerabilities, update package-lock.json, verify all dependencies are compatible with Node.js v22.16.0 LTS, ensure Express.js v5.1.0 is properly installed | High | 2 |
-| API Key Management | Although not required for this simple app, document best practices for future API integrations, create placeholder configuration for potential future enhancements | Medium | 1 |
-| Security Validation | Verify X-Powered-By header is disabled, test ReDoS protection in Express.js v5, validate error messages don't expose sensitive information, ensure HTTPS readiness for production | High | 2 |
-| Performance Testing | Run load tests to verify <100ms response time, test concurrent request handling (100+ requests), validate memory usage stays under 50MB, optimize startup time | Medium | 1.5 |
-| Docker Registry Setup | Configure container registry credentials, push Docker images to registry, set up automated image scanning, document container deployment process | Medium | 1 |
-| Production Deployment | Deploy to chosen platform (Heroku/Render/Railway), configure production environment variables, set up health monitoring, validate production endpoints | High | 0.5 |
+| QA/Bug Fixes | Examine generated Python code for syntax errors, fix pip dependency issues, validate Flask v3.1.1 compatibility, ensure all Python imports are correct, verify virtual environment setup | High | 5 |
+| Environment Configuration | Set up Flask environment variables for production deployment, configure FLASK_ENV and PORT settings, create .env.example file with python-dotenv, validate environment-specific configurations | High | 2 |
+| Dependency Updates | Run pip-audit and safety to fix Python package vulnerabilities, update requirements.txt, verify all dependencies are compatible with Python 3.12+, ensure Flask v3.1.1 and Gunicorn are properly installed | High | 2 |
+| API Key Management | Although not required for this simple Flask app, document best practices for future API integrations, create placeholder configuration for potential future enhancements using python-dotenv | Medium | 1 |
+| Security Validation | Verify Flask security headers are configured, validate bandit security analysis results, test Python security best practices, ensure error messages don't expose sensitive information, validate HTTPS readiness for Gunicorn production | High | 2 |
+| Performance Testing | Run pytest-benchmark to verify <50ms warm response time, test concurrent request handling (100+ requests), validate memory usage stays under 75MB using psutil monitoring, optimize Flask startup time | Medium | 1.5 |
+| Docker Registry Setup | Configure container registry credentials for Python containers, push Docker images to registry, set up automated Python container scanning, document Flask container deployment process | Medium | 1 |
+| Production Deployment | Deploy Flask app to chosen platform (Heroku/Render/Railway), configure production Gunicorn environment variables, set up Flask health monitoring, validate production WSGI endpoints | High | 0.5 |
 | **Total** | | | **15** |
