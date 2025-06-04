@@ -312,14 +312,16 @@ To help with triage, this issue appears to be related to:
 
 ---
 
-**Thank you for helping improve this educational Node.js tutorial! Your bug report helps make learning Node.js and Express.js better for everyone.**
+**Thank you for helping improve this educational Python Flask tutorial! Your bug report helps make learning Flask web development and Python best practices better for everyone.**
 
 <!-- 
 For maintainers: This issue template follows educational best practices and includes:
-- Comprehensive environment information
-- Detailed reproduction steps  
-- Educational context and impact assessment
-- Development setup guidance for contributors
-- Quality assurance through pre-submission checklist
-- Support for community learning objectives
+- Comprehensive Python/Flask environment information with virtual environment support
+- Detailed reproduction steps including pytest test execution and Flask development workflows
+- Flask-specific troubleshooting guidance including application factory patterns and WSGI configuration
+- Educational context and impact assessment for Python web development learning
+- Development setup guidance for contributors with virtual environment best practices
+- Quality assurance through pre-submission checklist with pytest coverage validation
+- Support for community learning objectives in modern Python web development
+- Integration with Python ecosystem tools (pytest, coverage.py, bandit security scanning)
 -->
