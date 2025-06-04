@@ -1,0 +1,28 @@
+# Production Python Dependencies for Flask Hello World Tutorial
+# This file replaces package.json functionality for Python environments
+# and defines runtime dependencies required for the Flask application.
+
+# Core Web Framework
+# Flask 3.1.1+ provides the WSGI web application framework replacing Express.js v5.1.0
+# with enhanced type hints, security defaults, and Python 3.12+ compatibility
+Flask>=3.1.1
+
+# Environment Configuration Management
+# python-dotenv enables 12-factor app configuration patterns with .env file support
+# replacing Node.js process.env patterns for environment variable loading
+python-dotenv>=1.0.1
+
+# Cross-Origin Resource Sharing (CORS)
+# Flask-CORS provides secure cross-origin request handling with configurable policies
+# replacing CORS functionality that was built into Express.js
+Flask-CORS>=4.0.0
+
+# Production WSGI Server
+# Gunicorn provides production-grade WSGI HTTP server with multi-worker process management
+# replacing Node.js built-in HTTP server for scalable deployment
+gunicorn>=21.2.0
+
+# Package Distribution Optimization
+# Wheel format enables faster installation and distribution of Python packages
+# optimizing dependency management and deployment artifact creation
+wheel>=0.42.0
