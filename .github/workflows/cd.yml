@@ -892,55 +892,60 @@ jobs:
           echo "📚 Educational CD Pipeline Demonstration Complete!"
 
 # =============================================================================
-# EDUCATIONAL DEPLOYMENT PIPELINE SUMMARY
+# EDUCATIONAL PYTHON FLASK DEPLOYMENT PIPELINE SUMMARY
 # =============================================================================
-# This Continuous Deployment pipeline demonstrates comprehensive container 
-# deployment patterns for the Node.js tutorial application, showcasing:
+# This Continuous Deployment pipeline demonstrates comprehensive Python container 
+# deployment patterns for the Flask tutorial application, showcasing:
 #
-# 🏗️ CONTAINER BUILD AUTOMATION:
-#   - Multi-platform Docker image building (linux/amd64, linux/arm64)
-#   - GitHub Container Registry integration (ghcr.io)
-#   - Semantic versioning and metadata management
-#   - Build optimization with layer caching
-#   - Educational container labeling and documentation
+# 🏗️ PYTHON CONTAINER BUILD AUTOMATION:
+#   - Multi-platform Python Docker image building (linux/amd64, linux/arm64)
+#   - python:3.12-alpine base image optimization with pip caching
+#   - GitHub Container Registry integration (ghcr.io) with Python suffix versioning
+#   - Semantic versioning and Python package metadata management
+#   - Build optimization with pip wheel caching and layer optimization
+#   - Educational Python container labeling and documentation
 #
-# 🔒 SECURITY INTEGRATION:
-#   - Trivy vulnerability scanning for container images
+# 🔒 PYTHON SECURITY INTEGRATION:
+#   - Trivy vulnerability scanning for Python container images
+#   - bandit Python static security analysis for Flask applications
+#   - safety Python dependency vulnerability assessment
 #   - SARIF security reporting to GitHub Security tab
-#   - Security gate validation with threshold management
-#   - Container provenance and SBOM generation
-#   - Educational security awareness and best practices
+#   - Python-specific security gate validation with threshold management
+#   - Container provenance and SBOM generation for Python packages
+#   - Educational Python security awareness and best practices
 #
-# 🚀 MULTI-ENVIRONMENT DEPLOYMENT:
-#   - Automated staging environment deployment
-#   - Production deployment with manual approval gates
-#   - Azure Web Apps container deployment integration
-#   - Environment-specific configuration management
-#   - Educational deployment strategy demonstration
+# 🚀 FLASK MULTI-ENVIRONMENT DEPLOYMENT:
+#   - Automated Flask staging environment deployment with Gunicorn
+#   - Production deployment with manual approval gates and Python runtime
+#   - Azure Web Apps Python container deployment integration
+#   - Flask-specific environment configuration management (FLASK_ENV, Gunicorn workers)
+#   - Educational Python deployment strategy demonstration
 #
-# 🏥 HEALTH MONITORING & VALIDATION:
-#   - Comprehensive health check implementation
-#   - Smoke testing for endpoint validation
-#   - Performance benchmarking and load testing
-#   - Production monitoring with rollback triggers
-#   - Educational monitoring patterns and alerting
+# 🏥 FLASK HEALTH MONITORING & VALIDATION:
+#   - Comprehensive Flask health check implementation with /hello endpoint
+#   - Python application startup time accommodation (45s staging, 90s production)
+#   - Flask-specific smoke testing for endpoint validation and JSON responses
+#   - Python performance benchmarking and Flask load testing
+#   - Production monitoring with Flask-aware rollback triggers
+#   - Educational Python monitoring patterns and Flask alerting
 #
-# 📊 DEPLOYMENT REPORTING:
-#   - Comprehensive deployment status reporting
-#   - Artifact management and version tracking
-#   - Educational deployment documentation
-#   - GitHub Actions workflow integration
-#   - Deployment history and audit trail
+# 📊 PYTHON DEPLOYMENT REPORTING:
+#   - Comprehensive Flask deployment status reporting
+#   - Python artifact management and version tracking
+#   - Educational Python deployment documentation
+#   - GitHub Actions workflow integration with Python tooling
+#   - Flask deployment history and audit trail
 #
-# 🎓 EDUCATIONAL FEATURES:
-#   - Clear logging and status reporting throughout pipeline
-#   - Comprehensive documentation and learning points
-#   - Production-ready patterns in educational context
-#   - Container deployment best practices demonstration
-#   - CI/CD pipeline integration and orchestration
+# 🎓 PYTHON EDUCATIONAL FEATURES:
+#   - Clear logging and status reporting throughout Flask pipeline
+#   - Comprehensive documentation and Python learning points
+#   - Production-ready Flask patterns in educational context
+#   - Python container deployment best practices demonstration
+#   - CI/CD pipeline integration and Python orchestration
+#   - Flask vs Express.js migration pattern demonstration
 #
-# This pipeline serves as both a functional deployment system and an 
-# educational demonstration of modern container deployment practices,
+# This pipeline serves as both a functional Flask deployment system and an 
+# educational demonstration of modern Python container deployment practices,
 # security integration, and production deployment strategies for the
-# Node.js tutorial application with Express.js v5.1.0.
+# Flask tutorial application with Python 3.12+ and Flask v3.1.1+.
 # =============================================================================
