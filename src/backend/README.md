@@ -1,4 +1,4 @@
-# Python Flask Tutorial Backend - Hello World HTTP Server
+# Python Flask Migration Tutorial Backend - Hello World HTTP Server
 
 ## Overview
 
@@ -6,74 +6,94 @@ This educational Python Flask tutorial demonstrates fundamental HTTP server conc
 
 ### Project Purpose and Educational Objectives
 
-- **Understanding HTTP request-response cycle**: Learn how web servers process incoming requests and generate responses using Flask's WSGI application architecture
-- **Flask framework fundamentals**: Master the lightweight Python web framework used by major companies including Netflix, LinkedIn, Pinterest and Reddit for scalable web applications
-- **Python runtime environment concepts**: Explore the Python interpreter with Flask's application factory pattern, WSGI server integration, and production deployment strategies
-- **RESTful API endpoint design**: Implement industry-standard API patterns using Flask decorators and best practices for modern Python web development
+- **Understanding HTTP request-response cycle**: Learn how web servers process incoming requests and generate responses using Flask's WSGI architecture
+- **Flask framework fundamentals**: Master the micro web framework for Python that provides the core utilities for building web applications with minimal overhead
+- **Python 3.12+ runtime environment concepts**: Explore the powerful Python runtime with type hints, pattern matching, and performance optimizations
+- **RESTful API endpoint design**: Implement industry-standard API patterns using Flask's decorator-based routing system
 
 ### Technology Stack Overview
 
-- **Python 3.12+ 'Stable'**: Latest stable Python runtime providing modern language features, enhanced type hint support, and optimized performance characteristics
-- **Flask v3.1.1**: Latest web framework with enhanced security defaults, modern Python compatibility, and optimized performance for educational and production use
-- **Gunicorn v21.0.0**: Production-grade WSGI HTTP server for Flask application deployment with worker process management and graceful shutdown
-- **pytest v8.4.0**: Advanced testing framework with fixture management, parametric testing, and comprehensive assertion capabilities
+- **Python 3.12+**: Latest stable Python runtime with enhanced performance, type hints, and modern language features
+- **Flask v3.1.1**: Lightweight WSGI web application framework with enhanced security features and Python 3.12+ compatibility
+- **pip**: Package installer for Python providing dependency management and package distribution
+- **Python Modern Syntax**: Advanced features including type hints, dataclasses, pattern matching, and async/await patterns
 
 ### Learning Outcomes and Skills Developed
 
 Upon completion of this tutorial, you will understand:
-- Flask application factory pattern and WSGI server lifecycle management
-- Flask route handlers, middleware, and error handling using Python decorators
-- Stateless application design principles with Flask request context management
-- Environment-based configuration management using python-dotenv
-- Graceful shutdown procedures and Python signal handling
-- Security best practices with Flask security headers and container hardening
-- Modern Python features including f-strings, type hints, and context managers
+- HTTP server creation using Flask application factory pattern
+- Flask routing system with decorator-based view functions
+- WSGI application architecture and deployment patterns
+- Python environment management with virtual environments
+- Graceful shutdown procedures and signal handling
+- Security best practices with Flask v3.1.1
+- Modern Python features and Flask development patterns
 
 ## Prerequisites
 
 ### Python 3.12+ Installation
 
-The application requires Python 3.12 or higher for compatibility with Flask v3.1.1 and modern language features. Python 3.12 provides critical performance improvements, enhanced error messages, and advanced type hint support.
+The application requires Python 3.12 or higher for compatibility with Flask v3.1.1 and modern Python features. Python 3.12+ provides significant performance improvements, enhanced type system, and security updates.
 
 **Installation Methods:**
 - **Official Installer**: Download from [python.org](https://python.org/)
-- **pyenv (recommended)**: Recommended for managing multiple Python versions
+- **pyenv**: Recommended for managing multiple Python versions
   ```bash
   pyenv install 3.12.0
-  pyenv local 3.12.0
+  pyenv global 3.12.0
   ```
+- **System Package Manager**:
+  ```bash
+  # Ubuntu/Debian
+  sudo apt update && sudo apt install python3.12 python3.12-venv
+  
+  # macOS with Homebrew
+  brew install python@3.12
+  
+  # Windows with Chocolatey
+  choco install python --version=3.12.0
+  ```
+
+### pip Package Manager
+
+pip comes bundled with Python and provides dependency management capabilities. Verify installation:
+```bash
+pip --version  # Should show 23.0+ or higher
+python -m pip --version  # Alternative verification method
+```
 
 ### Virtual Environment Setup
 
-Python virtual environments provide dependency isolation and project-specific package management:
+Python virtual environments provide isolated dependency management and are essential for Flask development:
 ```bash
 # Create virtual environment
-python -m venv .venv
+python -m venv flask-tutorial-env
 
 # Activate virtual environment
-# On Linux/macOS:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
+# Linux/macOS:
+source flask-tutorial-env/bin/activate
+# Windows:
+flask-tutorial-env\Scripts\activate
 
-# Verify activation
-which python  # Should show .venv/bin/python
+# Verify activation (should show virtual environment path)
+which python
 ```
 
 ### Basic Python and HTTP Knowledge
 
 Familiarity with the following concepts enhances learning effectiveness:
-- Python 3.x syntax including f-strings, type hints, and decorators
+- Python 3.12+ syntax including type hints and decorators
 - HTTP protocol fundamentals (methods, status codes, headers)
-- Object-oriented programming concepts and context managers
+- Asynchronous programming concepts with async/await
 - JSON data format and REST architectural principles
 
 ### Command Line Interface Familiarity
 
 Basic terminal/command prompt skills are required for:
 - Navigating directories with `cd` command
+- Managing virtual environments with `python -m venv`
 - Installing dependencies with `pip install`
-- Starting the Flask development server
+- Starting the server with `python wsgi.py` or `flask run`
 - Testing endpoints with `curl` or similar tools
 
 ## Installation
@@ -86,38 +106,50 @@ git clone <repository-url>
 cd python-flask-tutorial/src/backend
 ```
 
-### Virtual Environment and Dependency Installation
+### Virtual Environment Creation and Activation
 
-Create isolated Python environment and install Flask dependencies:
+Create and activate a Python virtual environment for dependency isolation:
 ```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# or
-.venv\Scripts\activate  # Windows
+# Create virtual environment using Python 3.12+
+python -m venv venv
 
-# Install Flask and all required dependencies
+# Activate virtual environment
+# Linux/macOS:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Verify Python version in virtual environment
+python --version  # Should show Python 3.12+ or higher
+```
+
+### Dependency Installation with pip install
+
+Install Flask and all required dependencies from requirements.txt:
+```bash
 pip install -r requirements.txt
 ```
 
-This command downloads Flask v3.1.1, Gunicorn, pytest, and all testing dependencies. The `requirements.txt` file ensures exact version consistency across different environments.
+This command downloads Flask v3.1.1, pytest, coverage tools, and creates the virtual environment with all dependencies. The `requirements.txt` file ensures exact version consistency across different environments.
 
 ### Environment Configuration
 
 The application supports environment-based configuration for deployment flexibility using python-dotenv:
 
 **Environment Variables:**
-- `FLASK_RUN_PORT`: Server port (default: 5000)
-- `FLASK_RUN_HOST`: Host address (default: localhost)
+- `PORT`: Server port (default: 3000)
+- `HOST`: Host address (default: localhost)
 - `FLASK_ENV`: Environment mode (development/production/testing)
-- `LOG_LEVEL`: Logging verbosity (info/warn/error)
+- `FLASK_DEBUG`: Debug mode (true/false)
+- `SECRET_KEY`: Flask secret key for session security
 
 **Example .env file (optional):**
 ```bash
-FLASK_RUN_PORT=5000
-FLASK_RUN_HOST=localhost
+PORT=3000
+HOST=localhost
 FLASK_ENV=development
-LOG_LEVEL=info
+FLASK_DEBUG=true
+SECRET_KEY=your-secret-key-change-in-production
 ```
 
 ### Verification Steps
@@ -125,93 +157,115 @@ LOG_LEVEL=info
 Confirm successful installation:
 ```bash
 # Verify Python version
-python --version  # Should show 3.12.0 or higher
+python --version  # Should show 3.12+ or higher
 
 # Verify pip version
-pip --version   # Should show pip with Python 3.12
+pip --version      # Should show 23.0+ or higher
 
 # Verify Flask installation
-python -c "import flask; print(flask.__version__)"  # Should show 3.1.1
+pip show Flask     # Should show Flask>=3.1.1
+
+# Verify virtual environment activation
+which python       # Should show venv path
 
 # Run basic functionality test
-pytest  # Execute test suite to verify setup
+pytest             # Execute test suite to verify setup
 ```
 
 ## Usage
 
-### Starting the Flask Development Server
+### Starting the Development Server
 
-Launch the HTTP server using Flask's built-in development server:
+Launch the Flask development server using the WSGI entry point:
 ```bash
-# Using Flask CLI (recommended for development)
-flask run
+# Using WSGI entry point (recommended)
+python wsgi.py
 
-# Or using Python module
-python -m flask run
+# Alternative: Using Flask CLI
+export FLASK_APP=app.py  # Linux/macOS
+set FLASK_APP=app.py     # Windows
+flask run --host=localhost --port=3000
 
-# For production use Gunicorn WSGI server
-gunicorn wsgi:app
+# Production deployment with Gunicorn
+gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4
 ```
 
 **Expected Output:**
 ```
- * Running on http://localhost:5000
- * Environment: development
- * Debug mode: on
- * Flask v3.1.1 initialized successfully
+🚀 WSGI Application Successfully Initialized!
+============================================================
+⏰ Startup time: 2024-01-01T12:00:00.000000
+🌐 Application available at: http://localhost:3000
+📡 Host: localhost
+🔌 Port: 3000
+
+📋 Runtime Information:
+   Python version: 3.12.0
+   Flask environment: development
+   Flask debug mode: True
+   Process ID: 12345
+
+🎯 Available Endpoints:
+   GET  http://localhost:3000/hello  →  Returns 'Hello world'
+   GET  http://localhost:3000/health →  Health check endpoint
+============================================================
 ```
 
-The Flask development server typically starts within 2 seconds and consumes less than 75MB of memory during operation.
+The server typically starts within 2 seconds and consumes less than 75MB of memory during operation.
 
 ### Testing the /hello Endpoint
 
-The application exposes a single HTTP GET endpoint at `/hello` that demonstrates basic Flask routing and JSON response generation.
+The application exposes a JSON HTTP GET endpoint at `/hello` that demonstrates Flask routing and JSON response generation.
 
 **Browser Access:**
-Navigate to `http://localhost:5000/hello` in any web browser to see the JSON response.
+Navigate to `http://localhost:3000/hello` in any web browser to see the JSON "Hello world" response.
 
 **Command Line Testing with curl:**
 ```bash
-curl http://localhost:5000/hello
+curl http://localhost:3000/hello
 ```
 
-**Expected Response:**
+**Expected JSON Response:**
 ```json
 {
-  "message": "Hello world",
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "message": "Hello world"
 }
 ```
 
 **HTTP Response Details:**
 - Status Code: `200 OK`
 - Content-Type: `application/json`
-- Content-Length: `67`
+- Content-Length: `27`
 - Response Time: < 50ms
 
 ### Command Line Testing Examples
 
 **Basic GET request:**
 ```bash
-curl -i http://localhost:5000/hello
+curl -i http://localhost:3000/hello
 ```
 
 **Output with headers:**
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 67
+Content-Length: 27
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
 Date: Mon, 01 Jan 2024 12:00:00 GMT
 
-{
-  "message": "Hello world",
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
+{"message": "Hello world"}
+```
+
+**Testing health check endpoint:**
+```bash
+curl -i http://localhost:3000/health
 ```
 
 **Testing invalid routes:**
 ```bash
-curl -i http://localhost:5000/invalid
+curl -i http://localhost:3000/invalid
 # Returns 404 Not Found with JSON error response
 ```
 
@@ -224,7 +278,7 @@ The core educational endpoint demonstrating fundamental Flask HTTP server functi
 **Endpoint Details:**
 - **URL**: `/hello`
 - **Method**: `GET`
-- **Description**: Returns a JSON greeting with timestamp to demonstrate basic HTTP request-response cycle
+- **Description**: Returns a JSON 'Hello world' response to demonstrate Flask request-response cycle
 - **Authentication**: None required
 - **Parameters**: None
 
@@ -233,9 +287,9 @@ The core educational endpoint demonstrating fundamental Flask HTTP server functi
 **HTTP Request Example:**
 ```http
 GET /hello HTTP/1.1
-Host: localhost:5000
+Host: localhost:3000
 User-Agent: curl/7.68.0
-Accept: */*
+Accept: application/json
 ```
 
 **Required Headers:** None
@@ -247,16 +301,35 @@ Accept: */*
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 67
+Content-Length: 27
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Cache-Control: no-cache, no-store, must-revalidate
 Date: Mon, 01 Jan 2024 12:00:00 GMT
 
-{
-  "message": "Hello world",
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
+{"message": "Hello world"}
 ```
 
-**Response Body:** JSON object with message and timestamp fields
+**Response Body:** JSON object with message field containing "Hello world"
+
+### GET /health Health Check Endpoint
+
+**Endpoint Details:**
+- **URL**: `/health`
+- **Method**: `GET`
+- **Description**: Returns application health status for monitoring and deployment verification
+- **Response Format**: JSON with timestamp and service information
+
+**Successful Health Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T12:00:00.000000",
+  "service": "flask-hello-world-tutorial",
+  "version": "1.0.0"
+}
+```
 
 ### Error Handling and Status Codes
 
@@ -268,9 +341,12 @@ HTTP/1.1 404 Not Found
 Content-Type: application/json
 
 {
-  "error": "Not Found",
   "status": 404,
-  "message": "The requested route does not exist"
+  "error": "Not Found",
+  "message": "The requested resource was not found",
+  "path": "/invalid",
+  "method": "GET",
+  "timestamp": "2024-01-01T12:00:00.000000"
 }
 ```
 
@@ -280,9 +356,12 @@ HTTP/1.1 405 Method Not Allowed
 Content-Type: application/json
 
 {
-  "error": "Method Not Allowed",
   "status": 405,
-  "message": "POST method not supported for /hello endpoint"
+  "error": "Method Not Allowed",
+  "message": "The POST method is not allowed for this endpoint",
+  "path": "/hello",
+  "method": "POST",
+  "timestamp": "2024-01-01T12:00:00.000000"
 }
 ```
 
@@ -292,24 +371,26 @@ HTTP/1.1 500 Internal Server Error
 Content-Type: application/json
 
 {
-  "error": "Internal Server Error",
   "status": 500,
-  "message": "An unexpected error occurred"
+  "error": "Internal Server Error",
+  "message": "An internal server error occurred",
+  "timestamp": "2024-01-01T12:00:00.000000"
 }
 ```
 
 ### Example Requests and Responses
 
-**Valid Request Example:**
+**Valid JSON Request Example:**
 ```bash
-curl -X GET http://localhost:5000/hello \
+curl -X GET http://localhost:3000/hello \
   -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
   -v
 ```
 
 **Invalid Method Example:**
 ```bash
-curl -X POST http://localhost:5000/hello \
+curl -X POST http://localhost:3000/hello \
   -H "Content-Type: application/json" \
   -d '{"test": "data"}' \
   -v
@@ -319,48 +400,56 @@ curl -X POST http://localhost:5000/hello \
 
 ### pytest Testing Framework Setup
 
-The application uses pytest v8.4.0 as the primary testing framework, providing advanced fixture management, parametric testing, and comprehensive assertion capabilities with Flask integration.
+The application uses pytest v8.4.0+ as the primary testing framework, providing zero-configuration testing with built-in coverage reporting, Flask integration, and comprehensive assertion libraries.
 
 **pytest Benefits:**
-- Advanced fixture system with scope management and dependency injection
-- pytest-flask integration for Flask-specific testing patterns
-- pytest-cov for code coverage measurement and reporting
+- Zero configuration setup with automatic test discovery
+- Flask-specific testing through pytest-flask integration
+- Built-in code coverage collection with pytest-cov
+- Fixtures for dependency injection and test isolation
 - Parallel test execution capabilities with pytest-xdist
 - Extensive plugin ecosystem and community support
 
 ### Running Unit Tests
 
-Execute the complete test suite using pytest:
+Execute the complete test suite:
 ```bash
+# Run all tests with coverage
 pytest
 
-# With verbose output
+# Run tests with verbose output
 pytest -v
 
-# Run specific test file
-pytest tests/test_app.py
+# Run specific test categories
+pytest -m unit          # Unit tests only
+pytest -m integration   # Integration tests only
+pytest -m performance   # Performance tests only
 ```
 
 **Test Categories:**
 - **Unit Tests**: Individual Flask component functionality validation
-- **Integration Tests**: HTTP endpoint and request-response cycle testing using Flask test client
-- **Performance Tests**: Response time and memory usage validation using pytest-benchmark
+- **Integration Tests**: Complete HTTP request-response cycle testing
+- **Performance Tests**: Response time and memory usage validation
+- **Security Tests**: Flask application security and vulnerability testing
 
 ### Code Coverage Reports
 
-Generate comprehensive coverage analysis using pytest-cov:
+Generate comprehensive coverage analysis with 100% enforcement:
 ```bash
-# Run tests with coverage
-pytest --cov=src
+# Run tests with coverage (default configuration)
+pytest
 
 # Generate HTML coverage report
-pytest --cov=src --cov-report=html
+pytest --cov-report=html
 
-# Generate coverage report with missing lines
-pytest --cov=src --cov-report=term-missing
+# Generate terminal coverage summary
+pytest --cov-report=term-missing
+
+# Coverage enforcement (fails if below 100%)
+pytest --cov-fail-under=100
 ```
 
-**Coverage Targets:**
+**Coverage Targets (100% Enforcement):**
 - Line Coverage: 100% (complete code execution)
 - Function Coverage: 100% (all functions tested)
 - Branch Coverage: 100% (all conditional paths)
@@ -369,47 +458,58 @@ pytest --cov=src --cov-report=term-missing
 **Coverage Report Output:**
 ```
 ==================== Coverage summary ====================
-Name                      Stmts   Miss  Cover   Missing
--------------------------------------------------------
-src/app.py                   25      0   100%
-src/wsgi.py                   8      0   100%
--------------------------------------------------------
-TOTAL                        33      0   100%
+Statements   : 100% ( 45/45 )
+Branches     : 100% ( 12/12 )
+Functions    : 100% ( 8/8 )
+Lines        : 100% ( 45/45 )
+===========================================================
 ```
 
-### Flask Test Client Integration
+### Flask Application Testing with pytest-flask
 
 pytest-flask provides powerful HTTP assertion capabilities for testing Flask applications:
 
 **Example Test Cases:**
 ```python
 # Basic endpoint testing
-def test_hello_endpoint_success(client):
-    """Test GET /hello returns JSON response with 200 status."""
+def test_hello_endpoint_returns_json_message(client):
+    """Test GET /hello returns correct JSON response."""
     response = client.get('/hello')
     assert response.status_code == 200
-    assert response.is_json
+    assert response.content_type == 'application/json'
     
-    data = response.get_json()
-    assert 'message' in data
-    assert 'timestamp' in data
-    assert data['message'] == 'Hello world'
+    json_data = response.get_json()
+    assert json_data['message'] == 'Hello world'
 
 # Error handling testing
-def test_nonexistent_route_returns_404(client):
-    """Test non-existent routes return 404 with JSON error."""
+def test_unknown_route_returns_404(client):
+    """Test unknown routes return 404 with JSON error."""
     response = client.get('/unknown')
     assert response.status_code == 404
     
-    data = response.get_json()
-    assert data['error'] == 'Not Found'
+    json_data = response.get_json()
+    assert json_data['status'] == 404
+    assert json_data['error'] == 'Not Found'
+
+# Health check testing
+def test_health_endpoint_returns_status(client):
+    """Test GET /health returns health information."""
+    response = client.get('/health')
+    assert response.status_code == 200
+    
+    json_data = response.get_json()
+    assert json_data['status'] == 'healthy'
+    assert 'timestamp' in json_data
+    assert json_data['service'] == 'flask-hello-world-tutorial'
 ```
 
 **Test Execution Commands:**
-- `pytest`: Run all tests once
-- `pytest --watch`: Watch mode for development (with pytest-watch plugin)
-- `pytest --cov=src --cov-report=html`: Generate coverage report
-- `pytest -n auto`: Parallel test execution with pytest-xdist
+- `pytest`: Run all tests with coverage enforcement
+- `pytest -v`: Verbose output with test descriptions
+- `pytest --no-cov`: Skip coverage for faster development iteration
+- `pytest -x`: Stop after first failure
+- `pytest --tb=short`: Shorter traceback format
+- `pytest -k "hello"`: Run tests matching pattern
 
 ## Project Structure
 
@@ -417,169 +517,191 @@ def test_nonexistent_route_returns_404(client):
 
 ```
 src/backend/
-├── app.py                 # Flask application factory with /hello endpoint
-├── wsgi.py                # WSGI server entry point for production deployment
+├── app.py                 # Flask application factory with routes and middleware
+├── wsgi.py                # WSGI entry point for production deployment
 ├── requirements.txt       # Python package dependencies
-├── requirements-dev.txt   # Development dependencies including pytest
-├── pytest.ini            # pytest configuration and coverage settings
+├── pytest.ini            # pytest testing framework configuration
 ├── README.md              # This documentation file
 ├── .env.example           # Environment variable template
-├── .gitignore             # Git ignore patterns for Python projects
+├── .gitignore             # Git ignore patterns
 └── tests/
-    ├── conftest.py        # pytest fixtures and test configuration
+    ├── conftest.py        # pytest fixtures and configuration
     ├── test_app.py        # Flask application unit tests
-    └── test_wsgi.py       # WSGI server integration tests
+    ├── test_endpoints.py  # HTTP endpoint integration tests
+    └── test_wsgi.py       # WSGI application integration tests
 ```
 
 ### Component Responsibilities
 
 **app.py - Flask Application Core:**
-- Flask application factory pattern implementation using `create_app()`
-- `/hello` endpoint implementation with JSON response generation
-- Error handler registration using `@app.errorhandler()` decorators
-- Flask configuration and middleware setup for development and production
+- Flask application factory pattern with `create_app()` function
+- `/hello` and `/health` endpoint implementation using decorators
+- Flask-CORS configuration for cross-origin resource sharing
+- Error handling decorators for consistent error responses
+- Security middleware with Flask before/after request hooks
 
-**wsgi.py - WSGI Server Interface:**
-- WSGI application entry point for production deployment with Gunicorn
-- Signal handling for graceful shutdown procedures
-- Environment-based configuration loading using python-dotenv
-- Production-ready server lifecycle management
+**wsgi.py - WSGI Server Management:**
+- WSGI application instance creation for production deployment
+- Python signal handling for graceful shutdown (SIGTERM, SIGINT)
+- Memory usage monitoring and performance logging
+- Environment configuration loading with python-dotenv
+- Development server support with Flask debug mode
 
 **requirements.txt - Python Dependencies:**
-- Flask v3.1.1 core framework dependency
-- Gunicorn v21.0.0 for production WSGI server deployment
-- python-dotenv for environment variable management
-- Flask-CORS for cross-origin resource sharing configuration
+- Production runtime dependencies (Flask, gunicorn, python-dotenv)
+- Testing framework dependencies (pytest, pytest-flask, coverage)
+- Code quality tools (black, flake8, bandit, safety)
+- Development utilities (watchdog, pytest-benchmark)
 
 ### Configuration Files
 
 **pytest.ini - Testing Configuration:**
 ```ini
 [tool:pytest]
-addopts = --cov=src --cov-report=html --cov-report=term --cov-fail-under=100
 testpaths = tests
-python_files = test_*.py
-python_functions = test_*
+addopts = 
+    --cov=src
+    --cov-branch
+    --cov-fail-under=100
+    --cov-report=html:htmlcov
+    --cov-report=term-missing
+    --strict-markers
+markers =
+    unit: Unit tests for individual components
+    integration: Integration tests for complete request cycles
+    performance: Performance tests with response time validation
+    security: Security tests for vulnerabilities
 ```
 
 **.env.example - Environment Template:**
 ```bash
-# Flask Development Server Configuration
-FLASK_RUN_PORT=5000
-FLASK_RUN_HOST=localhost
+# Server Configuration
+PORT=3000
+HOST=localhost
 FLASK_ENV=development
+FLASK_DEBUG=true
 
-# Logging Configuration
-LOG_LEVEL=info
+# Security Configuration
+SECRET_KEY=your-secret-key-change-in-production
 
-# Flask Application Settings
-FLASK_DEBUG=1
+# Application Settings
+FLASK_APP=app.py
 ```
 
 ### Testing Structure
 
-**tests/conftest.py - pytest Configuration:**
-- Flask application fixture for test isolation
-- Flask test client fixture for HTTP endpoint testing
-- Dynamic port allocation fixtures for parallel test execution
-- Memory monitoring fixtures using psutil for performance validation
+**tests/conftest.py - pytest Fixtures:**
+- Flask application factory fixture for test isolation
+- Test client fixture for HTTP request simulation
+- Database fixtures (if implemented in future)
+- Mock data generators using Faker library
 
 **tests/test_app.py - Application Unit Tests:**
-- Flask application factory pattern testing
-- Route handler functionality validation using Flask test client
-- Error handler testing with comprehensive status code validation
-- JSON response format and content validation
+- Flask application factory functionality validation
+- Route handler logic testing in isolation
+- Middleware execution order verification
+- Configuration loading and validation
 
-**tests/test_wsgi.py - Server Integration Tests:**
-- WSGI server startup and shutdown procedures testing
-- Environment configuration testing with python-dotenv
-- Performance and resource usage validation using pytest-benchmark
-- Production deployment scenario validation
+**tests/test_endpoints.py - Endpoint Integration Tests:**
+- Complete HTTP request-response cycle validation
+- JSON response format and content verification
+- Error handling and status code validation
+- Security header verification
 
 ## Educational Context
 
 ### HTTP Server Fundamentals
 
-This tutorial demonstrates core HTTP server concepts essential for modern web development:
+This tutorial demonstrates core HTTP server concepts essential for web development using Flask:
 
 **Request-Response Cycle:**
 1. **Client Request**: HTTP client sends GET request to Flask application
-2. **Flask Processing**: Request routed through Flask middleware to appropriate handler
-3. **Business Logic**: Handler processes request and generates JSON response
-4. **Response Transmission**: Flask sends HTTP response back to client through WSGI server
+2. **WSGI Processing**: Flask routes request through WSGI interface to appropriate handler
+3. **Business Logic**: Flask view function processes request and generates response
+4. **Response Transmission**: Flask sends JSON HTTP response back to client through WSGI
 
 **Key Learning Concepts:**
-- HTTP protocol mechanics and message structure with Flask abstractions
-- Status codes and their semantic meanings in RESTful API design
-- Header management and content type negotiation using Flask helpers
-- Stateless communication principles with Flask request context
+- WSGI (Web Server Gateway Interface) specification and implementation
+- HTTP protocol mechanics with Flask's request/response objects
+- Status codes and semantic meanings in REST API design
+- JSON content negotiation and automatic serialization
+- Stateless communication principles with Flask application context
 
 ### Flask Framework Concepts
 
-Flask v3.1.1 provides robust tooling for HTTP servers with enhanced security and educational clarity:
+Flask v3.1.1 provides lightweight, flexible tooling for HTTP servers with modern Python integration:
 
 **Framework Philosophy:**
-- Microframework approach with minimal dependencies and maximum flexibility
-- Werkzeug WSGI toolkit foundation for request/response handling
-- Jinja2 templating engine integration for dynamic content generation
-- Blueprint system for modular application architecture
+- Micro framework with minimal assumptions about application structure
+- Extensible through a rich ecosystem of Flask extensions
+- WSGI-compliant for compatibility with various deployment options
+- Werkzeug-based with robust HTTP handling and debugging tools
 
-**Flask v3.x Enhancements:**
-- **Enhanced Type Hints**: Improved IDE support and static analysis capabilities
-- **Async Support**: Optional asynchronous request handling for improved performance
-- **Security Improvements**: Enhanced security defaults and automatic security headers
-- **Python 3.8+ Compatibility**: Modern Python feature support and optimization
+**Flask v3.1.1 Features:**
+- **Enhanced Type Hints**: Improved IDE integration and static analysis support
+- **Security Improvements**: Updated dependencies with security patches
+- **Python 3.12+ Compatibility**: Optimized for modern Python features and performance
+- **Async Support**: Built-in support for async view functions where needed
 
 ### Python Runtime Understanding
 
-Python 3.12+ provides a modern runtime environment with significant improvements:
+Python 3.12+ provides a powerful runtime with significant improvements over previous versions:
 
 **Runtime Characteristics:**
-- **Interpreter Optimizations**: Enhanced bytecode optimization and faster startup times
-- **Type System**: Advanced type hint support with static analysis capabilities
-- **Memory Management**: Improved garbage collection and memory efficiency
-- **Error Messages**: Enhanced error reporting with precise location information
+- **Performance Improvements**: 10-60% faster execution compared to Python 3.11
+- **Enhanced Type System**: Improved type hints and static analysis capabilities
+- **Memory Efficiency**: Reduced memory overhead and garbage collection improvements
+- **pip Ecosystem**: Access to over 400,000 packages on PyPI
+- **Cross-Platform Compatibility**: Consistent behavior across Windows, macOS, and Linux
 
 ### Modern Python Patterns
 
 The application demonstrates contemporary Python development practices:
 
 **Python 3.12+ Features Utilized:**
-- **F-string Formatting**: Clean string interpolation for dynamic response generation
-- **Type Hints**: Function parameter and return type annotations for better code documentation
-- **Context Managers**: Proper resource management using `with` statements
-- **Decorator Patterns**: Flask route registration and error handler implementation
-- **Dataclasses**: Structured configuration objects with automatic serialization
+- **Type Hints**: Comprehensive type annotations for better code documentation
+- **Decorators**: Flask route decorators and error handler decorators
+- **Context Managers**: Flask application context and request context handling
+- **F-Strings**: Modern string formatting for logging and responses
+- **Dataclasses**: Structured data handling (if extended)
+- **Pattern Matching**: Advanced control flow for complex routing (if extended)
 
 ## Troubleshooting
 
 ### Port Binding Issues
 
-**Problem:** Port 5000 already in use
+**Problem:** Port 3000 already in use
 ```
-OSError: [Errno 48] Address already in use
+OSError: [Errno 98] Address already in use
 ```
 
 **Solutions:**
 1. **Kill existing process:**
    ```bash
-   # Find process using port 5000
-   lsof -ti:5000 | xargs kill
+   # Find process using port 3000
+   lsof -i:3000
+   kill -9 <PID>
    
-   # Or on Windows
-   netstat -ano | findstr :5000
+   # Or use fuser
+   fuser -k 3000/tcp
+   
+   # Windows equivalent
+   netstat -ano | findstr :3000
    taskkill /PID <PID> /F
    ```
 
 2. **Use alternative port:**
    ```bash
-   FLASK_RUN_PORT=5001 flask run
+   PORT=3001 python wsgi.py
+   
+   # Or with Flask CLI
+   flask run --port 3001
    ```
 
 3. **Check for other applications:**
-   Common applications that use port 5000 include Flask development servers, AirPlay, and other Python web applications.
+   Common applications that use port 3000 include development servers, React applications, and Node.js applications.
 
-### Dependency Installation Problems
+### Virtual Environment Issues
 
 **Problem:** pip install fails with permission errors
 ```
@@ -587,37 +709,45 @@ PermissionError: [Errno 13] Permission denied
 ```
 
 **Solutions:**
-1. **Use virtual environment (recommended):**
+1. **Ensure virtual environment is activated:**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate
+   # Check if virtual environment is active
+   which python
+   
+   # Should show path to venv/bin/python
+   # If not, activate it:
+   source venv/bin/activate  # Linux/macOS
+   venv\Scripts\activate     # Windows
+   ```
+
+2. **Recreate virtual environment:**
+   ```bash
+   deactivate
+   rm -rf venv
+   python -m venv venv
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-2. **Clear pip cache:**
+3. **Clear pip cache:**
    ```bash
    pip cache purge
    pip install --no-cache-dir -r requirements.txt
-   ```
-
-3. **User installation (if virtual env not available):**
-   ```bash
-   pip install --user -r requirements.txt
    ```
 
 ### Python Version Compatibility
 
 **Problem:** Flask v3.1.1 requires Python 3.8 or higher
 ```
-ERROR: Package 'Flask' requires a different Python: 3.7.0 not in '>=3.8'
+ERROR: Flask 3.1.1 requires Python >=3.8
 ```
 
 **Solutions:**
-1. **Update Python to 3.12+ (recommended):**
+1. **Update Python to 3.12+ version:**
    ```bash
-   # Using pyenv
+   # Using pyenv (recommended)
    pyenv install 3.12.0
-   pyenv local 3.12.0
+   pyenv global 3.12.0
    
    # Verify version
    python --version
@@ -625,93 +755,94 @@ ERROR: Package 'Flask' requires a different Python: 3.7.0 not in '>=3.8'
 
 2. **Check virtual environment Python version:**
    ```bash
-   # If virtual environment exists
-   which python
-   python --version
+   # Ensure virtual environment uses correct Python
+   python -c "import sys; print(sys.version)"
+   ```
+
+### Flask Import Errors
+
+**Problem:** Flask application import failures
+```
+ModuleNotFoundError: No module named 'flask'
+```
+
+**Solutions:**
+1. **Verify Flask installation:**
+   ```bash
+   pip show Flask
+   pip list | grep -i flask
+   ```
+
+2. **Install Flask explicitly:**
+   ```bash
+   pip install Flask>=3.1.1
+   ```
+
+3. **Check PYTHONPATH:**
+   ```bash
+   echo $PYTHONPATH
+   python -c "import sys; print(sys.path)"
    ```
 
 ### Testing Framework Issues
 
 **Problem:** pytest tests failing with import errors
 ```
-ModuleNotFoundError: No module named 'src'
+ImportError: cannot import name 'create_app' from 'app'
 ```
 
 **Solutions:**
-1. **Verify PYTHONPATH and pytest configuration:**
-   ```python
-   # pytest.ini
-   [tool:pytest]
-   pythonpath = .
-   testpaths = tests
+1. **Verify test configuration:**
+   ```bash
+   # Check pytest configuration
+   pytest --collect-only
+   
+   # Verify app module can be imported
+   python -c "from app import create_app; print('Success')"
    ```
 
-2. **Install package in development mode:**
-   ```bash
-   pip install -e .
+2. **Fix Python path in tests:**
+   ```python
+   # In conftest.py or test files
+   import sys
+   import os
+   sys.path.insert(0, os.path.dirname(__file__))
    ```
 
 3. **Clear pytest cache:**
    ```bash
    pytest --cache-clear
+   rm -rf .pytest_cache
    ```
 
 ### Common Server Issues
 
-**Problem:** Flask server starts but endpoint not responding
+**Problem:** Server starts but endpoints not responding
 ```
-curl: (7) Failed to connect to localhost port 5000
+curl: (7) Failed to connect to localhost port 3000
 ```
 
 **Diagnostic Steps:**
 1. **Verify server is listening:**
    ```bash
-   netstat -tlnp | grep :5000
+   netstat -tlnp | grep :3000
+   lsof -i:3000
    ```
 
 2. **Check Flask application logs:**
    ```bash
-   FLASK_ENV=development flask run --debug
+   # Enable debug logging
+   FLASK_DEBUG=true python wsgi.py
+   
+   # Or with verbose pytest
+   pytest -s -v
    ```
 
 3. **Test with verbose curl:**
    ```bash
-   curl -v http://localhost:5000/hello
+   curl -v http://localhost:3000/hello
+   curl -v http://localhost:3000/health
    ```
-
-## Docker Containerization
-
-### Container Build and Deployment
-
-The application supports containerized deployment using Docker with python:3.12-alpine base image:
-
-```bash
-# Build production container
-docker build -t flask-hello-world .
-
-# Run container
-docker run -p 5000:5000 flask-hello-world
-
-# Build and run with Docker Compose
-docker-compose up --build
-```
-
-### Container Health Checks
-
-The Docker container includes health check configuration for production deployment:
-
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
-    CMD curl -f http://localhost:5000/health || \
-        curl -f http://localhost:5000/hello || \
-        exit 1
-```
-
-**Health Check Validation:**
-- Primary endpoint: `/health` (if implemented)
-- Fallback endpoint: `/hello`
-- 45-second startup period for Python application initialization
-- 10-second timeout accommodating Python GIL and garbage collection
 
 ## Next Steps
 
@@ -720,105 +851,130 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
 Progress to more advanced tutorials incorporating data persistence:
 
 **Recommended Learning Path:**
-1. **SQLite with Flask-SQLAlchemy**: Lightweight database integration for development
-2. **PostgreSQL with SQLAlchemy ORM**: Production-grade relational database support
-3. **Redis for Caching**: In-memory data store for session management and caching
-4. **Database Migrations**: Schema management with Flask-Migrate and Alembic
+1. **SQLAlchemy with PostgreSQL**: Relational database integration using SQLAlchemy ORM
+2. **Flask-SQLAlchemy**: Flask-specific database extensions and patterns
+3. **MongoDB with PyMongo**: NoSQL document database integration
+4. **Redis for Caching**: In-memory data structure store for session and cache management
+5. **Database Migration Strategies**: Alembic for schema management and version control
 
 **Example Database Integration:**
 ```python
-# Flask-SQLAlchemy configuration
+# Flask-SQLAlchemy setup
 from flask_sqlalchemy import SQLAlchemy
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tutorial.db'
-db = SQLAlchemy(app)
+db = SQLAlchemy()
+
+def create_app():
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://user:pass@localhost/db'
+    db.init_app(app)
+    return app
 ```
 
-### Implementing Authentication
+### Implementing Authentication and Authorization
 
 Enhance security with user management and access control:
 
 **Authentication Patterns:**
-1. **JWT Token Authentication**: Stateless authentication for APIs using PyJWT
-2. **Session-Based Authentication**: Server-side session management with Flask-Session
-3. **OAuth 2.0 Integration**: Third-party authentication using Authlib
-4. **Multi-Factor Authentication**: Enhanced security with TOTP and SMS verification
+1. **JWT Token Authentication**: Stateless authentication for REST APIs
+2. **Flask-Login**: Session-based authentication with user management
+3. **OAuth 2.0 Integration**: Third-party authentication providers (Google, GitHub)
+4. **Flask-Security**: Comprehensive authentication and authorization framework
+5. **Multi-Factor Authentication**: Enhanced security with 2FA/TOTP
 
 **Libraries and Tools:**
-- **Flask-Login**: User session management for Flask applications
-- **bcrypt**: Password hashing and salting for secure authentication
-- **PyJWT**: JSON Web Token implementation for stateless authentication
-- **Flask-Principal**: Role-based access control and permissions
+- **Flask-JWT-Extended**: JWT authentication for Flask applications
+- **bcrypt**: Password hashing and salting with Flask-Bcrypt
+- **Flask-Principal**: Identity and permission management
+- **Authlib**: OAuth and OpenID Connect integration
 
 ### Building RESTful APIs
 
 Expand beyond the single endpoint to full CRUD operations:
 
-**REST Architecture Principles:**
+**REST Architecture Implementation:**
 1. **Resource-Based URLs**: Logical resource organization with Flask blueprints
-2. **HTTP Method Semantics**: Proper use of GET, POST, PUT, DELETE with Flask routing
-3. **Stateless Communication**: No server-side session dependencies
-4. **Uniform Interface**: Consistent API design patterns with Flask serialization
+2. **HTTP Method Semantics**: Proper use of GET, POST, PUT, DELETE, PATCH
+3. **Request/Response Patterns**: JSON serialization and validation
+4. **API Versioning**: URL-based or header-based versioning strategies
 
 **Advanced API Features:**
-- Request validation using Marshmallow or Pydantic
-- Response pagination and filtering with Flask-SQLAlchemy
-- Rate limiting using Flask-Limiter
-- API versioning strategies with Flask blueprints
-- OpenAPI documentation with Flask-RESTX or Spectree
+- **Marshmallow**: Advanced serialization and validation
+- **Flask-RESTful**: Resource-based API development
+- **OpenAPI/Swagger**: API documentation with Flask-SMOREST
+- **Rate Limiting**: Request throttling with Flask-Limiter
+- **API Authentication**: Token-based and OAuth2 implementation
 
 ### Production Deployment Considerations
 
 Prepare Flask applications for production environments:
 
 **Deployment Platforms:**
-1. **Platform-as-a-Service (PaaS)**: Heroku, Render, Railway for simplified Flask deployment
+1. **Platform-as-a-Service (PaaS)**: Heroku, Render, Railway for simplified deployment
 2. **Cloud Providers**: AWS, Google Cloud, Microsoft Azure for scalable infrastructure
 3. **Container Orchestration**: Docker and Kubernetes for microservices architecture
-4. **Content Delivery Networks**: CloudFlare, AWS CloudFront for global distribution
+4. **WSGI Servers**: Gunicorn, uWSGI, and Waitress for production serving
 
 **Production Optimizations:**
-- Environment-specific configuration management with Flask-Config
-- Process monitoring with Gunicorn and supervisord
-- Load balancing and horizontal scaling strategies
-- Security hardening with Flask-Talisman and security headers
-- Performance monitoring with Flask-APM and observability tools
+- **Application Configuration**: Environment-specific settings with Flask-Config
+- **Process Management**: Gunicorn multi-worker deployment strategies
+- **Reverse Proxy Setup**: nginx configuration for static files and load balancing
+- **SSL/TLS Configuration**: HTTPS setup with Let's Encrypt certificates
+- **Performance Monitoring**: APM tools integration (New Relic, DataDog)
 
-**Recommended Tools:**
-- **Gunicorn**: Production WSGI server for Flask applications
-- **nginx**: Reverse proxy and load balancer for Flask deployments
+**Recommended Production Tools:**
+- **Gunicorn**: WSGI HTTP server for Python web applications
+- **nginx**: Reverse proxy and static file serving
 - **Docker**: Containerization for consistent deployment environments
-- **Monitoring**: New Relic, DataDog, or Prometheus for Flask application observability
+- **Prometheus + Grafana**: Monitoring and metrics collection
+- **Sentry**: Error tracking and performance monitoring
+
+### Advanced Flask Concepts
+
+Explore advanced Flask patterns and extensions:
+
+**Flask Extensions:**
+- **Flask-Migrate**: Database migration management with Alembic
+- **Flask-Mail**: Email sending capabilities
+- **Flask-Admin**: Administrative interface generation
+- **Flask-SocketIO**: WebSocket support for real-time applications
+- **Flask-Caching**: Caching layer with multiple backend support
+
+**Advanced Patterns:**
+- **Application Factories**: Scalable application configuration
+- **Blueprint Registration**: Modular application organization
+- **Custom Decorators**: Authentication and authorization decorators
+- **Flask Context**: Understanding application and request contexts
+- **Error Handling**: Custom error pages and exception handling
 
 ---
 
 ## Performance Characteristics
 
-- **Startup Time**: < 2 seconds for Flask development server
-- **Memory Usage**: < 75MB during operation with Gunicorn
+- **Startup Time**: < 2 seconds
+- **Memory Usage**: < 75MB during operation (Python runtime included)
 - **Response Time**: < 50ms for /hello endpoint
-- **Concurrent Requests**: 100+ supported through Gunicorn worker processes
-- **Test Execution**: < 10 seconds for complete pytest suite
+- **Concurrent Requests**: 100+ supported through WSGI and thread pools
+- **Test Execution**: < 10 seconds for complete test suite
 
 ## Security Considerations
 
 ### Flask v3.1.1 Security Features
-- Enhanced security defaults with automatic security headers
-- CSRF protection capabilities with Flask-WTF integration
-- Secure cookie configuration and session management
-- JSON response sanitization preventing XSS vulnerabilities
+- **Enhanced Dependencies**: Updated Werkzeug and Jinja2 with security patches
+- **CSRF Protection**: Built-in support with Flask-WTF integration
+- **Secure Headers**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection
+- **JSON Security**: Safe JSON handling with proper content type validation
 
-### Python Security Best Practices
-- Virtual environment isolation preventing dependency conflicts
-- Security scanning with bandit for Python code analysis
-- Dependency vulnerability scanning with pip-audit and safety
-- Container security with non-root execution and minimal attack surface
+### Python 3.12+ Security Benefits
+- **Security Patches**: Latest security updates and vulnerability fixes
+- **SSL/TLS Support**: Modern cryptography with updated OpenSSL integration
+- **Type Safety**: Enhanced type checking reduces runtime errors
 
 ### Educational Security Practices
-- Generic error messages preventing information disclosure using Flask error handlers
-- Secure environment variable handling with python-dotenv
-- Minimal dependency surface area reducing attack vectors
-- Input validation through Flask request parsing and validation
+- **Environment Variables**: Secure configuration management with python-dotenv
+- **Error Handling**: Generic error messages preventing information disclosure
+- **Dependency Security**: Automated vulnerability scanning with safety and bandit
+- **Input Validation**: Request data validation through Flask's request handling
 
 ## License Information
 
@@ -836,14 +992,14 @@ Prepare Flask applications for production environments:
 Maintain simplicity and educational clarity in all contributions. The primary goal is learning effectiveness rather than feature completeness.
 
 ### Code Standards
-Follow PEP 8 Python style guidelines with clear comments and comprehensive documentation. All code should be self-explanatory for educational purposes.
+Follow PEP 8 Python style guide with comprehensive type hints and docstrings. All code should be self-explanatory for educational purposes.
 
 ### Testing Requirements
-Maintain 100% test coverage using pytest for educational demonstration. Any new functionality must include corresponding test cases with pytest-flask integration.
+Maintain 100% test coverage for educational demonstration. Any new functionality must include corresponding pytest test cases.
 
 ### Documentation Updates
-Update README.md for any functional changes or additions. Documentation should reflect current Flask implementation accurately.
+Update README.md for any functional changes or additions. Documentation should reflect current implementation accurately.
 
 ---
 
-**Happy Learning!** This tutorial provides a solid foundation for understanding Python Flask and modern web development fundamentals. Continue exploring the vast ecosystem of Python libraries and Flask extensions to build more complex and feature-rich applications.
+**Happy Learning!** This tutorial provides a solid foundation for understanding Python Flask fundamentals. Continue exploring the rich ecosystem of Flask extensions and Python libraries to build more complex and feature-rich web applications.
