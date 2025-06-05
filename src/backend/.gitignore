@@ -1,12 +1,20 @@
-# Node.js Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn-integrity
-.pnp
-.pnp.js
+# Python Dependencies and Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+*.pyo
+*.pyd
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+.python-version
+.pythonpath
 
 # Environment Configuration
 .env
@@ -16,13 +24,16 @@ yarn-error.log*
 .env.production.local
 .env.*
 
-# Testing and Coverage
-coverage/
-.nyc_output/
-*.lcov
+# Testing and Coverage (pytest and coverage.py)
+.pytest_cache/
 .coverage
+htmlcov/
+coverage.xml
+coverage.json
+.cache/
 test-results/
 junit.xml
+.tox/
 
 # Development Tools
 .vscode/
@@ -32,6 +43,16 @@ junit.xml
 *~
 .project
 .settings/
+# Python-specific IDE configurations
+*.sublime-project
+*.sublime-workspace
+.spyderproject
+.spyproject
+.rope_project_config
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # System Files
 .DS_Store
@@ -51,13 +72,22 @@ pids/
 *.pid.lock
 lib-cov
 
-# Build and Distribution
+# Build and Distribution (Python packaging)
 dist/
 build/
-*.tgz
-*.tar.gz
-.cache/
-.parcel-cache/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.whl
+*.manifest
+*.spec
+# setuptools
+.installed.cfg
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Temporary Files
 tmp/
@@ -70,4 +100,7 @@ temp/
 # Security Critical Files
 *.key
 *.pem
-config/secrets.js
+config/secrets.py
+secrets.py
+*.crt
+*.csr

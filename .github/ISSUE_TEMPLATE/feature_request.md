@@ -377,10 +377,10 @@ Select one:
 
 <!-- 
 This feature request template is designed to ensure all proposed enhancements:
-1. Align with Node.js v22.16.0 LTS and Express.js v5.1.0 requirements
+1. Align with Python 3.12+ and Flask v3.1.1 requirements
 2. Support educational objectives and learning progression
 3. Maintain compatibility with the tutorial's simplicity and focus
-4. Include comprehensive implementation and testing considerations
+4. Include comprehensive implementation and testing considerations with pytest
 5. Facilitate community evaluation and constructive feedback
 
 For questions about this template or the evaluation process, please refer to:

@@ -695,35 +695,36 @@ graph TD
 
 | Tool Category | Tool | Version | Purpose |
 |--------------|------|---------|---------|
-| Runtime | Node.js | v22.16.0 LTS | JavaScript runtime environment |
-| Package Manager | npm | v11.4.1 | Dependency management |
-| Code Editor | Any text editor | Latest | JavaScript development |
+| **Runtime** | **Python** | **v3.12+** | **Python runtime environment with modern features** |
+| **Package Manager** | **pip** | **Latest** | **Python dependency management** |
+| **Virtual Environment** | **venv/virtualenv** | **Built-in** | **Dependency isolation** |
+| **Code Editor** | **Any Python-compatible editor** | **Latest** | **Python development with Flask support** |
 
 ### 3.6.2 Build System
 
-**No Build Process Required:**
-- Direct JavaScript execution via Node.js
-- No transpilation or compilation needed
-- No bundling or minification required
-- Simple `node server.js` execution
+**Python Development Process:**
+- **Direct Python execution via Flask development server**
+- **No compilation needed (interpreted language)**
+- **Virtual environment for dependency isolation**
+- **Simple `python -m flask run` or `gunicorn wsgi:app` execution**
 
 ### 3.6.3 Development Workflow
 
 ```mermaid
 graph LR
-    A[Code Development] --> B[npm install]
-    B --> C[node server.js]
-    C --> D[HTTP Testing]
+    A[Python Code Development] --> B[pip install -r requirements.txt]
+    B --> C[python -m flask run]
+    C --> D[HTTP Testing with pytest]
     D --> E[Code Iteration]
     E --> A
     
-    subgraph "Development Environment"
+    subgraph "Python Development Environment"
         A
         B
         C
     end
     
-    subgraph "Testing"
+    subgraph "Testing with pytest"
         D
         E
     end
@@ -733,35 +734,36 @@ graph LR
 
 | Deployment Aspect | Implementation | Rationale |
 |-------------------|---------------|-----------|
-| Containerization | Optional Docker support | Educational flexibility |
-| Process Management | Direct Node.js execution | Simplicity for learning |
-| Environment Configuration | Environment variables | Standard Node.js practices |
-| Port Configuration | Configurable (default 3000) | Development convenience |
+| **Containerization** | **Docker support with python:3.12-alpine** | **Production-ready container deployment** |
+| **Process Management** | **Gunicorn WSGI server execution** | **Production-grade Python web server** |
+| **Environment Configuration** | **python-dotenv environment variables** | **Standard Python Flask practices** |
+| **Port Configuration** | **Configurable (default 5000)** | **Flask development convenience** |
 
 ### 3.6.5 CI/CD Requirements
 
-**Minimal CI/CD for Tutorial:**
-- No automated testing pipeline required
-- No deployment automation needed
-- Manual execution for educational purposes
-- Version control optional but recommended
+**Comprehensive CI/CD for Python:**
+- **Automated pytest testing pipeline required**
+- **Automated deployment with Python-specific tooling**
+- **Coverage validation with pytest-cov**
+- **Security scanning with bandit and pip-audit**
+- **Version control with Git recommended**
 
 ### 3.6.6 Platform Compatibility
 
 | Platform | Support Level | Validation |
 |----------|--------------|------------|
-| Windows | Full support with installers | Node.js v22.16.0 compatibility |
-| macOS | Full support (Intel and Apple Silicon) | Universal binary support |
-| Linux | Full support (multiple architectures) | Standard package availability |
+| **Windows** | **Full support with Python 3.12+ installers** | **Python 3.12+ compatibility verified** |
+| **macOS** | **Full support (Intel and Apple Silicon)** | **Universal Python binary support** |
+| **Linux** | **Full support (multiple architectures)** | **Standard Python package availability** |
 
 ### 3.6.7 Resource Requirements
 
 | Resource | Minimum | Recommended | Justification |
 |----------|---------|-------------|---------------|
-| Memory | 50MB | 100MB | Lightweight Express.js application |
-| CPU | Single core | Dual core | Basic HTTP request processing |
-| Disk Space | 100MB | 500MB | Node.js runtime and dependencies |
-| Network | HTTP port access | Configurable port | Local development server |
+| **Memory** | **75MB** | **150MB** | **Python Flask application with WSGI server** |
+| **CPU** | **Single core** | **Dual core** | **Python HTTP request processing** |
+| **Disk Space** | **200MB** | **500MB** | **Python runtime, virtual environment, and dependencies** |
+| **Network** | **HTTP port access** | **Configurable port** | **Flask development server** |
 
 # 4. PROCESS FLOWCHART
 

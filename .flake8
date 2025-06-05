@@ -1,0 +1,252 @@
+# flake8 configuration file for Python Flask Hello World Tutorial
+# This configuration enforces PEP 8 compliance, security standards, and maintains
+# compatibility with Black formatter while providing comprehensive code quality
+# validation for CI/CD pipelines and development workflows.
+#
+# Purpose: Replace .eslintrc.json functionality for Python code quality assurance
+# Integration: GitHub Actions CI/CD, pytest testing, black formatting, security scanning
+# Standards: PEP 8 compliance, Flask best practices, security-focused linting
+
+[flake8]
+
+# =============================================================================
+# LINE LENGTH AND FORMATTING COMPATIBILITY
+# =============================================================================
+
+# Set line length to 88 characters for Black formatter compatibility
+# This replaces ESLint's max-len rule and ensures consistent formatting
+# between Black and flake8 without conflicts during CI/CD validation
+max-line-length = 88
+
+# =============================================================================
+# DIRECTORIES AND FILES TO EXCLUDE
+# =============================================================================
+
+# Exclude common Python directories and build artifacts
+# Equivalent to .gitignore patterns for comprehensive project coverage
+exclude = 
+    # Python cache and compiled files
+    __pycache__,
+    *.pyc,
+    .pycache,
+    
+    # Virtual environments and dependency management
+    .venv,
+    venv,
+    env,
+    .env,
+    
+    # Build and distribution directories
+    build,
+    dist,
+    *.egg-info,
+    .eggs,
+    
+    # Testing and coverage artifacts
+    .pytest_cache,
+    .coverage,
+    htmlcov,
+    .tox,
+    
+    # IDE and development tools
+    .vscode,
+    .idea,
+    *.swp,
+    *.swo,
+    
+    # Version control and CI/CD
+    .git,
+    .github,
+    
+    # Documentation and static files
+    docs/_build,
+    migrations,
+    
+    # Flask-specific exclusions
+    instance,
+    .instance,
+    
+    # Docker and container files
+    .docker,
+    Dockerfile*,
+    docker-compose*.yml,
+
+# =============================================================================
+# ERROR CODE CONFIGURATION
+# =============================================================================
+
+# Ignore specific error codes that conflict with Black formatting
+# or are not applicable to Flask application development patterns
+ignore = 
+    # Black formatting compatibility ignores
+    E203,  # Whitespace before ':' (conflicts with Black)
+    E501,  # Line too long (handled by max-line-length)
+    W503,  # Line break before binary operator (Black preference)
+    W504,  # Line break after binary operator (allow either style)
+    
+    # Flask and web development patterns
+    E402,  # Module level import not at top (Flask app factory pattern)
+    
+    # Documentation and comments (optional for tutorial)
+    D100,  # Missing docstring in public module
+    D101,  # Missing docstring in public class
+    D102,  # Missing docstring in public method
+    D103,  # Missing docstring in public function
+    D104,  # Missing docstring in public package
+    D105,  # Missing docstring in magic method
+
+# Enable specific error codes for comprehensive validation
+# Focus on security, maintainability, and Flask best practices
+select = 
+    # Pycodestyle (PEP 8) errors and warnings
+    E,     # Error codes for PEP 8 violations
+    W,     # Warning codes for style issues
+    
+    # Pyflakes import and name checking
+    F,     # Undefined names, unused imports, etc.
+    
+    # McCabe complexity checking
+    C,     # Complexity analysis for maintainable code
+    
+    # Security-focused checks (requires flake8-security plugin)
+    S,     # Security issues and vulnerable patterns
+    
+    # Flask-specific best practices
+    N,     # Naming conventions for Flask applications
+    
+    # Import sorting and organization
+    I,     # Import statement organization (if flake8-import-order installed)
+
+# =============================================================================
+# COMPLEXITY AND MAINTAINABILITY LIMITS
+# =============================================================================
+
+# Set cyclomatic complexity threshold for maintainable code architecture
+# Enforces SOLID principles and encourages modular design patterns
+max-complexity = 10
+
+# Additional complexity metrics for comprehensive code quality
+max-annotations-complexity = 4
+max-expression-complexity = 7
+max-cognitive-complexity = 12
+
+# =============================================================================
+# PER-FILE IGNORES AND EXCEPTIONS
+# =============================================================================
+
+# Configure per-file ignore patterns for specific file types
+# Allows flexibility for test files, configuration modules, and migration scripts
+per-file-ignores = 
+    # Test files - allow longer lines and import patterns
+    tests/*.py:E501,F401,F403,S101,S311,D100,D101,D102,D103
+    test_*.py:E501,F401,F403,S101,S311,D100,D101,D102,D103
+    **/test_*.py:E501,F401,F403,S101,S311,D100,D101,D102,D103
+    
+    # Configuration files - allow longer lines and complex imports
+    conftest.py:E501,F401,F403,D100,D101,D102,D103
+    settings.py:E501,F401,F403,D100,D101,D102,D103
+    config.py:E501,F401,F403,D100,D101,D102,D103
+    
+    # Flask application factory and WSGI entry points
+    app.py:E402,F401
+    wsgi.py:E402,F401
+    __init__.py:F401,D104
+    
+    # Migration and database setup files
+    migrations/*.py:E501,F401,F403,D100,D101,D102,D103
+    alembic/*.py:E501,F401,F403,D100,D101,D102,D103
+    
+    # Development and deployment scripts
+    scripts/*.py:E501,S602,S603,S607,D100,D101,D102,D103
+    deploy/*.py:E501,S602,S603,S607,D100,D101,D102,D103
+
+# =============================================================================
+# NAMING CONVENTIONS
+# =============================================================================
+
+# Enforce consistent naming patterns for Flask applications
+# following Python and Flask community standards
+
+# Class names should be CamelCase
+classmethod-decorators = classmethod
+staticmethod-decorators = staticmethod
+
+# Function and variable names should be snake_case
+# Constants should be UPPER_CASE
+# Private members should start with underscore
+
+# =============================================================================
+# SECURITY AND BEST PRACTICES
+# =============================================================================
+
+# Security-focused configuration requiring flake8-security plugin
+# Detects common security vulnerabilities in Python code
+
+# Enable security checks for Flask applications
+enable-extensions = 
+    S,     # Security checks via flake8-security
+    C,     # McCabe complexity analysis
+    N,     # Naming convention enforcement
+
+# =============================================================================
+# INTEGRATION WITH DEVELOPMENT TOOLS
+# =============================================================================
+
+# Configure flake8 for optimal integration with Black, pytest, and CI/CD
+# Ensures compatibility across the entire development toolchain
+
+# Output format for CI/CD integration
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
+
+# Statistics and summary reporting
+statistics = True
+count = True
+show-source = True
+
+# =============================================================================
+# PERFORMANCE AND EXECUTION
+# =============================================================================
+
+# Optimize flake8 execution for large codebases and CI/CD performance
+jobs = auto
+
+# Enable caching for faster subsequent runs
+cache-dir = .flake8_cache
+
+# =============================================================================
+# FLASK-SPECIFIC CONSIDERATIONS
+# =============================================================================
+
+# Flask application patterns that require special consideration:
+# - Application factory pattern (app.py)
+# - Blueprint registration
+# - Configuration management
+# - Request context handling
+# - Error handler registration
+# - WSGI server integration
+
+# These patterns are accommodated through per-file ignores and
+# selective error code configuration to maintain Flask best practices
+# while enforcing overall code quality standards.
+
+# =============================================================================
+# CI/CD INTEGRATION NOTES
+# =============================================================================
+
+# This configuration is designed for integration with:
+# - GitHub Actions CI/CD pipelines
+# - pytest test execution and coverage reporting
+# - Black code formatting automation
+# - bandit security scanning
+# - mypy static type checking (optional)
+# - pre-commit hooks for development workflow
+
+# Exit codes:
+# 0 = No issues found
+# 1 = Issues found (will fail CI/CD pipeline)
+
+# Integration command examples:
+# flake8 src/                          # Lint source code
+# flake8 tests/                        # Lint test code  
+# flake8 --format=junit-xml > flake8.xml  # CI/CD reporting
+# flake8 --statistics --count          # Summary reporting

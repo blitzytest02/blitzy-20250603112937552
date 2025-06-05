@@ -1,0 +1,244 @@
+# Development Python Dependencies for Flask Hello World Tutorial
+# This file defines development, testing, and code quality dependencies
+# for comprehensive Python Flask development workflows and CI/CD pipelines.
+
+# ========================================
+# Core Testing Framework - pytest Ecosystem
+# ========================================
+
+# Primary testing framework replacing Jest v29.7.0 with comprehensive
+# fixture management, parametric testing, and assertion introspection
+pytest>=8.4.0
+
+# Flask-specific testing integration providing app fixtures, test client automation,
+# and seamless Flask application context management for comprehensive endpoint testing
+pytest-flask>=1.3.0
+
+# pytest plugin providing seamless coverage.py integration during test execution
+# with automated coverage reporting and configurable quality gate thresholds
+pytest-cov>=5.0.0
+
+# Parallel test execution plugin for improved performance with multi-core utilization
+# enabling automated worker allocation and test isolation for Flask applications
+pytest-xdist>=3.5.0
+
+# Interactive HTML test reporting with detailed execution summaries, error analysis,
+# and comprehensive test result visualization for stakeholder communication
+pytest-html>=4.1.1
+
+# Performance testing and benchmarking framework with statistical analysis,
+# regression detection, and automated threshold enforcement for Flask endpoints
+pytest-benchmark>=4.0.0
+
+# Enhanced assertion introspection and debugging capabilities for pytest
+# providing detailed failure analysis and improved development experience
+pytest-clarity>=1.0.1
+
+# ========================================
+# Code Coverage Analysis
+# ========================================
+
+# Python code coverage measurement with branch analysis, statement tracking,
+# and multi-format reporting (HTML, XML, JSON) replacing Jest built-in coverage
+coverage[toml]>=7.6.0
+
+# ========================================
+# Code Quality and Formatting Tools
+# ========================================
+
+# Uncompromising Python code formatter ensuring consistent style across project
+# with PEP 8 compliance and configurable formatting options replacing ESLint
+black>=24.0.0
+
+# Python linting tool combining pycodestyle, pyflakes, and McCabe complexity analysis
+# for comprehensive style guide enforcement and code quality validation
+flake8>=7.0.0
+
+# Security-focused flake8 plugin for identifying common security vulnerabilities
+# and anti-patterns in Python code with Flask-specific security rule validation
+flake8-security>=1.7.1
+
+# Import sorting and organization tool ensuring consistent import structure
+# and improved code maintainability with PEP 8 import guidelines
+isort>=5.13.0
+
+# Static type checker for Python with gradual typing support and Flask compatibility
+# providing enhanced IDE integration and early error detection (optional)
+mypy>=1.8.0
+
+# Type hint stub packages for improved mypy analysis
+types-flask>=1.1.6
+types-requests>=2.31.0
+
+# Python docstring linting and validation for comprehensive documentation standards
+pydocstyle>=6.3.0
+
+# Advanced Python linting with additional code quality checks
+pylint>=3.0.0
+
+# ========================================
+# Security Scanning and Analysis Tools
+# ========================================
+
+# Python AST static security analysis tool for identifying common security
+# vulnerabilities including SQL injection, hardcoded passwords, and Flask-specific issues
+bandit>=1.8.3
+
+# Python package security database scanner for detecting known vulnerabilities
+# in project dependencies with comprehensive vulnerability reporting
+safety>=3.0.0
+
+# PyPA official audit tool for scanning Python packages against known vulnerabilities
+# using the OSV database with comprehensive dependency analysis
+pip-audit>=2.6.0
+
+# ========================================
+# Development Utilities and Tools
+# ========================================
+
+# Cross-platform file system event monitoring for Flask development server automation
+# enabling automatic application reloading during development with efficient file watching
+watchdog>=3.0.0
+
+# System and process monitoring library for performance analysis, memory tracking,
+# and resource consumption validation during Flask application testing
+psutil>=5.9.0
+
+# Comprehensive library for generating fake data for testing scenarios
+# with deterministic seeding for reproducible test data in Flask applications
+faker>=20.0.0
+
+# Advanced Python debugger with enhanced debugging capabilities for Flask development
+# providing improved stack trace analysis and interactive debugging sessions
+ipdb>=0.13.0
+
+# Interactive Python shell with enhanced features for development and debugging
+# including syntax highlighting, auto-completion, and Flask application inspection
+ipython>=8.18.0
+
+# ========================================
+# HTTP Testing and API Development
+# ========================================
+
+# Elegant HTTP library for Python providing simplified request handling
+# and comprehensive response validation for Flask API testing scenarios
+requests>=2.31.0
+
+# HTTP mocking library for testing Flask applications with external API dependencies
+# enabling comprehensive integration testing with controlled external service simulation
+responses>=0.24.0
+
+# Advanced HTTP request/response recording and replay for integration testing
+# with comprehensive Flask application external dependency validation
+vcrpy>=6.0.0
+
+# ========================================
+# Documentation and Development Support
+# ========================================
+
+# Documentation generation tool for Python projects with comprehensive
+# API documentation support and Flask application documentation patterns
+sphinx>=7.2.0
+
+# Python packaging tools for development and distribution workflow support
+# including build system integration and dependency management optimization
+build>=1.0.0
+
+# Python dependency resolution and lock file management for reproducible
+# development environments and enhanced dependency security
+pip-tools>=7.3.0
+
+# ========================================
+# Performance Monitoring and Profiling
+# ========================================
+
+# Memory profiling tool for Python applications with comprehensive memory
+# usage analysis and leak detection capabilities for Flask performance optimization
+memory-profiler>=0.61.0
+
+# Line-by-line profiling for Python code with detailed performance analysis
+# and bottleneck identification for Flask application optimization
+line-profiler>=4.1.0
+
+# ========================================
+# Container Development Support
+# ========================================
+
+# Docker SDK for Python enabling container management and testing workflows
+# with Flask application containerization development and validation support
+docker>=7.0.0
+
+# ========================================
+# Git Integration and Development Workflow
+# ========================================
+
+# Git hooks management for automated code quality validation
+# including pre-commit formatting, linting, and security scanning
+pre-commit>=3.6.0
+
+# Enhanced Git repository analysis and development workflow optimization
+# with comprehensive commit analysis and code change tracking
+gitpython>=3.1.40
+
+# ========================================
+# JSON and Data Processing Tools
+# ========================================
+
+# Fast JSON parsing and generation library for enhanced Flask API testing
+# with improved performance characteristics and comprehensive data validation
+orjson>=3.9.0
+
+# Schema validation library for JSON data validation in Flask applications
+# with comprehensive data integrity checking and API contract validation
+jsonschema>=4.20.0
+
+# ========================================
+# Development Environment Configuration
+# ========================================
+
+# Enhanced Python REPL with improved debugging and development experience
+# including Flask application context integration and interactive debugging
+ptpython>=3.0.0
+
+# Development server enhancement for Flask applications with improved
+# debugging capabilities and enhanced development workflow support
+flask-debugtoolbar>=0.15.0
+
+# ========================================
+# Additional Testing Utilities
+# ========================================
+
+# Test data generation and factory patterns for comprehensive Flask testing
+# with object creation patterns and fixture management integration
+factory-boy>=3.3.0
+
+# Time manipulation and mocking for comprehensive temporal testing scenarios
+# including Flask application time-dependent functionality validation
+freezegun>=1.4.0
+
+# Environment variable management and testing support for Flask applications
+# with comprehensive configuration testing and isolation capabilities
+pytest-env>=1.1.0
+
+# Temporary directory and file management for Flask testing scenarios
+# with comprehensive cleanup and isolation for file-based testing
+pytest-tmp-path>=1.0.0
+
+# ========================================
+# Version Constraint Notes
+# ========================================
+
+# All version constraints use >= to allow compatible updates while maintaining
+# stability. Major version constraints prevent breaking changes that could
+# impact Flask development workflows or CI/CD pipeline compatibility.
+#
+# Constraints are compatible with Python 3.12+ runtime requirements and
+# Flask v3.1.1 ecosystem integration patterns established in requirements.txt.
+#
+# Security tools (bandit, safety, pip-audit) use latest available versions
+# to ensure comprehensive vulnerability detection and up-to-date security
+# scanning capabilities for the Flask application and Python dependencies.
+#
+# Testing framework versions (pytest ecosystem) provide comprehensive
+# compatibility with Flask-specific testing patterns and CI/CD integration
+# requirements while maintaining stability for educational tutorial usage.

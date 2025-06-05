@@ -700,44 +700,107 @@ describe('Express.js v5 Features Demonstration', () => {
 });
 ```
 
-### Performance Testing Requirements
+### Performance Testing Requirements with pytest-benchmark
 
-#### **Response Time Validation**
+#### **Response Time Validation using pytest-benchmark**
 
-```javascript
-// Performance testing for educational awareness
-describe('Performance Requirements', () => {
-  it('should meet response time targets for hello endpoint', async () => {
-    const measurements = [];
-    const iterations = 10;
+```python
+# Performance testing for educational awareness
+import pytest
+import psutil
+from flask import Flask
+
+class TestPerformanceRequirements:
+    """Performance testing using pytest-benchmark for statistical accuracy."""
     
-    // Collect multiple measurements for statistical accuracy
-    for (let i = 0; i < iterations; i++) {
-      const startTime = process.hrtime.bigint();
-      
-      await request(app)
-        .get('/hello')
-        .expect(200);
-      
-      const endTime = process.hrtime.bigint();
-      const responseTime = Number(endTime - startTime) / 1000000; // Convert to ms
-      measurements.push(responseTime);
-    }
+    @pytest.mark.performance
+    def test_hello_endpoint_response_time_benchmark(self, benchmark, client):
+        """
+        Educational performance test using pytest-benchmark.
+        Provides statistical analysis with multiple iterations.
+        """
+        def make_hello_request():
+            response = client.get('/hello')
+            assert response.status_code == 200
+            return response
+        
+        # pytest-benchmark automatically handles iterations and statistical analysis
+        result = benchmark(make_hello_request)
+        
+        # Educational performance analysis from benchmark stats
+        stats = benchmark.stats
+        print(f"📊 Performance Results:")
+        print(f"   Average: {stats.mean * 1000:.2f}ms")
+        print(f"   Median: {stats.median * 1000:.2f}ms")
+        print(f"   Standard Deviation: {stats.stddev * 1000:.2f}ms")
+        print(f"   Target: <100ms")
+        
+        # Performance assertions
+        assert stats.mean < 0.100  # 100ms target
+        assert stats.median < 0.050  # 50ms warm request target
     
-    // Educational performance analysis
-    const averageTime = measurements.reduce((a, b) => a + b) / measurements.length;
-    const maxTime = Math.max(...measurements);
+    @pytest.mark.performance
+    def test_memory_usage_monitoring(self, client):
+        """Educational memory usage testing with psutil."""
+        import psutil
+        
+        # Baseline memory measurement
+        process = psutil.Process()
+        baseline_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        # Execute requests to test memory growth
+        for _ in range(50):
+            response = client.get('/hello')
+            assert response.status_code == 200
+        
+        # Measure memory after requests
+        current_memory = process.memory_info().rss / 1024 / 1024  # MB
+        memory_growth = current_memory - baseline_memory
+        
+        print(f"📊 Memory Usage Results:")
+        print(f"   Baseline: {baseline_memory:.2f}MB")
+        print(f"   Current: {current_memory:.2f}MB")
+        print(f"   Growth: {memory_growth:.2f}MB")
+        print(f"   Target: <75MB total, <5MB growth")
+        
+        # Memory assertions
+        assert current_memory < 75  # 75MB total limit
+        assert memory_growth < 5    # 5MB growth limit
     
-    console.log(`📊 Performance Results:`);
-    console.log(`   Average: ${averageTime.toFixed(2)}ms`);
-    console.log(`   Maximum: ${maxTime.toFixed(2)}ms`);
-    console.log(`   Target: <100ms`);
-    
-    // Performance assertions
-    expect(averageTime).toBeLessThan(100);
-    expect(maxTime).toBeLessThan(200);
-  });
-});
+    @pytest.mark.benchmark
+    def test_concurrent_request_performance(self, benchmark, client):
+        """Educational concurrent request testing with pytest-benchmark."""
+        import threading
+        import queue
+        
+        def concurrent_requests():
+            results = queue.Queue()
+            
+            def make_request():
+                response = client.get('/hello')
+                results.put(response.status_code == 200)
+            
+            # Create 10 concurrent threads
+            threads = [threading.Thread(target=make_request) for _ in range(10)]
+            
+            # Start all threads
+            for thread in threads:
+                thread.start()
+            
+            # Wait for completion
+            for thread in threads:
+                thread.join()
+            
+            # Collect results
+            success_results = [results.get() for _ in range(10)]
+            return all(success_results)
+        
+        # Benchmark concurrent performance
+        result = benchmark(concurrent_requests)
+        assert result is True  # All requests succeeded
+        
+        # Validate performance under load
+        assert benchmark.stats.mean < 0.200  # 200ms for concurrent requests
 ```
 
 ---

@@ -1,12 +1,12 @@
-# Node.js Hello World Tutorial
+# Python Flask Hello World Tutorial
 
-[![Node.js Version](https://img.shields.io/badge/node.js-v22.16.0%20LTS-brightgreen)](https://nodejs.org/)
-[![Express.js Version](https://img.shields.io/badge/express.js-v5.1.0-blue)](https://expressjs.com/)
+[![Python Version](https://img.shields.io/badge/python-v3.12%2B-brightgreen)](https://python.org/)
+[![Flask Version](https://img.shields.io/badge/flask-v3.1.1-blue)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/tutorial/nodejs-hello-tutorial)
-[![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/tutorial/nodejs-hello-tutorial)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
+[![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
 
-A simple Node.js tutorial application demonstrating fundamental HTTP server concepts using Express.js v5.1.0 and Node.js v22.16.0 LTS through hands-on HTTP server implementation with a single `/hello` endpoint returning 'Hello world'.
+A comprehensive Python Flask tutorial application demonstrating fundamental WSGI web server concepts using Flask v3.1.1 and Python 3.12+ through hands-on HTTP server implementation with a single `/hello` endpoint returning 'Hello world'.
 
 ## Table of Contents
 
@@ -25,38 +25,41 @@ A simple Node.js tutorial application demonstrating fundamental HTTP server conc
 
 ### Learning Objectives
 
-This tutorial application is designed to provide hands-on experience with fundamental Node.js and Express.js concepts:
+This tutorial application is designed to provide hands-on experience with fundamental Python web development and Flask concepts:
 
-- **Understanding Node.js HTTP server fundamentals** - Learn how Node.js handles HTTP requests and responses
-- **Learning Express.js framework basics and routing** - Master Express.js middleware and route handling patterns
-- **Implementing RESTful API endpoints** - Create and test HTTP endpoints following REST principles
-- **Understanding request-response cycles** - Comprehend the complete HTTP request-response flow
-- **Learning error handling patterns** - Implement robust error handling and status code management
-- **Understanding testing with Jest and Supertest** - Write comprehensive tests for HTTP endpoints
+- **Understanding Python WSGI server fundamentals** - Learn how Python handles HTTP requests and responses through WSGI protocol
+- **Learning Flask framework basics and routing** - Master Flask decorator-based routing and view function patterns
+- **Implementing RESTful API endpoints** - Create and test HTTP endpoints following REST principles with Flask
+- **Understanding request-response cycles** - Comprehend the complete HTTP request-response flow in Python
+- **Learning error handling patterns** - Implement robust error handling and status code management with Flask decorators
+- **Understanding testing with pytest and Flask test client** - Write comprehensive tests for Flask endpoints using pytest fixtures
 
 ### Technology Stack
 
 **Runtime Environment:**
-- **Node.js v22.16.0 LTS 'Jod'** - Active LTS support extending until October 2025, providing stability for educational use with V8 engine updates and enhanced performance
+- **Python 3.12+ 'Latest'** - Modern Python interpreter with enhanced performance, improved type hints, and comprehensive standard library support extending long-term stability
 
 **Web Framework:**
-- **Express.js v5.1.0** - Latest version with security enhancements including ReDoS protection through path-to-regexp@8.x, automatic promise rejection handling, and framework fingerprinting prevention
+- **Flask v3.1.1** - Latest WSGI web framework with enhanced type hint support, security defaults, and modern Python 3.12+ compatibility for production-ready applications
 
 **Testing Framework:**
-- **Jest v29.7.0** - Zero-configuration testing framework with built-in coverage reporting and snapshot testing capabilities
-- **Supertest v7.1.1** - HTTP endpoint testing library providing fluent assertions for API testing
+- **pytest v8.4.0** - Comprehensive Python testing framework with advanced fixture management and Flask-specific integration
+- **pytest-flask v1.3.0** - Flask application testing plugin providing specialized fixtures for HTTP endpoint testing
+
+**WSGI Server:**
+- **Gunicorn v21.2.0** - Production-grade Python WSGI HTTP server with multi-worker process management for scalable deployment
 
 **Containerization (Optional):**
-- **Docker** - Multi-stage builds with Alpine Linux for minimal resource usage and deployment learning
+- **Docker** - Multi-stage builds with python:3.12-alpine for minimal resource usage and deployment learning
 
 ### Project Features
 
-- **Single `/hello` endpoint** returning 'Hello world' response demonstrating basic HTTP server functionality
-- **Express.js v5 security features** including ReDoS protection and automatic promise handling
-- **Comprehensive error handling** with 404 and 500 responses following HTTP standards
-- **Educational logging and monitoring patterns** for understanding server behavior
-- **Complete test suite with 100% code coverage** demonstrating testing best practices
-- **Docker containerization support** for deployment learning and environment consistency
+- **Single `/hello` endpoint** returning 'Hello world' response demonstrating basic Flask WSGI server functionality
+- **Flask v3.1.1 security features** including automatic JSON serialization and modern security defaults
+- **Comprehensive error handling** with 404 and 500 responses following HTTP standards using Flask decorators
+- **Educational logging and monitoring patterns** for understanding Python web server behavior
+- **Complete test suite with 100% code coverage** demonstrating pytest best practices and Flask testing patterns
+- **Docker containerization support** for deployment learning and environment consistency with Python runtime
 
 ## Prerequisites
 
@@ -64,15 +67,15 @@ This tutorial application is designed to provide hands-on experience with fundam
 
 | Component | Minimum Version | Recommended | Purpose |
 |-----------|----------------|-------------|---------|
-| **Node.js** | v22.16.0 LTS | Latest LTS | JavaScript runtime environment |
-| **npm** | v10.0.0 | Latest | Package manager (bundled with Node.js) |
-| **Memory** | 100MB RAM | 200MB | Application runtime requirements |
-| **Disk Space** | 50MB | 100MB | Dependencies and project files |
+| **Python** | v3.12.0 | Latest 3.12.x | Python runtime environment with modern language features |
+| **pip** | v23.0.0 | Latest | Python package manager (bundled with Python) |
+| **Memory** | 75MB RAM | 150MB | Flask application runtime requirements |
+| **Disk Space** | 100MB | 200MB | Virtual environment and dependencies |
 
 ### Installation Links
 
-- **Node.js Official**: [https://nodejs.org/en/download/](https://nodejs.org/en/download/) - Official Node.js installers for all platforms
-- **Node Version Manager**: [https://github.com/nvm-sh/nvm](https://github.com/nvm-sh/nvm) - Manage multiple Node.js versions
+- **Python Official**: [https://python.org/downloads/](https://python.org/downloads/) - Official Python installers for all platforms
+- **pyenv (Version Manager)**: [https://github.com/pyenv/pyenv](https://github.com/pyenv/pyenv) - Manage multiple Python versions
 - **Docker (Optional)**: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/) - For containerization learning
 
 ### Verification Commands
@@ -80,11 +83,11 @@ This tutorial application is designed to provide hands-on experience with fundam
 Verify your development environment meets the requirements:
 
 ```bash
-# Check Node.js version (should show v22.16.0 or higher)
-node --version
+# Check Python version (should show v3.12.0 or higher)
+python --version
 
-# Check npm version (should show v10.0.0 or higher)
-npm --version
+# Check pip version (should show v23.0.0 or higher)
+pip --version
 
 # Optional: Check Docker version for containerization
 docker --version
@@ -96,103 +99,135 @@ docker --version
 
 ```bash
 # Clone the tutorial repository
-git clone https://github.com/tutorial/nodejs-hello-tutorial.git
+git clone https://github.com/tutorial/python-flask-tutorial.git
 
 # Navigate to project directory
-cd nodejs-hello-tutorial
+cd python-flask-tutorial
 
 # Navigate to backend source directory
 cd src/backend
 ```
 
-### 2. Install Dependencies
+### 2. Virtual Environment Setup
 
 ```bash
-# Install Express.js v5.1.0 and development dependencies
-npm install
+# Create Python virtual environment
+python -m venv .venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source .venv/bin/activate
+# On Windows:
+.venv\Scripts\activate
+
+# Verify virtual environment activation
+which python  # Should show .venv path
+```
+
+### 3. Install Dependencies
+
+```bash
+# Install Flask v3.1.1 and production dependencies
+pip install -r requirements.txt
+
+# Install development dependencies (optional)
+pip install -r requirements-dev.txt
 
 # Verify installed packages
-npm list
+pip list
 
-# Optional: Run security audit
-npm audit
+# Optional: Check for security vulnerabilities
+pip-audit
 ```
 
 **Expected Dependencies:**
-- `express@^5.1.0` - Web framework for HTTP server functionality
-- `jest@^29.7.0` - Testing framework (development dependency)
-- `supertest@^7.1.1` - HTTP testing library (development dependency)
+- `Flask>=3.1.1` - WSGI web framework for HTTP server functionality
+- `python-dotenv>=1.0.1` - Environment variable management
+- `Flask-CORS>=4.0.0` - Cross-origin resource sharing
+- `pytest>=8.4.0` - Testing framework (development dependency)
+- `pytest-flask>=1.3.0` - Flask testing integration (development dependency)
 
-### 3. Environment Setup (Optional)
+### 4. Environment Setup (Optional)
 
 Create a `.env` file for custom configuration:
 
 ```bash
 # Optional environment variables
-PORT=3000
+FLASK_APP=app.py
+FLASK_ENV=development
+PORT=5000
 HOST=localhost
-NODE_ENV=development
 ```
 
 **Default Configuration:**
-- **PORT**: 3000 (customizable via environment variable)
+- **PORT**: 5000 (customizable via environment variable)
 - **HOST**: localhost (safe for local development)
-- **NODE_ENV**: development (enables enhanced logging)
+- **FLASK_ENV**: development (enables enhanced debugging)
 
 ## Usage
 
 ### Development Server
 
-#### Start the Server
+#### Start the Flask Server
 
 ```bash
-# Start the HTTP server
-npm start
+# Activate virtual environment first
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate  # Windows
 
-# Alternative: Direct Node.js execution
-node server.js
+# Start the Flask development server
+python -m flask run
 
-# Development mode with enhanced logging
-npm run dev
+# Alternative: Start with Gunicorn for production testing
+gunicorn wsgi:app
+
+# Custom port development mode
+python -m flask run --port=8080
+
+# Development mode with debug enabled
+FLASK_DEBUG=True python -m flask run
 ```
 
 **Expected Output:**
 ```
-🚀 Server Successfully Started!
+🚀 Flask Server Successfully Started!
 ============================================================
 ⏰ Startup time: 2024-01-15T10:30:00.000Z
-🌐 Server listening on: http://localhost:3000
+🌐 Server listening on: http://localhost:5000
 📡 Host: localhost
-🔌 Port: 3000
+🔌 Port: 5000
 
 🎯 Available Endpoints:
-   GET  http://localhost:3000/hello  →  Returns "Hello world"
+   GET  http://localhost:5000/hello  →  Returns "Hello world"
 
 🔧 Testing Commands:
-   curl http://localhost:3000/hello
-   curl -i http://localhost:3000/hello  # Include response headers
+   curl http://localhost:5000/hello
+   curl -i http://localhost:5000/hello  # Include response headers
 
 🌐 Browser Access:
-   Open: http://localhost:3000/hello
+   Open: http://localhost:5000/hello
 ```
 
 #### Test the Endpoint
 
 **Browser Access:**
 ```
-http://localhost:3000/hello
+http://localhost:5000/hello
 ```
 
 **Command Line Testing:**
 ```bash
 # Basic request
-curl http://localhost:3000/hello
+curl http://localhost:5000/hello
 
 # Include response headers
-curl -i http://localhost:3000/hello
+curl -i http://localhost:5000/hello
 
 # Test error handling
-curl http://localhost:3000/invalid
+curl http://localhost:5000/invalid
+
+# Test with JSON response format
+curl -H "Accept: application/json" http://localhost:5000/hello
 ```
 
 **Expected Responses:**
@@ -230,19 +265,19 @@ Content-Type: application/json
 **Custom Port Configuration:**
 ```bash
 # Run on custom port
-PORT=8080 npm start
+FLASK_RUN_PORT=8080 python -m flask run
 
 # Verify custom port
 curl http://localhost:8080/hello
 ```
 
-**Environment-Specific Logging:**
+**Environment-Specific Configuration:**
 ```bash
-# Enhanced development logging
-NODE_ENV=development npm start
+# Enhanced development debugging
+FLASK_DEBUG=True python -m flask run
 
-# Production logging mode
-NODE_ENV=production npm start
+# Production mode testing
+FLASK_ENV=production gunicorn wsgi:app
 ```
 
 ## API Documentation
@@ -251,12 +286,12 @@ NODE_ENV=production npm start
 
 #### GET /hello
 
-Returns a simple 'Hello world' greeting demonstrating basic HTTP server functionality.
+Returns a simple 'Hello world' greeting demonstrating basic Flask WSGI server functionality.
 
 **Request:**
 ```http
 GET /hello HTTP/1.1
-Host: localhost:3000
+Host: localhost:5000
 ```
 
 **Response:**
@@ -271,16 +306,25 @@ Hello world
 **Response Headers:**
 - `Content-Type`: `text/plain; charset=utf-8`
 - `Content-Length`: `11`
-- `X-Powered-By`: *Disabled for security*
+- `Server`: `Werkzeug/3.x.x Python/3.12.x` (development)
 
 **cURL Example:**
 ```bash
-curl -i http://localhost:3000/hello
+curl -i http://localhost:5000/hello
+```
+
+**Python Requests Example:**
+```python
+import requests
+
+response = requests.get('http://localhost:5000/hello')
+print(response.text)  # "Hello world"
+print(response.status_code)  # 200
 ```
 
 **JavaScript Fetch Example:**
 ```javascript
-fetch('http://localhost:3000/hello')
+fetch('http://localhost:5000/hello')
   .then(response => response.text())
   .then(data => console.log(data)); // "Hello world"
 ```
@@ -289,11 +333,11 @@ fetch('http://localhost:3000/hello')
 
 #### 404 Not Found
 
-Returned for undefined routes and invalid endpoints.
+Returned for undefined routes and invalid endpoints using Flask error handlers.
 
 **Request:**
 ```bash
-curl http://localhost:3000/nonexistent
+curl http://localhost:5000/nonexistent
 ```
 
 **Response:**
@@ -315,7 +359,7 @@ Returned for unsupported HTTP methods on existing endpoints.
 
 **Request:**
 ```bash
-curl -X POST http://localhost:3000/hello
+curl -X POST http://localhost:5000/hello
 ```
 
 **Response:**
@@ -331,11 +375,11 @@ Content-Type: application/json
 
 ### Security Features
 
-**Express.js v5.1.0 Security Enhancements:**
-- **X-Powered-By header disabled** - Prevents framework fingerprinting
-- **ReDoS protection** - path-to-regexp@8.x prevents regular expression denial of service
-- **Automatic promise rejection handling** - Enhanced error management
-- **Generic error messages** - Prevents information disclosure
+**Flask v3.1.1 Security Enhancements:**
+- **Server header configuration** - Configurable server identification for production
+- **Automatic JSON serialization** - Built-in JSON response handling with security defaults
+- **CORS integration** - Flask-CORS extension for secure cross-origin request handling
+- **Generic error messages** - Prevents information disclosure in production environments
 
 ## Testing
 
@@ -344,28 +388,35 @@ Content-Type: application/json
 #### Run All Tests
 
 ```bash
-# Execute complete test suite
-npm test
+# Activate virtual environment
+source .venv/bin/activate
 
-# Run tests in watch mode for development
-npm run test:watch
+# Execute complete test suite
+pytest
+
+# Run tests with verbose output
+pytest -v
+
+# Run tests in watch mode for development (requires pytest-watch)
+pytest-watch
 
 # Generate coverage report
-npm run test:coverage
+pytest --cov=. --cov-report=html
 
 # CI/CD optimized testing
-npm run test:ci
+pytest --cov=. --cov-report=xml --junitxml=test-results.xml
 ```
 
 #### Test Structure
 
 **Test Files:**
-- `tests/app.test.js` - Express.js application testing with Supertest
-- `tests/server.test.js` - HTTP server lifecycle and configuration testing
+- `tests/test_app.py` - Flask application testing with pytest-flask fixtures
+- `tests/test_wsgi.py` - WSGI server lifecycle and configuration testing
 
 **Testing Framework Stack:**
-- **Jest v29.7.0** - Zero-configuration testing with built-in coverage
-- **Supertest v7.1.1** - HTTP endpoint testing with fluent assertions
+- **pytest v8.4.0** - Advanced testing framework with fixture management
+- **pytest-flask v1.3.0** - Flask-specific testing fixtures and utilities
+- **coverage.py v7.6.0** - Code coverage measurement and reporting
 
 #### Coverage Reports
 
@@ -377,47 +428,47 @@ npm run test:ci
 
 **Coverage Report Example:**
 ```bash
-npm run test:coverage
+pytest --cov=. --cov-report=term-missing
 ```
 
 ```
 ----------------------|---------|----------|---------|---------|
-File                  | % Stmts | % Branch | % Funcs | % Lines |
-----------------------|---------|----------|---------|---------|
-All files            |     100 |      100 |     100 |     100 |
- server.js           |     100 |      100 |     100 |     100 |
- app.js              |     100 |      100 |     100 |     100 |
-----------------------|---------|----------|---------|---------|
+Name                  | Stmts   | Miss     | Branch  | BrPart  | Cover   |
+----------------------|---------|----------|---------|---------|---------|
+app.py               |      45 |        0 |       8 |       0 |   100%  |
+wsgi.py              |      32 |        0 |       6 |       0 |   100%  |
+tests/test_app.py    |      28 |        0 |       0 |       0 |   100%  |
+----------------------|---------|----------|---------|---------|---------|
+TOTAL                |     105 |        0 |      14 |       0 |   100%  |
 ```
 
 #### Test Examples
 
-**Endpoint Testing:**
-```javascript
-// Test /hello endpoint response and headers
-describe('GET /hello', () => {
-  it('should return "Hello world" with 200 status', async () => {
-    const response = await request(app)
-      .get('/hello')
-      .expect(200)
-      .expect('Content-Type', /text\/plain/);
+**Endpoint Testing with pytest-flask:**
+```python
+# Test /hello endpoint response and headers
+def test_hello_endpoint(client):
+    """Test Flask /hello endpoint returns correct response."""
+    response = client.get('/hello')
     
-    expect(response.text).toBe('Hello world');
-  });
-});
+    assert response.status_code == 200
+    assert response.data == b'Hello world'
+    assert response.content_type == 'text/plain; charset=utf-8'
 ```
 
 **Error Handling Testing:**
-```javascript
-// Test 404 error handling
-describe('Error Handling', () => {
-  it('should return 404 for unknown routes', async () => {
-    await request(app)
-      .get('/unknown')
-      .expect(404)
-      .expect('Content-Type', /application\/json/);
-  });
-});
+```python
+# Test 404 error handling with Flask error handlers
+def test_404_error_handling(client):
+    """Test Flask 404 error handler returns JSON response."""
+    response = client.get('/unknown')
+    
+    assert response.status_code == 404
+    assert response.content_type == 'application/json'
+    
+    json_data = response.get_json()
+    assert json_data['status'] == 404
+    assert json_data['message'] == 'Not Found'
 ```
 
 ## Deployment
@@ -427,33 +478,41 @@ describe('Error Handling', () => {
 #### Production Mode
 
 ```bash
-# Run in production mode
-NODE_ENV=production npm start
+# Activate virtual environment
+source .venv/bin/activate
 
-# Custom port for production
-PORT=8080 NODE_ENV=production npm start
+# Run with Gunicorn for production testing
+gunicorn wsgi:app
+
+# Custom port and workers for production
+gunicorn --bind 0.0.0.0:8080 --workers 2 wsgi:app
+
+# With configuration file
+gunicorn --config gunicorn.conf.py wsgi:app
 ```
 
-#### Process Management (Optional)
+#### Process Management with Supervisor (Optional)
 
-Install and use PM2 for production process management:
+Install and use Supervisor for production process management:
 
 ```bash
-# Install PM2 globally
-npm install -g pm2
+# Install Supervisor
+pip install supervisor
 
-# Start application with PM2
-pm2 start server.js --name "nodejs-tutorial"
+# Create configuration file
+cat > supervisord.conf << EOF
+[program:flask-tutorial]
+command=gunicorn --bind 0.0.0.0:5000 wsgi:app
+directory=/path/to/project
+user=www-data
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/flask-tutorial.log
+EOF
 
-# Monitor application
-pm2 list
-pm2 logs nodejs-tutorial
-
-# Restart application
-pm2 restart nodejs-tutorial
-
-# Stop application
-pm2 stop nodejs-tutorial
+# Start application with Supervisor
+supervisorctl start flask-tutorial
 ```
 
 ### Docker Deployment
@@ -462,23 +521,23 @@ pm2 stop nodejs-tutorial
 
 ```bash
 # Development build with debugging tools
-docker build --target development -t nodejs-tutorial:dev .
+docker build --target development -t flask-tutorial:dev .
 
 # Production build optimized for deployment
-docker build --target production -t nodejs-tutorial:prod .
+docker build --target production -t flask-tutorial:prod .
 ```
 
 #### Run Docker Containers
 
 ```bash
 # Run development container with volume mounting
-docker run -p 3000:3000 -v $(pwd)/src/backend:/usr/src/app nodejs-tutorial:dev
+docker run -p 5000:5000 -v $(pwd)/src/backend:/usr/src/app flask-tutorial:dev
 
-# Run production container
-docker run -p 3000:3000 nodejs-tutorial:prod
+# Run production container with Gunicorn
+docker run -p 5000:5000 flask-tutorial:prod
 
 # Run with custom port
-docker run -p 8080:3000 -e PORT=3000 nodejs-tutorial:prod
+docker run -p 8080:5000 -e PORT=5000 flask-tutorial:prod
 ```
 
 #### Docker Compose (Optional)
@@ -487,14 +546,14 @@ docker run -p 8080:3000 -e PORT=3000 nodejs-tutorial:prod
 # docker-compose.yml
 version: '3.8'
 services:
-  nodejs-tutorial:
+  flask-tutorial:
     build:
       context: .
       target: production
     ports:
-      - "3000:3000"
+      - "5000:5000"
     environment:
-      - NODE_ENV=production
+      - FLASK_ENV=production
     restart: unless-stopped
 ```
 
@@ -518,7 +577,10 @@ docker-compose down
 heroku login
 
 # Create Heroku application
-heroku create nodejs-hello-tutorial
+heroku create python-flask-tutorial
+
+# Set Python buildpack
+heroku buildpacks:set heroku/python
 
 # Deploy application
 git push heroku main
@@ -527,21 +589,38 @@ git push heroku main
 heroku open
 ```
 
-#### Render Deployment
+**Required Heroku Files:**
+- `runtime.txt`: `python-3.12.0`
+- `Procfile`: `web: gunicorn wsgi:app`
 
-1. Connect GitHub repository to Render
-2. Select Node.js environment
-3. Configure build and start commands:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+#### Azure Web Apps Deployment
+
+1. Create Azure Web App with Python 3.12 runtime
+2. Configure deployment settings:
+   - **Runtime**: Python 3.12
+   - **Startup Command**: `gunicorn wsgi:app`
+   - **App Settings**: Configure environment variables
+
+```bash
+# Azure CLI deployment
+az webapp create --resource-group myResourceGroup \
+  --plan myAppServicePlan \
+  --name python-flask-tutorial \
+  --runtime "PYTHON|3.12"
+
+# Deploy from local git
+az webapp deployment source config-local-git \
+  --name python-flask-tutorial \
+  --resource-group myResourceGroup
+```
 
 #### Railway Deployment
 
-Railway automatically detects Node.js applications through `package.json`:
+Railway automatically detects Python applications through `requirements.txt`:
 
 ```bash
 # Install Railway CLI
-npm install -g @railway/cli
+pip install railway
 
 # Login and deploy
 railway login
@@ -553,10 +632,10 @@ railway up
 
 1. Connect GitHub repository
 2. Configure app settings:
-   - **Framework**: Node.js
-   - **Build Command**: `npm install`
-   - **Run Command**: `npm start`
-   - **Port**: 3000
+   - **Framework**: Python (Flask)
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Run Command**: `gunicorn wsgi:app`
+   - **Port**: 5000
 
 ### Environment Configuration
 
@@ -564,20 +643,24 @@ railway up
 
 | Variable | Default | Purpose | Platform Notes |
 |----------|---------|---------|----------------|
-| `PORT` | 3000 | Server port | Heroku/Render set automatically |
-| `NODE_ENV` | development | Environment mode | Set to 'production' for deployment |
+| `PORT` | 5000 | Server port | Heroku/Azure set automatically |
+| `FLASK_ENV` | development | Environment mode | Set to 'production' for deployment |
 | `HOST` | localhost | Host binding | Use '0.0.0.0' for containerized deployment |
+| `WORKERS` | 1 | Gunicorn worker processes | Increase for production traffic |
 
 **Platform-Specific Configuration:**
 
-```javascript
-// server.js - Dynamic port configuration
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || 'localhost';
+```python
+# wsgi.py - Dynamic configuration
+import os
+from app import create_app
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app = create_app()
+
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    app.run(host=host, port=port)
 ```
 
 ## Troubleshooting
@@ -588,84 +671,89 @@ app.listen(PORT, HOST, () => {
 
 **Error:**
 ```
-Error: EADDRINUSE: address already in use :::3000
+OSError: [Errno 48] Address already in use
 ```
 
 **Solutions:**
 ```bash
-# Find process using port 3000
-lsof -ti:3000 | xargs kill  # macOS/Linux
-netstat -ano | findstr :3000  # Windows
+# Find process using port 5000
+lsof -ti:5000 | xargs kill  # macOS/Linux
+netstat -ano | findstr :5000  # Windows
 
 # Use different port
-PORT=8080 npm start
+FLASK_RUN_PORT=8080 python -m flask run
 
 # Kill specific process
 kill -9 <process-id>
 ```
 
-#### Node.js Version Compatibility
+#### Python Version Compatibility
 
 **Error:**
 ```
-Error: Express.js v5 requires Node.js v18+
+ImportError: Flask requires Python 3.8 or higher
 ```
 
 **Solutions:**
 ```bash
-# Check current Node.js version
-node --version
+# Check current Python version
+python --version
 
-# Update Node.js to v22.16.0 LTS
-# Download from https://nodejs.org/
+# Update Python to 3.12+
+# Download from https://python.org/
 
-# Using Node Version Manager (nvm)
-nvm install 22.16.0
-nvm use 22.16.0
-nvm alias default 22.16.0
+# Using pyenv (recommended)
+pyenv install 3.12.0
+pyenv global 3.12.0
+pyenv rehash
 ```
 
-#### Permission Denied
+#### Virtual Environment Issues
 
 **Error:**
 ```
-Error: EACCES: permission denied, bind to port 80
+ModuleNotFoundError: No module named 'flask'
 ```
 
 **Solutions:**
 ```bash
-# Use port 3000 or higher (recommended)
-PORT=3000 npm start
+# Ensure virtual environment is activated
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate     # Windows
 
-# Check port permissions
-# Ports below 1024 require administrator privileges
+# Verify activation
+which python  # Should show .venv path
 
-# For development, always use ports above 1024
-PORT=3000 npm start
+# Reinstall dependencies
+pip install -r requirements.txt
+
+# Create new virtual environment if corrupted
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 #### Dependencies Installation Failed
 
 **Error:**
 ```
-npm ERR! peer dep missing: express@^5.1.0
+ERROR: Could not find a version that satisfies the requirement Flask>=3.1.1
 ```
 
 **Solutions:**
 ```bash
-# Clear npm cache
-npm cache clean --force
+# Update pip to latest version
+pip install --upgrade pip
 
-# Remove node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
+# Clear pip cache
+pip cache purge
 
-# Verify Node.js and npm versions
-node --version  # Should be v22.16.0+
-npm --version   # Should be v10.0.0+
+# Install with verbose output for debugging
+pip install -r requirements.txt -v
 
-# Install specific Express.js version
-npm install express@^5.1.0
+# Install specific Flask version
+pip install Flask==3.1.1
 ```
 
 ### Debugging Tips
@@ -673,31 +761,34 @@ npm install express@^5.1.0
 #### Verbose Logging
 
 ```bash
-# Enable development logging
-NODE_ENV=development npm start
+# Enable Flask debug mode
+FLASK_DEBUG=True python -m flask run
 
-# Debug mode with enhanced output
-DEBUG=express:* npm start
+# Enhanced logging level
+FLASK_ENV=development python -m flask run
+
+# Gunicorn debug mode
+gunicorn --log-level debug wsgi:app
 ```
 
 #### Network Testing
 
 ```bash
 # Test endpoint with verbose output
-curl -v http://localhost:3000/hello
+curl -v http://localhost:5000/hello
 
 # Test with specific headers
-curl -H "Accept: text/plain" http://localhost:3000/hello
+curl -H "Accept: application/json" http://localhost:5000/hello
 
 # Test timeout behavior
-curl --max-time 5 http://localhost:3000/hello
+curl --max-time 5 http://localhost:5000/hello
 ```
 
 #### Docker Debugging
 
 ```bash
 # Debug Docker container
-docker run -it nodejs-tutorial:dev sh
+docker run -it flask-tutorial:dev sh
 
 # View container logs
 docker logs <container-id>
@@ -711,8 +802,8 @@ docker exec -it <container-id> sh
 #### Slow Startup
 
 **Potential Causes:**
-- Node.js version compatibility
-- Dependency installation issues
+- Python version compatibility
+- Virtual environment configuration issues
 - System resource constraints
 
 **Solutions:**
@@ -721,11 +812,11 @@ docker exec -it <container-id> sh
 free -h  # Linux/macOS memory check
 top      # Process monitoring
 
-# Optimize npm install
-npm ci --only=production
+# Optimize pip install
+pip install --no-cache-dir -r requirements.txt
 
-# Check Node.js performance
-node --trace-warnings server.js
+# Check Python performance
+python -X dev app.py
 ```
 
 #### Slow Response Times
@@ -733,16 +824,16 @@ node --trace-warnings server.js
 **Monitoring:**
 ```bash
 # Monitor response times
-curl -w "@curl-format.txt" http://localhost:3000/hello
+curl -w "@curl-format.txt" http://localhost:5000/hello
 
 # Create curl-format.txt
 echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.txt
 ```
 
 **Performance Targets:**
-- **Response Time**: < 100ms for /hello endpoint
-- **Memory Usage**: < 50MB for tutorial application
-- **Startup Time**: < 3 seconds for server initialization
+- **Response Time**: < 50ms for /hello endpoint (warm requests)
+- **Memory Usage**: < 75MB for tutorial application
+- **Startup Time**: < 5 seconds for Flask development server
 
 ## Contributing
 
@@ -753,8 +844,8 @@ echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.tx
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/your-username/nodejs-hello-tutorial.git
-cd nodejs-hello-tutorial
+git clone https://github.com/your-username/python-flask-tutorial.git
+cd python-flask-tutorial
 ```
 
 #### 2. Create Feature Branch
@@ -763,16 +854,24 @@ cd nodejs-hello-tutorial
 # Create feature branch from main
 git checkout -b feature/your-feature-name
 
-# Make changes and test
-npm test
+# Set up development environment
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
 
-# Ensure code quality
-npm run test:coverage
+# Make changes and test
+pytest
+pytest --cov=. --cov-report=html
 ```
 
 #### 3. Submit Changes
 
 ```bash
+# Ensure code quality
+black .
+flake8 .
+isort .
+
 # Add and commit changes
 git add .
 git commit -m "Add: clear description of changes"
@@ -785,27 +884,27 @@ git push origin feature/your-feature-name
 
 ### Code Standards
 
-#### JavaScript Style Guidelines
+#### Python Style Guidelines
 
-- **ES6+ Syntax**: Use modern JavaScript features
-- **Consistent Formatting**: Follow existing code patterns
-- **Clear Variable Names**: Use descriptive, meaningful names
-- **Function Documentation**: Include JSDoc comments for functions
+- **PEP 8 Compliance**: Follow Python style guide conventions
+- **Type Hints**: Use type annotations for improved code documentation
+- **Docstrings**: Include comprehensive docstrings for all functions and classes
+- **Black Formatting**: Use Black for consistent code formatting
 
 #### Testing Requirements
 
-- **100% Test Coverage**: Maintain complete test coverage
-- **Test Documentation**: Clear test descriptions and expectations
+- **100% Test Coverage**: Maintain complete test coverage using pytest-cov
+- **pytest Fixtures**: Use pytest-flask fixtures for Flask application testing
+- **Test Documentation**: Clear test descriptions and assertions
 - **Error Case Testing**: Include negative test scenarios
-- **Performance Testing**: Verify response time requirements
 
 #### Commit Message Format
 
 ```bash
 # Format: Type: Description
 git commit -m "Add: new /health endpoint for monitoring"
-git commit -m "Fix: resolve port binding error on Windows"
-git commit -m "Update: improve error handling documentation"
+git commit -m "Fix: resolve WSGI binding error on containers"
+git commit -m "Update: improve Flask error handling documentation"
 git commit -m "Test: add integration tests for Docker deployment"
 ```
 
@@ -813,24 +912,24 @@ git commit -m "Test: add integration tests for Docker deployment"
 
 #### Contribution Guidelines
 
-- **Maintain Simplicity**: Preserve educational clarity and simplicity
+- **Maintain Simplicity**: Preserve educational clarity and Flask best practices
 - **Comprehensive Documentation**: Ensure all changes are well-documented
 - **Learning Examples**: Provide clear examples and usage patterns
-- **Progressive Learning**: Support progressive learning objectives
+- **Progressive Learning**: Support progressive Flask learning objectives
 
 **Educational Standards:**
-- Clear explanations for code changes
+- Clear explanations for Flask-specific patterns
 - Maintain beginner-friendly documentation
-- Include educational comments in code
-- Provide troubleshooting guidance
+- Include educational comments in Python code
+- Provide troubleshooting guidance for Python environments
 
 #### Code Review Criteria
 
-- **Educational Value**: Does the change enhance learning?
+- **Educational Value**: Does the change enhance Flask learning?
 - **Simplicity**: Is the implementation clear and understandable?
 - **Documentation**: Are changes properly documented?
-- **Testing**: Is the change properly tested?
-- **Compatibility**: Does it maintain Node.js v22.16.0 LTS compatibility?
+- **Testing**: Is the change properly tested with pytest?
+- **Compatibility**: Does it maintain Python 3.12+ compatibility?
 
 ## License
 
@@ -881,23 +980,24 @@ See [LICENSE](LICENSE) file for complete license text and terms.
 
 ### Learning Resources
 
-- **Node.js Official Documentation**: [https://nodejs.org/docs/](https://nodejs.org/docs/)
-- **Express.js Guide**: [https://expressjs.com/en/guide/](https://expressjs.com/en/guide/)
-- **Jest Testing Framework**: [https://jestjs.io/docs/getting-started](https://jestjs.io/docs/getting-started)
-- **HTTP Protocol Fundamentals**: [MDN HTTP Guide](https://developer.mozilla.org/en-US/docs/Web/HTTP)
+- **Python Official Documentation**: [https://docs.python.org/3/](https://docs.python.org/3/)
+- **Flask Guide**: [https://flask.palletsprojects.com/en/3.0.x/](https://flask.palletsprojects.com/en/3.0.x/)
+- **pytest Documentation**: [https://docs.pytest.org/en/stable/](https://docs.pytest.org/en/stable/)
+- **WSGI Protocol Fundamentals**: [PEP 3333 - Python Web Server Gateway Interface](https://peps.python.org/pep-3333/)
 
 ### Community Support
 
-- **GitHub Issues**: [Report bugs and request features](https://github.com/tutorial/nodejs-hello-tutorial/issues)
-- **Stack Overflow**: Tag questions with `nodejs`, `express`, `tutorial`
-- **Node.js Community**: [https://nodejs.org/en/get-involved/](https://nodejs.org/en/get-involved/)
+- **GitHub Issues**: [Report bugs and request features](https://github.com/tutorial/python-flask-tutorial/issues)
+- **Stack Overflow**: Tag questions with `python`, `flask`, `tutorial`
+- **Python Community**: [https://www.python.org/community/](https://www.python.org/community/)
+- **Flask Community**: [https://flask.palletsprojects.com/en/3.0.x/community/](https://flask.palletsprojects.com/en/3.0.x/community/)
 
 ### Version History
 
-- **v1.0.0** - Initial release with Node.js v22.16.0 LTS and Express.js v5.1.0
-- Features: Single /hello endpoint, comprehensive testing, Docker support
-- Educational focus: HTTP server fundamentals and Express.js basics
+- **v2.0.0** - Migration to Python 3.12+ and Flask 3.1.1 from Node.js/Express.js
+- Features: Single /hello endpoint, comprehensive pytest testing, Docker support with python:3.12-alpine
+- Educational focus: Python WSGI fundamentals and Flask application patterns
 
 ---
 
-**🎓 Happy Learning!** This tutorial provides a solid foundation for understanding Node.js and Express.js fundamentals. Build upon these concepts to create more complex applications and advance your web development skills.
+**🐍 Happy Learning!** This tutorial provides a solid foundation for understanding Python web development and Flask fundamentals. Build upon these concepts to create more complex Flask applications and advance your Python web development skills.

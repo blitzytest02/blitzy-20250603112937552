@@ -1,18 +1,18 @@
 # =============================================================================
-# DOCKER COMPOSE CONFIGURATION - Node.js Tutorial Application
+# DOCKER COMPOSE CONFIGURATION - Python Flask Tutorial Application
 # =============================================================================
-# Multi-environment container orchestration for Express.js v5.1.0 hello world server
-# Educational demonstration of Docker Compose patterns with Node.js v22.16.0 LTS
+# Multi-environment container orchestration for Flask v3.1.1 hello world server
+# Educational demonstration of Docker Compose patterns with Python v3.12+ LTS
 # 
 # Purpose: Containerized deployment orchestration for development and production
 # Learning Objectives: Multi-service configuration, environment management, networking
-# Technical Stack: Docker Compose v3.8, Node.js v22.16.0 LTS, Express.js v5.1.0
+# Technical Stack: Docker Compose v3.8, Python v3.12+ LTS, Flask v3.1.1
 # 
 # Usage:
-#   Development: docker-compose up nodejs-tutorial-dev
-#   Production:  docker-compose up nodejs-tutorial-prod  
-#   Testing:     docker-compose run --rm nodejs-tutorial-dev npm test
-#   Both:        docker-compose up nodejs-tutorial-dev nodejs-tutorial-prod
+#   Development: docker-compose up flask-tutorial-dev
+#   Production:  docker-compose up flask-tutorial-prod  
+#   Testing:     docker-compose run --rm flask-tutorial-dev python -m pytest
+#   Both:        docker-compose up flask-tutorial-dev flask-tutorial-prod
 # =============================================================================
 
 version: '3.8'
@@ -31,10 +31,10 @@ services:
   # Development service with source code mounting, debugging capabilities,
   # and comprehensive development tooling for educational workflow demonstration
   
-  nodejs-tutorial-dev:
+  flask-tutorial-dev:
     # Container identification and metadata
-    container_name: nodejs-tutorial-dev
-    hostname: nodejs-tutorial-dev
+    container_name: flask-tutorial-dev
+    hostname: flask-tutorial-dev
     
     # Multi-stage build configuration targeting development stage
     build:
@@ -43,37 +43,48 @@ services:
       target: development
       # Build arguments for development optimization
       args:
-        - NODE_ENV=development
+        - FLASK_ENV=development
         - BUILD_DATE=${BUILD_DATE:-}
         - VCS_REF=${VCS_REF:-}
       # Build caching strategy for development efficiency
       cache_from:
-        - node:22.16.0-alpine
-        - nodejs-tutorial:dev-cache
+        - python:3.12-alpine
+        - flask-tutorial:dev-cache
     
     # Development environment variables for educational transparency
     environment:
-      # Node.js runtime configuration
-      NODE_ENV: development
+      # Flask runtime configuration
+      FLASK_ENV: development
+      FLASK_APP: wsgi.py
+      FLASK_DEBUG: "true"
       PORT: 3000
       HOST: 0.0.0.0
       
+      # Python runtime configuration
+      PYTHON_VERSION: "3.12"
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONPATH: /usr/src/app
+      
       # Development-specific logging and debugging
       LOG_LEVEL: debug
-      DEBUG: express:*
       
-      # NPM configuration for development workflow
-      NPM_CONFIG_LOGLEVEL: info
-      NPM_CONFIG_COLOR: true
+      # Pip configuration for development workflow
+      PIP_NO_CACHE_DIR: "0"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      
+      # Flask development server configuration
+      WERKZEUG_RUN_MAIN: "true"
+      WERKZEUG_DEBUG_PIN: off
       
       # Educational environment metadata
       TUTORIAL_MODE: development
-      COMPOSE_SERVICE: nodejs-tutorial-dev
+      COMPOSE_SERVICE: flask-tutorial-dev
     
     # Port mapping for development access and debugging
     ports:
       - "3000:3000"     # HTTP server port for application access
-      - "9229:9229"     # Node.js debugger port for IDE integration
+      - "5678:5678"     # Python debugpy port for IDE integration
     
     # Volume configuration for development workflow
     volumes:
@@ -83,18 +94,19 @@ services:
         target: /usr/src/app
         consistency: delegated
         
-      # Anonymous volume for node_modules to prevent host override
+      # Named volume for persistent virtual environment caching
       - type: volume
-        target: /usr/src/app/node_modules
+        source: venv_cache_dev
+        target: /usr/src/app/.venv
         
-      # Named volume for persistent dependency caching
+      # Named volume for pip cache optimization
       - type: volume
-        source: node_modules_cache_dev
-        target: /usr/src/app/.npm
+        source: pip_cache_dev
+        target: /home/python/.cache/pip
     
     # Network configuration for service isolation and discovery
     networks:
-      - tutorial-network
+      - flask-tutorial-network
     
     # Restart policy for development stability
     restart: unless-stopped
@@ -102,11 +114,16 @@ services:
     # Development startup command with debugging and hot-reload capabilities
     command: >
       sh -c "
-        echo '🎓 Starting Node.js Tutorial Development Server...' &&
+        echo '🎓 Starting Flask Tutorial Development Server...' &&
         echo '📋 Development Features: Hot-reload, Debug mode, Comprehensive logging' &&
         echo '🔧 Access: http://localhost:3000/hello' &&
-        echo '🐛 Debug: chrome://inspect for Node.js debugging' &&
-        npm run dev
+        echo '🐛 Debug: Python debugpy on port 5678 for IDE integration' &&
+        echo '🔄 Installing development dependencies...' &&
+        . venv/bin/activate &&
+        pip install -r requirements-dev.txt &&
+        echo '✅ Dependencies installed' &&
+        echo '🚀 Starting Flask development server with watchdog hot-reload...' &&
+        python -m flask run --host=0.0.0.0 --port=3000 --debug --reload
       "
     
     # Health check configuration for development monitoring
@@ -124,18 +141,19 @@ services:
     # Development-specific labels for container identification
     labels:
       - "tutorial.environment=development"
-      - "tutorial.service=nodejs-tutorial-dev"
-      - "tutorial.version=1.0.0"
+      - "tutorial.service=flask-tutorial-dev"
+      - "tutorial.version=2.0.0"
       - "tutorial.purpose=educational-development"
-      - "tutorial.framework=express.5.1.0"
-      - "tutorial.runtime=node.22.16.0"
+      - "tutorial.framework=flask.3.1.1"
+      - "tutorial.runtime=python.3.12"
+      - "tutorial.wsgi=gunicorn"
     
     # Security configuration for development environment
     security_opt:
       - no-new-privileges:true
     
     # User configuration for non-root execution
-    user: "1000:1000"  # node user from Dockerfile
+    user: "1000:1000"  # python user from Dockerfile
     
     # Working directory specification
     working_dir: /usr/src/app
@@ -146,7 +164,7 @@ services:
     
     # Dependency configuration for service startup order
     depends_on:
-      - tutorial-network-setup
+      - flask-network-setup
 
   # ===========================================================================
   # PRODUCTION SERVICE CONFIGURATION  
@@ -154,10 +172,10 @@ services:
   # Production service with optimized container, resource limits, security hardening,
   # and performance tuning for production deployment demonstration
   
-  nodejs-tutorial-prod:
+  flask-tutorial-prod:
     # Container identification and metadata
-    container_name: nodejs-tutorial-prod
-    hostname: nodejs-tutorial-prod
+    container_name: flask-tutorial-prod
+    hostname: flask-tutorial-prod
     
     # Multi-stage build configuration targeting production stage
     build:
@@ -166,36 +184,47 @@ services:
       target: production
       # Build arguments for production optimization
       args:
-        - NODE_ENV=production
+        - FLASK_ENV=production
         - BUILD_DATE=${BUILD_DATE:-}
         - VCS_REF=${VCS_REF:-}
       # Build caching strategy for production efficiency
       cache_from:
-        - node:22.16.0-alpine
-        - nodejs-tutorial:prod-cache
+        - python:3.12-alpine
+        - flask-tutorial:prod-cache
     
     # Production environment variables for optimal performance
     environment:
-      # Node.js runtime configuration for production
-      NODE_ENV: production
+      # Flask runtime configuration for production
+      FLASK_ENV: production
+      FLASK_APP: wsgi.py
+      FLASK_DEBUG: "false"
       PORT: 3000
       HOST: 0.0.0.0
       
+      # Python runtime configuration
+      PYTHON_VERSION: "3.12"
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONPATH: /usr/src/app
+      
       # Production logging configuration
       LOG_LEVEL: info
-      NPM_CONFIG_LOGLEVEL: error
-      NPM_CONFIG_COLOR: false
+      PIP_NO_CACHE_DIR: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
       
-      # Performance optimization settings
-      NODE_OPTIONS: "--max-old-space-size=128 --gc-interval=100"
-      UV_THREADPOOL_SIZE: 4
+      # Gunicorn WSGI server configuration
+      GUNICORN_WORKERS: "4"
+      GUNICORN_TIMEOUT: "30"
+      GUNICORN_KEEPALIVE: "2"
+      GUNICORN_MAX_REQUESTS: "1000"
+      GUNICORN_MAX_REQUESTS_JITTER: "100"
       
       # Security configuration
-      NODE_TLS_REJECT_UNAUTHORIZED: 1
+      PYTHONHASHSEED: "random"
       
       # Educational environment metadata
       TUTORIAL_MODE: production
-      COMPOSE_SERVICE: nodejs-tutorial-prod
+      COMPOSE_SERVICE: flask-tutorial-prod
     
     # Port mapping for production access (different port to avoid dev conflicts)
     ports:
@@ -203,15 +232,21 @@ services:
     
     # Volume configuration for production (no source mounting)
     volumes:
-      # Named volume for any persistent data (minimal for this tutorial)
+      # Named volume for virtual environment caching (read-only)
       - type: volume
-        source: node_modules_cache_prod
-        target: /usr/src/app/.npm
+        source: venv_cache_prod
+        target: /usr/src/app/.venv
+        read_only: true
+        
+      # Named volume for pip cache (read-only in production)
+      - type: volume
+        source: pip_cache_prod
+        target: /home/python/.cache/pip
         read_only: true
     
     # Network configuration for service isolation
     networks:
-      - tutorial-network
+      - flask-tutorial-network
     
     # Restart policy for production stability
     restart: always
@@ -219,11 +254,13 @@ services:
     # Production startup command optimized for performance
     command: >
       sh -c "
-        echo '🚀 Starting Node.js Tutorial Production Server...' &&
-        echo '📋 Production Features: Optimized performance, Resource limits, Security hardening' &&
+        echo '🚀 Starting Flask Tutorial Production Server...' &&
+        echo '📋 Production Features: Gunicorn WSGI server, Resource limits, Security hardening' &&
         echo '🔧 Access: http://localhost:3001/hello' &&
         echo '📊 Resource limits: 128MB memory, 0.5 CPU cores' &&
-        npm start
+        echo '⚡ Gunicorn workers: 4, timeout: 30s' &&
+        . venv/bin/activate &&
+        exec gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4 --timeout 30 --keepalive 2 --max-requests 1000 --max-requests-jitter 100 --preload --log-level info
       "
     
     # Health check configuration for production monitoring
@@ -242,10 +279,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M          # Educational memory constraint for resource awareness
+          memory: 128M          # Adjusted memory constraint for Python runtime overhead
           cpus: '0.5'          # Half CPU core limit for performance testing
         reservations:
-          memory: 64M           # Guaranteed memory allocation for baseline performance
+          memory: 75M           # Guaranteed memory allocation for Python baseline performance
           cpus: '0.25'         # Quarter CPU core reservation for consistent performance
       
       # Production deployment configuration
@@ -264,11 +301,12 @@ services:
     # Production-specific labels for container identification
     labels:
       - "tutorial.environment=production"
-      - "tutorial.service=nodejs-tutorial-prod"
-      - "tutorial.version=1.0.0"
+      - "tutorial.service=flask-tutorial-prod"
+      - "tutorial.version=2.0.0"
       - "tutorial.purpose=educational-production"
-      - "tutorial.framework=express.5.1.0"
-      - "tutorial.runtime=node.22.16.0"
+      - "tutorial.framework=flask.3.1.1"
+      - "tutorial.runtime=python.3.12"
+      - "tutorial.wsgi=gunicorn"
       - "tutorial.optimization=performance"
       - "tutorial.security=hardened"
     
@@ -278,7 +316,7 @@ services:
       - apparmor:unconfined  # Educational: would be configured properly in real production
     
     # User configuration for non-root execution
-    user: "1000:1000"  # node user from Dockerfile
+    user: "1000:1000"  # python user from Dockerfile
     
     # Working directory specification
     working_dir: /usr/src/app
@@ -298,26 +336,26 @@ services:
     
     # Dependency configuration for service startup order
     depends_on:
-      - tutorial-network-setup
+      - flask-network-setup
 
   # ===========================================================================
   # NETWORK SETUP SERVICE
   # ===========================================================================
   # Utility service for network initialization and educational demonstration
   
-  tutorial-network-setup:
+  flask-network-setup:
     image: alpine:3.19
-    container_name: tutorial-network-setup
+    container_name: flask-network-setup
     command: >
       sh -c "
-        echo '🌐 Initializing tutorial network infrastructure...' &&
-        echo '📋 Network: tutorial-network (bridge driver)' &&
-        echo '🔧 Services: nodejs-tutorial-dev, nodejs-tutorial-prod' &&
+        echo '🌐 Initializing Flask tutorial network infrastructure...' &&
+        echo '📋 Network: flask-tutorial-network (bridge driver)' &&
+        echo '🔧 Services: flask-tutorial-dev, flask-tutorial-prod' &&
         echo '✅ Network setup complete' &&
         sleep 2
       "
     networks:
-      - tutorial-network
+      - flask-tutorial-network
     labels:
       - "tutorial.utility=network-setup"
       - "tutorial.purpose=educational"
@@ -328,14 +366,14 @@ services:
 # Custom bridge network for service isolation and educational networking demonstration
 
 networks:
-  tutorial-network:
+  flask-tutorial-network:
     # Custom bridge network for service isolation
     driver: bridge
-    name: nodejs-tutorial-network
+    name: flask-tutorial-network
     
     # Network configuration for educational transparency
     driver_opts:
-      com.docker.network.bridge.name: tutorial-br0
+      com.docker.network.bridge.name: flask-br0
       com.docker.network.bridge.enable_ip_masquerade: "true"
       com.docker.network.bridge.enable_icc: "true"
       com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
@@ -344,9 +382,9 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/16
-          gateway: 172.20.0.1
-          ip_range: 172.20.240.0/20
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+          ip_range: 172.21.240.0/20
     
     # Network labels for identification and management
     labels:
@@ -358,31 +396,49 @@ networks:
 # =============================================================================
 # VOLUME CONFIGURATION
 # =============================================================================
-# Named volumes for dependency caching and persistent data management
+# Named volumes for Python virtual environment and dependency caching
 
 volumes:
-  # Development environment dependency cache
-  node_modules_cache_dev:
+  # Development environment virtual environment cache
+  venv_cache_dev:
     driver: local
-    name: nodejs-tutorial-dev-cache
+    name: flask-tutorial-venv-dev-cache
     labels:
-      - "tutorial.volume=dev-cache"
-      - "tutorial.purpose=dependency-caching"
+      - "tutorial.volume=venv-dev-cache"
+      - "tutorial.purpose=virtual-environment-caching"
       - "tutorial.environment=development"
   
-  # Production environment dependency cache
-  node_modules_cache_prod:
+  # Production environment virtual environment cache
+  venv_cache_prod:
     driver: local
-    name: nodejs-tutorial-prod-cache
+    name: flask-tutorial-venv-prod-cache
     labels:
-      - "tutorial.volume=prod-cache"
-      - "tutorial.purpose=dependency-caching"
+      - "tutorial.volume=venv-prod-cache"
+      - "tutorial.purpose=virtual-environment-caching"
+      - "tutorial.environment=production"
+      
+  # Development environment pip cache
+  pip_cache_dev:
+    driver: local
+    name: flask-tutorial-pip-dev-cache
+    labels:
+      - "tutorial.volume=pip-dev-cache"
+      - "tutorial.purpose=pip-dependency-caching"
+      - "tutorial.environment=development"
+  
+  # Production environment pip cache
+  pip_cache_prod:
+    driver: local
+    name: flask-tutorial-pip-prod-cache
+    labels:
+      - "tutorial.volume=pip-prod-cache"
+      - "tutorial.purpose=pip-dependency-caching"
       - "tutorial.environment=production"
   
   # Shared volume for educational data persistence demonstration
-  tutorial_shared_data:
+  flask_shared_data:
     driver: local
-    name: nodejs-tutorial-shared
+    name: flask-tutorial-shared
     driver_opts:
       type: none
       o: bind
@@ -399,76 +455,109 @@ volumes:
 #
 # 1. MULTI-ENVIRONMENT SERVICES:
 #    - Development service with hot-reloading and debugging capabilities
-#    - Production service with optimized performance and resource constraints
-#    - Demonstrates environment-specific configuration patterns
+#    - Production service with Gunicorn WSGI server and resource constraints
+#    - Demonstrates environment-specific Flask configuration patterns
 #
-# 2. CONTAINER NETWORKING:
+# 2. PYTHON/FLASK CONTAINER PATTERNS:
+#    - Virtual environment isolation for dependency management
+#    - Flask development server with debug mode and hot-reload
+#    - Gunicorn WSGI server for production deployment
+#    - Python debugpy integration for IDE debugging
+#
+# 3. CONTAINER NETWORKING:
 #    - Custom bridge network for service isolation
 #    - Service discovery through container names
 #    - Network security through isolated communication
 #
-# 3. VOLUME MANAGEMENT:
+# 4. VOLUME MANAGEMENT:
 #    - Source code mounting for development workflow
-#    - Dependency caching for performance optimization
-#    - Anonymous volumes to prevent host interference
+#    - Virtual environment caching for performance optimization
+#    - Pip cache volumes for faster dependency installation
 #
-# 4. SECURITY IMPLEMENTATION:
+# 5. SECURITY IMPLEMENTATION:
 #    - Non-root user execution in all containers
 #    - Security options and capability management
 #    - Read-only filesystem for production hardening
 #
-# 5. RESOURCE MANAGEMENT:
-#    - Memory and CPU limits for production deployment
+# 6. RESOURCE MANAGEMENT:
+#    - Memory and CPU limits adjusted for Python runtime overhead
 #    - Resource reservations for guaranteed performance
 #    - Educational resource constraints for learning
 #
-# 6. HEALTH MONITORING:
-#    - HTTP endpoint health checks for service availability
+# 7. HEALTH MONITORING:
+#    - HTTP endpoint health checks for Flask application availability
 #    - Environment-specific health check configurations
 #    - Container restart policies based on health status
 #
-# 7. BUILD OPTIMIZATION:
-#    - Multi-stage Docker builds with different targets
+# 8. BUILD OPTIMIZATION:
+#    - Multi-stage Docker builds with Python-specific targets
 #    - Build caching strategies for faster rebuilds
-#    - Context optimization through .dockerignore patterns
+#    - Virtual environment optimization for container efficiency
 #
-# 8. OPERATIONAL PATTERNS:
-#    - Service dependencies and startup ordering
-#    - Graceful shutdown handling
-#    - Educational logging and transparency
+# 9. FLASK DEVELOPMENT PATTERNS:
+#    - Flask application factory pattern integration
+#    - Environment variable configuration with python-dotenv
+#    - WSGI deployment patterns with Gunicorn
 #
 # LEARNING COMMANDS:
 # ==================
 # View service status:     docker-compose ps
 # Follow service logs:     docker-compose logs -f [service-name]
 # Execute into container:  docker-compose exec [service-name] sh
-# Scale services:          docker-compose up --scale nodejs-tutorial-dev=2
-# Network inspection:      docker network inspect nodejs-tutorial-network
-# Volume inspection:       docker volume inspect nodejs-tutorial-dev-cache
+# Scale services:          docker-compose up --scale flask-tutorial-dev=2
+# Network inspection:      docker network inspect flask-tutorial-network
+# Volume inspection:       docker volume inspect flask-tutorial-venv-dev-cache
 # Resource monitoring:     docker stats $(docker-compose ps -q)
 # Clean shutdown:          docker-compose down --volumes --remove-orphans
 #
 # DEVELOPMENT WORKFLOW:
 # ====================
-# 1. Start development:    docker-compose up nodejs-tutorial-dev
+# 1. Start development:    docker-compose up flask-tutorial-dev
 # 2. View application:     http://localhost:3000/hello
 # 3. Edit source code:     Files in src/backend/ automatically reload
-# 4. Run tests:            docker-compose run --rm nodejs-tutorial-dev npm test
-# 5. Debug application:    chrome://inspect -> Node.js targets
+# 4. Run tests:            docker-compose run --rm flask-tutorial-dev python -m pytest
+# 5. Debug application:    Configure IDE to connect to debugpy on port 5678
+# 6. Code formatting:      docker-compose exec flask-tutorial-dev python -m black .
+# 7. Linting:              docker-compose exec flask-tutorial-dev python -m flake8
+# 8. Security scan:        docker-compose exec flask-tutorial-dev python -m bandit -r .
 #
 # PRODUCTION TESTING:
 # ===================
-# 1. Start production:     docker-compose up nodejs-tutorial-prod
+# 1. Start production:     docker-compose up flask-tutorial-prod
 # 2. View application:     http://localhost:3001/hello
-# 3. Monitor resources:    docker stats nodejs-tutorial-prod
-# 4. Check health:         docker-compose exec nodejs-tutorial-prod curl localhost:3000/hello
-# 5. Scale testing:        docker-compose up --scale nodejs-tutorial-prod=3
+# 3. Monitor resources:    docker stats flask-tutorial-prod
+# 4. Check health:         docker-compose exec flask-tutorial-prod curl localhost:3000/hello
+# 5. Scale testing:        docker-compose up --scale flask-tutorial-prod=3
+# 6. Performance test:     docker-compose exec flask-tutorial-prod ab -n 1000 -c 10 http://localhost:3000/hello
+#
+# PYTHON DEVELOPMENT COMMANDS:
+# =============================
+# 1. Install dependencies: docker-compose exec flask-tutorial-dev pip install -r requirements-dev.txt
+# 2. Run tests:            docker-compose exec flask-tutorial-dev python -m pytest -v
+# 3. Test coverage:        docker-compose exec flask-tutorial-dev python -m pytest --cov=app --cov-report=html
+# 4. Format code:          docker-compose exec flask-tutorial-dev python -m black app.py wsgi.py
+# 5. Lint code:            docker-compose exec flask-tutorial-dev python -m flake8 app.py wsgi.py
+# 6. Type checking:        docker-compose exec flask-tutorial-dev python -m mypy app.py wsgi.py
+# 7. Security scan:        docker-compose exec flask-tutorial-dev python -m bandit -r app.py wsgi.py
+# 8. Dependency audit:     docker-compose exec flask-tutorial-dev python -m pip-audit
+# 9. Interactive shell:    docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print('Flask app created')"
+# 10. Flask shell:         docker-compose exec flask-tutorial-dev python -m flask shell
 #
 # SECURITY VERIFICATION:
 # ======================
-# 1. User verification:    docker-compose exec nodejs-tutorial-prod whoami
-# 2. Capability check:     docker-compose exec nodejs-tutorial-prod cat /proc/self/status | grep Cap
-# 3. Filesystem check:     docker-compose exec nodejs-tutorial-prod touch /test-readonly
-# 4. Network isolation:    docker-compose exec nodejs-tutorial-prod ping nodejs-tutorial-dev
+# 1. User verification:    docker-compose exec flask-tutorial-prod whoami
+# 2. Capability check:     docker-compose exec flask-tutorial-prod cat /proc/self/status | grep Cap
+# 3. Filesystem check:     docker-compose exec flask-tutorial-prod touch /test-readonly
+# 4. Network isolation:    docker-compose exec flask-tutorial-prod ping flask-tutorial-dev
+# 5. Python security:      docker-compose exec flask-tutorial-dev python -m bandit -r .
+# 6. Dependency security:  docker-compose exec flask-tutorial-dev python -m safety check
+#
+# FLASK-SPECIFIC DEBUGGING:
+# =========================
+# 1. Flask routes:         docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print(app.url_map)"
+# 2. Flask config:         docker-compose exec flask-tutorial-dev python -c "from app import create_app; app = create_app(); print(dict(app.config))"
+# 3. Environment check:    docker-compose exec flask-tutorial-dev python -c "import os; print('FLASK_ENV:', os.getenv('FLASK_ENV')); print('FLASK_DEBUG:', os.getenv('FLASK_DEBUG'))"
+# 4. Import verification:  docker-compose exec flask-tutorial-dev python -c "import flask, flask_cors, dotenv; print('All imports successful')"
+# 5. WSGI check:           docker-compose exec flask-tutorial-prod python -c "from wsgi import application; print('WSGI application loaded:', type(application))"
 #
 # =============================================================================

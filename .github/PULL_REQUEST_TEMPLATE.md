@@ -166,8 +166,27 @@
 3. **Were any trade-offs made between complexity and educational value?**
    <!-- Discuss complexity vs. learning value decisions -->
 
-4. **How do changes maintain stateless operation principles?**
-   <!-- Confirm stateless design is preserved -->
+4. **How do changes maintain stateless Flask operation principles?**
+   <!-- Confirm stateless design is preserved with Flask patterns -->
+
+5. **Do changes utilize Flask application factory pattern appropriately?**
+   <!-- Ensure scalable Flask application structure -->
+
+### Python Development Practices
+
+**Answer the following questions about Python implementation:**
+
+1. **Is virtual environment setup properly documented?**
+   <!-- Describe virtual environment creation and activation steps -->
+
+2. **Are requirements.txt dependencies current and secure?**
+   <!-- Confirm all Flask and testing dependencies are specified -->
+
+3. **Does the Flask application structure follow best practices?**
+   <!-- Validate application factory pattern and module organization -->
+
+4. **Are Gunicorn WSGI server deployment considerations addressed?**
+   <!-- Ensure production deployment readiness -->
 
 ### Security Considerations
 

@@ -1,0 +1,204 @@
+# Flask Migration Tutorial - Python Dependencies
+# Production and development dependencies for Flask application
+# Migrated from Node.js/Express.js to Python/Flask per Section 0 requirements
+
+# ==============================================================================
+# PRODUCTION RUNTIME DEPENDENCIES
+# ==============================================================================
+
+# Primary WSGI Web Application Framework
+# Section 3.2 Flask framework selection and educational value
+Flask>=3.1.1
+
+# Environment Configuration Management
+# Replaces Node.js process.env with 12-factor app configuration patterns
+# Section 3.3 environment management requirements
+python-dotenv>=1.0.1
+
+# Cross-Origin Resource Sharing (CORS) Support
+# Flask extension providing secure cross-origin request handling
+# Section 3.3 dependency requirements
+Flask-CORS>=4.0.0
+
+# Production WSGI HTTP Server
+# Replaces Node.js built-in HTTP server for production deployment
+# Section 3.3 production deployment requirements
+gunicorn>=21.2.0
+
+# ==============================================================================
+# TESTING AND QUALITY ASSURANCE DEPENDENCIES
+# ==============================================================================
+
+# Python Testing Framework with Advanced Fixture Management
+# Replaces Jest v29.7.0 per Section 3.2 testing ecosystem migration
+# Section 6.6 testing strategy requirements for 100% coverage enforcement
+pytest>=8.4.0
+
+# Flask Application Testing Integration
+# Provides Flask-specific testing fixtures and HTTP client automation
+# Section 6.6 Flask testing integration requirements
+pytest-flask>=1.3.0
+
+# Code Coverage Measurement and Reporting
+# Section 6.6 100% coverage enforcement across all metrics
+coverage>=7.6.0
+
+# pytest Integration for coverage.py
+# Seamless coverage measurement during pytest execution
+# Section 6.6 pytest-cov integration requirements
+pytest-cov>=5.0.0
+
+# Performance Testing and Benchmarking
+# Statistical performance analysis for Flask application validation
+# Section 6.6 pytest-benchmark performance requirements
+pytest-benchmark>=4.0.0
+
+# Parallel Test Execution
+# Enables multi-core test execution for improved CI performance
+# Section 6.6 pytest-xdist parallel configuration
+pytest-xdist>=3.5.0
+
+# System Resource Monitoring
+# Memory usage tracking and performance monitoring integration
+# Section 6.6 psutil memory monitoring for <75MB enforcement
+psutil>=5.9.0
+
+# Test Data Generation
+# Realistic mock data generation for Flask application testing
+# Section 6.6 faker mock data generators
+Faker>=22.0.0
+
+# ==============================================================================
+# CODE QUALITY AND SECURITY DEPENDENCIES
+# ==============================================================================
+
+# Python Code Formatting
+# Uncompromising code formatter ensuring consistent style
+# Section 3.3 code quality requirements
+black>=24.0.0
+
+# Python Code Linting
+# Style guide enforcement with pycodestyle, pyflakes, and McCabe analysis
+# Section 3.3 code quality analysis
+flake8>=7.0.0
+
+# Python Security Analysis
+# Static code analysis for security vulnerabilities
+# Section 8.3 bandit security scanning requirements
+bandit>=1.7.5
+
+# Python Dependency Vulnerability Scanning
+# Security vulnerability detection for PyPI packages
+# Section 8.3 safety dependency assessment
+safety>=3.0.0
+
+# Static Type Checking (Optional)
+# Enhanced IDE integration and early error detection
+# Section 3.3 mypy type checking requirements
+mypy>=1.8.0
+
+# Security-focused Code Linting
+# flake8 plugin for security-related code patterns
+flake8-security>=1.7.1
+
+# ==============================================================================
+# DEVELOPMENT UTILITIES
+# ==============================================================================
+
+# Multipart Form Data Parsing
+# Essential for comprehensive Flask application testing with file uploads
+# Section 3.3 development utilities
+python-multipart>=0.0.6
+
+# Cross-platform File System Event Monitoring
+# Enables automatic application reloading during development
+# Section 3.3 development utilities
+watchdog>=3.0.0
+
+# Python Package Building Format
+# Faster installation and distribution for dependencies
+# Section 3.3 development utilities
+wheel>=0.42.0
+
+# HTML Test Report Generation
+# Interactive HTML reports for pytest test results
+pytest-html>=4.1.0
+
+# pytest Mock Integration
+# Enhanced mocking capabilities for pytest fixtures
+pytest-mock>=3.12.0
+
+# HTTP Client for Testing
+# HTTP library for advanced testing scenarios and external API calls
+requests>=2.31.0
+
+# JSON Schema Validation
+# Validate JSON responses and configuration in tests
+jsonschema>=4.20.0
+
+# ==============================================================================
+# CONTAINER AND DEPLOYMENT UTILITIES
+# ==============================================================================
+
+# Alpine Linux Compatibility
+# Ensure compatibility with python:3.12-alpine base image
+# Section 8.3 containerization requirements
+packaging>=23.0
+
+# Build System Interface
+# Modern Python build system for container optimization
+build>=1.0.0
+
+# ==============================================================================
+# PINNED VERSIONS FOR SECURITY AND REPRODUCIBILITY
+# ==============================================================================
+
+# Core dependencies with security-focused version pinning
+Werkzeug>=3.0.1  # Flask dependency with security fixes
+Jinja2>=3.1.2    # Flask templating engine with security patches
+MarkupSafe>=2.1.3  # Safe string handling for Jinja2
+itsdangerous>=2.1.2  # Cryptographic signing for Flask sessions
+click>=8.1.7     # Command line interface library used by Flask
+
+# Testing infrastructure dependencies
+pluggy>=1.3.0   # Plugin system for pytest
+iniconfig>=2.0.0  # Configuration file parsing for pytest
+tomli>=2.0.1    # TOML file parsing for pyproject.toml support
+
+# Security and quality assurance
+certifi>=2023.11.17  # Certificate bundle for HTTPS requests
+urllib3>=2.1.0   # HTTP library with security updates
+idna>=3.6        # Internationalized domain names support
+
+# Development and utility dependencies
+pathspec>=0.12.0  # File path specification parsing for black
+platformdirs>=4.1.0  # Platform-specific directory discovery
+typing-extensions>=4.8.0  # Typing system extensions for mypy
+
+# ==============================================================================
+# DEPENDENCY NOTES AND VERSION JUSTIFICATION
+# ==============================================================================
+
+# Flask>=3.1.1: Latest stable release with enhanced type hint support,
+#                improved security defaults, and Python 3.12+ compatibility
+#                per Section 3.2 Flask framework selection
+
+# pytest>=8.4.0: Latest stable release providing comprehensive testing
+#                 capabilities with modern Python support and enhanced
+#                 assertion introspection per Section 6.6 testing strategy
+
+# gunicorn>=21.2.0: Production-grade WSGI server with multi-worker process
+#                   management and configurable concurrency models
+#                   per Section 3.3 production deployment requirements
+
+# psutil>=5.9.0: System monitoring library for <75MB memory usage enforcement
+#                 and resource consumption validation per Section 6.6
+
+# python-dotenv>=1.0.1: Environment variable management enabling 12-factor
+#                        app configuration patterns replacing Node.js process.env
+#                        per Section 3.3 configuration requirements
+
+# All version specifications use >= constraints to allow compatible minor
+# and patch updates while maintaining stability and security per Section 3.3
+# dependency management strategy. Critical security updates will be applied
+# through automated dependency scanning via bandit, safety, and Trivy.

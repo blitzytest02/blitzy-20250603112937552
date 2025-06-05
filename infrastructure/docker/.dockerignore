@@ -1,9 +1,9 @@
 # =============================================================================
-# DOCKER IGNORE CONFIGURATION - Node.js Tutorial Application
+# DOCKER IGNORE CONFIGURATION - Python Flask Tutorial Application
 # =============================================================================
-# Docker build context exclusion patterns for Express.js v5.1.0 hello world server
+# Docker build context exclusion patterns for Flask v3.1.1 hello world server
 # Optimizes container builds, reduces image size, and maintains security best practices
-# Compatible with Node.js v22.16.0 LTS runtime and multi-stage Docker builds
+# Compatible with Python 3.12+ runtime and multi-stage Docker builds
 #
 # Educational Purpose: Demonstrates Docker build optimization and security patterns
 # Learning Objectives: Container security, build performance, file inclusion strategies
@@ -38,33 +38,74 @@
 .github/pull_request_template.md
 
 # =============================================================================
-# NODE.JS DEPENDENCIES AND PACKAGE MANAGEMENT
+# PYTHON DEPENDENCIES AND PACKAGE MANAGEMENT
 # =============================================================================
-# Node.js dependency directories and package manager artifacts
-# These are installed fresh in container using package.json for consistency
+# Python virtual environments, package caches, and distribution artifacts
+# These are installed fresh in container using requirements.txt for consistency
 # and to prevent host-container platform incompatibilities
 #
-# Educational Value: Demonstrates proper dependency management in containers
-# Build Optimization: node_modules can be 50-200MB, significant context reduction
-# Platform Compatibility: Prevents native module conflicts between host and container
+# Educational Value: Demonstrates proper Python dependency management in containers
+# Build Optimization: Virtual environments can be 100-500MB, significant context reduction
+# Platform Compatibility: Prevents native extension conflicts between host and container
 
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.npm
-.yarn-integrity
-.pnp
-.pnp.js
-.yarn/cache/
-.yarn/unplugged/
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnpm-store/
+# Python virtual environments (all common names)
+.venv/
+venv/
+env/
+ENV/
+.env/
+.ENV/
+.python-version
+pyvenv.cfg
 
-# Package manager lock files (included selectively via specific COPY instructions)
-# Keep package-lock.json and yarn.lock for reproducible builds but exclude caches
+# Python package management directories
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python distribution and packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Python package installer caches
+pip-wheel-metadata/
+.pip-cache/
+.cache/
+.pip/
+
+# Poetry package manager
+.poetry/
+poetry.lock
+.venv-poetry/
+
+# Pipenv package manager
+Pipfile.lock
+.pipenv/
+
+# Conda package manager
+.conda/
+environment.yml
+environment.yaml
+
+# PyInstaller distribution
+*.manifest
+*.spec
 
 # =============================================================================
 # ENVIRONMENT AND SECRETS (LOCALIZED SECURITY PATTERNS)
@@ -85,6 +126,14 @@ lerna-debug.log*
 .env.production.local
 .env.staging
 .env.backup
+
+# Flask-specific environment files
+.flaskenv
+.flask_env
+instance/
+config.py
+config/local.py
+config/secrets.py
 
 # Cryptographic keys and certificates (CRITICAL SECURITY)
 *.key
@@ -140,30 +189,81 @@ credentials.json
 ._*
 
 # =============================================================================
-# TESTING AND COVERAGE ARTIFACTS
+# TESTING AND COVERAGE ARTIFACTS (PYTEST ECOSYSTEM)
 # =============================================================================
-# Test coverage reports and testing artifacts that are generated during CI/CD
-# and not needed in production container images
+# pytest test coverage reports and testing artifacts that are generated during CI/CD
+# and not needed in production container images. Replaces Jest patterns with pytest equivalents.
 #
 # Educational Value: Distinguishing between development artifacts and runtime code
 # Build Optimization: Coverage directories can be large, excluding reduces image size
 
+# pytest cache and artifacts
+.pytest_cache/
+.cache/
+pytest.ini
+pytest.cfg
+pyproject.toml
+
+# Coverage analysis and reporting
 coverage/
-.nyc_output/
-*.lcov
 .coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.coverage.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Test results and reporting
 test-results/
 junit.xml
-.jest-cache/
+.pytest_html/
+.pytest_tmp/
+
+# Test directories (unless specifically needed)
 tests/
 __tests__/
 test/
 spec/
 
-# Test configuration files (unless specifically needed)
-jest.config.js
-karma.conf.js
-protractor.conf.js
+# Python testing configuration files
+conftest.py
+setup.cfg
+
+# =============================================================================
+# PYTHON DEVELOPMENT TOOLS AND LINTING
+# =============================================================================
+# Python-specific development tools, linters, formatters, and static analysis
+# artifacts that should not be included in production container images
+#
+# Educational Value: Understanding Python development tooling in containerized environments
+# Build Strategy: Development tools configured at build time, not runtime
+
+# Python code formatting and linting caches
+.black-cache/
+.mypy_cache/
+.ruff_cache/
+.pylint.d/
+
+# Python security scanning tools
+.bandit/
+bandit-report.json
+.safety/
+safety-report.json
+.semgrep/
+.security/
+
+# Python type checking
+.dmypy.json
+dmypy.json
+
+# Python documentation generation
+.sphinx/
+docs/_build/
+site/
 
 # =============================================================================
 # BUILD AND DISTRIBUTION ARTIFACTS
@@ -178,17 +278,21 @@ dist/
 build/
 out/
 lib-cov/
-*.tgz
 *.tar.gz
 *.zip
 *.rar
 *.7z
+*.whl
 
-# Webpack and bundler outputs
-.webpack/
-.rollup.cache/
-.parcel-cache/
-.cache/
+# Python wheel and distribution caches
+.wheels/
+wheelhouse/
+
+# Cython compiled extensions
+*.c
+*.cpp
+*.pyx.in
+*.pyd
 
 # =============================================================================
 # LOGS AND RUNTIME FILES
@@ -207,11 +311,18 @@ pids/
 *.pid.lock
 lib-cov
 
-# Application-specific log directories
+# Flask and Python application-specific log directories
 application.log
 error.log
 access.log
 debug.log
+flask.log
+gunicorn.log
+
+# Python debugging and profiling
+*.prof
+*.lprof
+*.heapdump
 
 # =============================================================================
 # TEMPORARY AND CACHE FILES
@@ -229,11 +340,13 @@ temp/
 *.tmp
 *.temp
 .cache/
-.parcel-cache/
-.next/
-.nuxt/
-.vuepress/dist/
-.serverless/
+.pytest_cache/
+
+# Python specific temporary files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
 
 # OS-specific temporary files
 .DS_Store
@@ -368,8 +481,8 @@ known_hosts
 database.yml
 config/database.yml
 config/application.yml
-config/production.rb
-config/staging.rb
+config/production.py
+config/staging.py
 
 # Security scanners and audit files
 .security/
@@ -429,7 +542,7 @@ vulnerability-report.*
 # EDUCATIONAL TUTORIAL SPECIFIC EXCLUSIONS
 # =============================================================================
 # Patterns specific to the educational context of this tutorial application
-# Maintains focus on core Node.js and Express.js learning objectives
+# Maintains focus on core Python Flask and learning objectives
 #
 # Educational Value: Demonstrating practical Docker configuration for tutorials
 # Learning Focus: Container best practices without overwhelming complexity
@@ -462,7 +575,7 @@ presentations/
 # Runtime Strategy: Monitoring configured through environment variables
 
 # Application Performance Monitoring configurations
-newrelic.js
+newrelic.ini
 datadog.yaml
 .apm/
 
@@ -504,20 +617,21 @@ liveness-probe.sh
 # Educational Value: Understanding production vs development container differences
 # Security Benefit: Prevents debugging information exposure
 
-# Node.js profiling and debugging
-*.heapdump
-*.cpuprofile
-isolate-*-v8.log
-*.trace
-
-# Performance monitoring
-.clinic/
-clinic.json
-perfetto-trace.*
+# Python profiling and debugging
+*.prof
+*.lprof
+*.pstats
+*.profile
+.profiling/
 
 # Memory analysis
 *.heap
 heap.json
+*.hprof
+
+# Flask debugging
+.flask_debug/
+flask_debug.log
 
 # =============================================================================
 # DEPENDENCY SCANNING AND AUDIT EXCLUSIONS
@@ -528,44 +642,122 @@ heap.json
 # Educational Value: Understanding security practices in container development
 # Security Workflow: Audits performed during build, results not needed in runtime
 
-# NPM audit and security reports
-npm-audit.json
+# pip audit and security reports
+pip-audit.json
 .audit-ci/
 security-report.*
 
-# Snyk security scanning
-.snyk
-snyk-report.*
+# Bandit security scanning
+.bandit/
+bandit-report.*
+
+# Safety security scanning
+.safety/
+safety-report.*
+
+# Semgrep security scanning
+.semgrep/
+semgrep-report.*
+
+# =============================================================================
+# FLASK-SPECIFIC EXCLUSIONS
+# =============================================================================
+# Flask framework specific files and artifacts that should not be included
+# in production containers
+#
+# Educational Value: Understanding Flask-specific development patterns
+# Security Benefit: Prevents Flask development configuration exposure
+
+# Flask instance folder (contains runtime configuration)
+instance/
+
+# Flask session data
+flask_session/
+
+# Flask debugging and development
+.flask_debug/
+.flask_cache/
+
+# Flask-specific environment files
+.flaskenv
+
+# WSGI server configurations (handled at runtime)
+gunicorn.conf.py
+uwsgi.ini
+wsgi.ini
+
+# =============================================================================
+# PYTHON PACKAGE MANAGEMENT EXCLUSIONS
+# =============================================================================
+# Python package management artifacts and caches that are not needed in
+# production containers
+#
+# Educational Value: Understanding Python packaging in containers
+# Build Optimization: Package caches can be significant in size
+
+# pip package manager
+.pip/
+pip-wheel-metadata/
+.pip-cache/
+
+# setuptools
+.eggs/
+*.egg-info/
+
+# wheel
+.wheel/
+wheelhouse/
+
+# conda package manager
+.conda/
+.condarc
+
+# pipenv
+Pipfile
+Pipfile.lock
+
+# poetry
+poetry.lock
+.poetry/
 
 # =============================================================================
 # LOCALIZATION STRATEGY DOCUMENTATION
 # =============================================================================
 # EDUCATIONAL NOTE: This .dockerignore file implements a comprehensive
 # localization strategy to eliminate circular dependencies while maintaining
-# complete coverage of necessary exclusion patterns.
+# complete coverage of necessary exclusion patterns for Python Flask applications.
 #
 # Key Benefits:
 # 1. Self-contained security patterns prevent external dependencies
 # 2. Comprehensive coverage without relying on root .gitignore
-# 3. Educational comments explain each pattern's purpose
-# 4. Optimized for multi-stage Docker builds
-# 5. Platform-compatible exclusions for cross-platform development
+# 3. Educational comments explain each pattern's purpose for Flask context
+# 4. Optimized for multi-stage Docker builds with Python/Alpine
+# 5. Platform-compatible exclusions for cross-platform Flask development
+#
+# Flask-Specific Optimizations:
+# - Python virtual environment exclusions prevent massive context bloat
+# - pytest patterns replace Jest testing artifacts
+# - Python development tool caches excluded for clean builds
+# - Flask instance and session data excluded for security
+# - WSGI server configurations handled at runtime, not build time
 #
 # Maintenance Strategy:
 # - All essential patterns from backend .gitignore are localized here
 # - Security patterns are integrated directly for comprehensive protection
 # - Platform compatibility patterns ensure clean cross-platform builds
 # - Educational comments provide learning context for each exclusion
+# - Python-specific patterns optimized for Flask v3.1.1 and Python 3.12+
 #
 # Performance Impact:
-# - Reduces build context size by 90-95% (from ~300MB to <15MB)
+# - Reduces build context size by 90-95% (from ~500MB to <25MB with Python)
 # - Improves build time by 70-80% through context optimization
-# - Enhances Docker layer caching efficiency
-# - Minimizes network transfer to Docker daemon
+# - Enhances Docker layer caching efficiency for Python environments
+# - Minimizes network transfer to Docker daemon for Flask applications
 #
 # Security Implementation:
 # - Prevents credential exposure through comprehensive env file exclusion
 # - Eliminates cryptographic key inclusion in container images
 # - Protects against information disclosure through error log exclusion
 # - Maintains defense-in-depth through multiple security pattern layers
+# - Flask-specific security patterns prevent development configuration exposure
 # =============================================================================
