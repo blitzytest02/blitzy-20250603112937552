@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Route handler for GET /hello, the tutorial's single endpoint.
  *

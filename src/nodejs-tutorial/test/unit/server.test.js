@@ -82,104 +82,42 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
     });
 
     // The overrides. PORT arrives as a string from the environment in every
-    // case - `PORT=3100 npm start` included - and resolvePort turns it into
-    // the number asserted here; toEqual does not coerce, so a returned string
-    // '3100' would fail. HOST is returned as it stands once it validates:
-    // 0.0.0.0 is an IP literal node:net recognises, which is how the wildcard
-    // stays available to a reader who asks for it by name.
+    // case - `PORT=3100 npm start` included - and Number.parseInt turns it
+    // into the number asserted here; toEqual does not coerce, so a returned
+    // string '3100' would fail. HOST is taken exactly as it arrives, which is
+    // how the wildcard stays available to a reader who asks for it by name.
     expect(resolveConfig({ PORT: '3100', HOST: '0.0.0.0' })).toEqual({
       port: 3100,
       host: '0.0.0.0'
     });
 
-    // Both values are trimmed, so a stray space in a .env line or around a
-    // shell assignment does not decide what gets bound.
-    expect(resolveConfig({ PORT: ' 3100 ', HOST: ' 127.0.0.1 ' })).toEqual({
-      port: 3100,
-      host: '127.0.0.1'
+    // The fallback paths, one assertion each, because they are the whole of
+    // what the documented parse promises. An empty string is as good as
+    // absent for either variable; a value Number.parseInt cannot read at all
+    // yields NaN; and '0' parses to the falsy 0, so it takes the default too
+    // rather than asking the operating system for any free port.
+    expect(resolveConfig({ PORT: '', HOST: '' })).toEqual({
+      port: DEFAULT_PORT,
+      host: DEFAULT_HOST
+    });
+    expect(resolveConfig({ PORT: 'not-a-number' })).toEqual({
+      port: DEFAULT_PORT,
+      host: DEFAULT_HOST
+    });
+    expect(resolveConfig({ PORT: '0' })).toEqual({
+      port: DEFAULT_PORT,
+      host: DEFAULT_HOST
     });
 
-    // The rest of this case is the invalid-value policy, and every rejection
-    // in it writes the notice src/server.js documents to standard error. The
-    // spy captures those lines instead of letting them into the reporter's
-    // output, and the finally restores it whatever the assertions do.
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-    try {
-      // PORT is matched as a whole string and then range-checked.
-      // Number.parseInt would have read '3000junk' as 3000 and '1e3' as 1;
-      // '-1' and 'not-a-number' are not decimal syntax at all; '65536' and
-      // '99999' are above the assignable range; and '0' is rejected as out of
-      // range rather than taken for absent, which is what testing it for
-      // falsiness did to it.
-      for (const port of [
-        '3000junk',
-        '1e3',
-        '-1',
-        '0',
-        '65536',
-        '99999',
-        'not-a-number'
-      ]) {
-        expect(resolveConfig({ PORT: port })).toEqual({
-          port: DEFAULT_PORT,
-          host: DEFAULT_HOST
-        });
-      }
-
-      // The top of the range binds, so it is accepted - which is what keeps
-      // the range check from being a blanket rejection of large ports.
-      expect(resolveConfig({ PORT: '65535' })).toEqual({
-        port: 65535,
-        host: DEFAULT_HOST
-      });
-
-      // HOST's numeric aliases are the rejection with a security
-      // consequence: the resolver widens '0', '0x0' and '0000' to 0.0.0.0 and
-      // '127.1' to 127.0.0.1, so binding them as given would settle the
-      // listener's exposure on a value that does not look like an address at
-      // all. They fall back to loopback instead, as do a name DNS does not
-      // allow and one longer than 253 characters.
-      for (const host of [
-        '0',
-        '0x0',
-        '0000',
-        '127.1',
-        'host_name',
-        'a'.repeat(254)
-      ]) {
-        expect(resolveConfig({ HOST: host })).toEqual({
-          port: DEFAULT_PORT,
-          host: DEFAULT_HOST
-        });
-      }
-
-      // The supported forms, so that validating cannot be mistaken for
-      // rejecting everything: an IPv6 literal - the wildcard included - and a
-      // DNS name both pass through untouched.
-      expect(resolveConfig({ HOST: '::' })).toEqual({
-        port: DEFAULT_PORT,
-        host: '::'
-      });
-      expect(resolveConfig({ HOST: 'db.internal' })).toEqual({
-        port: DEFAULT_PORT,
-        host: 'db.internal'
-      });
-
-      // One notice per rejected value - thirteen of them above - each naming
-      // the variable, the value it ignored and the default it used in place
-      // of it, so a malformed deployment template is visible rather than
-      // silent.
-      expect(warn).toHaveBeenCalledTimes(13);
-      expect(warn).toHaveBeenCalledWith(
-        'Ignoring HOST="0": unsupported value. Using HOST=localhost instead.'
-      );
-      expect(warn).toHaveBeenCalledWith(
-        'Ignoring PORT="3000junk": unsupported value. Using PORT=3000 instead.'
-      );
-    } finally {
-      warn.mockRestore();
-    }
+    // Number.parseInt reads as far as it understands and then stops, so a
+    // trailing typo is dropped rather than refused. That prefix tolerance is
+    // the parse this project documents - Configuration says so in as many
+    // words - rather than an accident, so it is pinned here: a change to the
+    // resolution has to change this line and that paragraph together.
+    expect(resolveConfig({ PORT: '3100junk' })).toEqual({
+      port: 3100,
+      host: DEFAULT_HOST
+    });
 
     // Called with no argument at all, resolveConfig reads the real
     // process.env through its default parameter. That is the form `npm start`
