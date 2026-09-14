@@ -2,7 +2,7 @@
 
 A self-contained Node.js and Express tutorial project that serves **exactly one endpoint**, `GET /hello`, and returns the plain-text greeting `Hello world` to the calling HTTP client. It is deliberately small: eleven bytes over a real socket, with every behaviour around those eleven bytes — the media type, the path casing, the methods the path accepts, what happens to every other path, and how the process shuts down — specified, documented and covered by tests. This project lives in `hello-node/` at the repository root and is entirely independent of the Python Flask application that also lives in this repository under `src/backend/`: it shares no code, no configuration, no port and no dependency manifest with it, and installing or running it changes nothing about the Flask service. The two can run side by side on one machine.
 
-Every command below is runnable **as written from the `hello-node/` directory**, unless the section says otherwise (the `curl` verification commands work from any directory). Every expected output shown was measured against this project on Node.js 22.23.2 with npm 11.19.1 — nothing here is predicted.
+Every command below is runnable **as written from the `hello-node/` directory**, unless the section says otherwise (the `curl` verification commands work from any directory). Every expected output shown was measured against this project on Node.js 22.16.0 with npm 11.4.1 — nothing here is predicted.
 
 ## Table of Contents
 
@@ -22,18 +22,16 @@ Every command below is runnable **as written from the `hello-node/` directory**,
 
 | Component | Required Version | Purpose |
 |-----------|------------------|---------|
-| **Node.js** | 22.23.2 | JavaScript runtime; pinned in `.nvmrc` and in `engines.node` |
-| **npm** | 11.19.1 | Package manager; pinned in `engines.npm` |
+| **Node.js** | 22.16.0 | JavaScript runtime; pinned in `.nvmrc` and in `engines.node` |
+| **npm** | 11.4.1 | Package manager; pinned in `engines.npm` |
 | **nvm** | 0.40.x (verified with 0.40.3) | Reads `.nvmrc` and selects the pinned Node.js for you. Needed only for the `nvm use` step below — Option B installs Node.js without it |
 | **curl** | any recent version | Used by the verification commands to call the endpoint |
 
-Node.js 22.23.2 is pinned twice — in `.nvmrc`, so `nvm use` selects it, and in the `engines` field of `package.json`, so npm warns if you install under a different runtime.
+Node.js 22.16.0 is pinned twice — in `.nvmrc`, so `nvm use` selects it, and in the `engines` field of `package.json`, so npm warns if you install under a different runtime.
 
-**Both pins are the newest release of the line they name, and that is the point of them.** 22.23.2 is the latest release of the Node.js 22.x Maintenance LTS line ("Jod"), and 11.19.1 is the latest npm 11.x. The repository's contributor guide names Node v22.16.0 and npm v11.4.1 instead (`CONTRIBUTING.md:90-91`); this project deliberately does not follow it there, because 22.16.0 is five security releases behind its own line and the npm 11.4.1 executable ships a bundled dependency tree with published advisories of its own — advisories that `npm audit` over *this* project's lockfile can never report, because they live inside the package manager rather than in the tree it installs. A pinned toolchain is only reproducible until it is also stale: when you advance these numbers, advance all three locations together — `engines.node`, `.nvmrc` and the lockfile root — and re-run everything in [Verification](#verification) and [Tests](#tests).
+**npm 11.4.1 is not bundled with Node.js 22.16.0, so you have to install it explicitly.** Node.js 22.16.0 ships npm **10.9.2**; installing `npm@11.4.1` yourself is what produces the pinned version. This is worth stating plainly because the repository's contributor guide claims the opposite (`CONTRIBUTING.md:91` describes npm v11.4.1 as "bundled with Node.js") — npm is a separate release train from Node.js, that claim is incorrect for any pairing, and the install step below is not optional.
 
-**npm 11.19.1 is not bundled with Node.js 22.23.2, so you have to install it explicitly.** Node.js 22.23.2 ships npm **10.9.8**; installing `npm@11.19.1` yourself is what produces the pinned version. This is worth stating plainly because the repository's contributor guide claims the opposite (`CONTRIBUTING.md:91` describes npm v11.4.1 as "bundled with Node.js") — npm is a separate release train from Node.js, that claim is incorrect for any pairing, and the install step below is not optional.
-
-### Getting Node.js 22.23.2
+### Getting Node.js 22.16.0
 
 Pick one of these two routes before running anything in the next section. The repository's contributor guide documents the same pair (`CONTRIBUTING.md:100-128`).
 
@@ -43,26 +41,26 @@ Pick one of these two routes before running anything in the next section. The re
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm install                      # reads .nvmrc -> installs 22.23.2
-nvm use                          # reads .nvmrc -> selects 22.23.2
+nvm install                      # reads .nvmrc -> installs 22.16.0
+nvm use                          # reads .nvmrc -> selects 22.16.0
 ```
 
 ```text
-Found '<path>/hello-node/.nvmrc' with version <22.23.2>
-Now using node v22.23.2 (npm v10.9.8)
+Found '<path>/hello-node/.nvmrc' with version <22.16.0>
+Now using node v22.16.0 (npm v10.9.2)
 ```
 
-The npm version nvm reports in parentheses is whichever one is installed for that runtime: `10.9.8` on a fresh install — that is the npm the official Node.js 22.23.2 distribution bundles — and `11.19.1` after you run the upgrade in the next section. `v0.40.3` is the nvm release this project was verified with; nvm's own README at <https://github.com/nvm-sh/nvm> carries the current tag, and any 0.40.x behaves the same way here. The installer appends those two `NVM_DIR` lines to your shell profile, so you only need to run them by hand in the shell you installed from — a terminal opened afterwards loads nvm on its own. Run `nvm install`/`nvm use` from the `hello-node/` directory, because that is where the `.nvmrc` they read lives.
+The npm version nvm reports in parentheses is whichever one is installed for that runtime: `10.9.2` on a fresh install — that is the npm the official Node.js 22.16.0 distribution bundles — and `11.4.1` after you run the upgrade in the next section. `v0.40.3` is the nvm release this project was verified with; nvm's own README at <https://github.com/nvm-sh/nvm> carries the current tag, and any 0.40.x behaves the same way here. The installer appends those two `NVM_DIR` lines to your shell profile, so you only need to run them by hand in the shell you installed from — a terminal opened afterwards loads nvm on its own. Run `nvm install`/`nvm use` from the `hello-node/` directory, because that is where the `.nvmrc` they read lives.
 
-**Option B — install Node.js 22.23.2 directly.** Download the 22.23.2 release from <https://nodejs.org/> and install it with the installer for your operating system. Then skip the `nvm use` line in the next section; every other command is unchanged.
+**Option B — install Node.js 22.16.0 directly.** Download the 22.16.0 release from <https://nodejs.org/> and install it with the installer for your operating system. Then skip the `nvm use` line in the next section; every other command is unchanged.
 
-Either way, npm 11.19.1 still has to be installed explicitly, as the next section does.
+Either way, npm 11.4.1 still has to be installed explicitly, as the next section does.
 
 Verify the toolchain before installing anything:
 
 ```bash
-node -v    # must report: v22.23.2
-npm -v     # must report: 11.19.1
+node -v    # must report: v22.16.0
+npm -v     # must report: 11.4.1
 ```
 
 ## Install and Run
@@ -70,15 +68,13 @@ npm -v     # must report: 11.19.1
 From the `hello-node/` directory:
 
 ```bash
-nvm use                          # reads .nvmrc -> 22.23.2
-npm install -g npm@11.19.1       # required: 22.23.2 bundles npm 10.9.8
+nvm use                          # reads .nvmrc -> 22.16.0
+npm install -g npm@11.4.1        # required: 22.16.0 bundles npm 10.9.2
 npm ci                           # restores from the committed lockfile
 npm start
 ```
 
-The first line needs nvm installed and loaded (Option A above). If you installed Node.js 22.23.2 directly (Option B), skip it and run the other three.
-
-**Install scripts here are reviewed rather than implicit.** Exactly one package in the committed lockfile declares an install script — `fsevents@2.3.3`, a dependency Jest reaches through its file-watching layer, whose script is `node-gyp rebuild` — and `package.json` records the decision about it in an `allowScripts` policy with a single entry, `"fsevents": false`. npm 11.19.1 reads that field (it is the project-scoped control from npm RFC 868; the same CLI refuses an `--allow-scripts` flag in a project install precisely so the decision lives in the repository rather than in someone's shell history) and skips the lifecycle scripts of a denied package while still linking its binaries. The decision is *deny* because nothing in this tutorial needs a compiled native addon. Two lockfile facts make that cost-free: the entry is marked `"optional": true`, so npm tolerates its absence, and `"os": ["darwin"]`, so on anything other than macOS npm skips the package entirely — on this Linux machine `node_modules/fsevents` is never created. `npm ci --strict-allow-scripts` exits `0` here, which is the check that no install script in the tree is left unreviewed.
+The first line needs nvm installed and loaded (Option A above). If you installed Node.js 22.16.0 directly (Option B), skip it and run the other three.
 
 `npm ci` is the authoritative install command. It installs exactly the tree recorded in the committed `package-lock.json`, which is what makes every learner's install identical to the one this document was verified against. Expected output:
 
@@ -86,7 +82,7 @@ The first line needs nvm installed and loaded (Option A above). If you installed
 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. ...
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, ...
 
-added 347 packages, and audited 348 packages in <duration>
+added 348 packages, and audited 349 packages in <duration>
 
 62 packages are looking for funding
   run `npm fund` for details
@@ -94,13 +90,13 @@ added 347 packages, and audited 348 packages in <duration>
 found 0 vulnerabilities
 ```
 
-The package counts are fixed by the committed lockfile, so those numbers are worth checking. The elapsed time is not: npm prints whatever the run took, which is why this document shows `<duration>` in its place rather than a figure to compare against. For scale, three warm-cache runs of this exact command on the machine it was verified against reported `979ms`, `1s` and `1s`, and a read-only `npm ci --dry-run` over the same lockfile reported `up to date in 301ms`; a cold npm cache or a slow network makes it considerably longer.
+The package counts are fixed by the committed lockfile, so those numbers are worth checking. The elapsed time is not: npm prints whatever the run took, which is why this document shows `<duration>` in its place rather than a figure to compare against. For scale, three warm-cache runs of this exact command on the machine it was verified against reported `1s`, `942ms` and `997ms`, and a read-only `npm ci --dry-run` over the same lockfile reported `up to date in 241ms`; a cold npm cache or a slow network makes it considerably longer.
 
 Three things in that output are expected and none is a problem:
 
-- **347 packages** for one declared runtime dependency. Express 5.1.0 brings a substantial transitive tree — body parsing, content negotiation, ETag generation, MIME lookup, routing and error handling — and the production-only tree is 68 of those packages. The rest are the test runner and its dependencies. The lockfile describes 348 packages, one more than are installed here, and the difference is the macOS-only `fsevents` discussed above: npm's summary counts the tree it actually installed rather than the lockfile's entries. That is also why older notes in this repository quote 348 and 349 — measured here, npm 11.4.1 counted the optional package it had skipped, and npm 11.19.1 does not.
+- **348 packages** for one declared runtime dependency. Express 5.1.0 brings a substantial transitive tree — body parsing, content negotiation, ETag generation, MIME lookup, routing and error handling — and the production-only tree is 68 of those packages. The rest are the test runner and its dependencies.
 - **Exactly two deprecation warnings**, `inflight@1.0.6` and `glob@7.2.3`. Both are reached transitively through Jest, neither is a package this project selects, and neither carries a security advisory against this tree. They are accepted, not fixed: resolving them would mean replacing the test runner.
-- **`found 0 vulnerabilities`** — what the audit built into `npm ci` reports for this lock graph: no advisory *currently known to the registry* matches any of the 348 packages it audited. That is a point-in-time statement about known advisories, not a guarantee that installing is risk-free. Two things it does not say: an advisory published tomorrow against a package already in the lockfile would change the answer with no change to the tree, which is why `npm audit` is worth re-running rather than trusting once; and `npm ci` runs the install lifecycle scripts of the packages it installs unless you pass `--ignore-scripts` (`npm config get ignore-scripts` is `false` by default), so a clean audit is not a statement about what those scripts do.
+- **`found 0 vulnerabilities`** — what the audit built into `npm ci` reports for this lock graph: no advisory *currently known to the registry* matches any of the 349 packages it audited. That is a point-in-time statement about known advisories, not a guarantee that installing is risk-free. Two things it does not say: an advisory published tomorrow against a package already in the lockfile would change the answer with no change to the tree, which is why `npm audit` is worth re-running rather than trusting once; and `npm ci` runs the install lifecycle scripts of the packages it installs unless you pass `--ignore-scripts` (`npm config get ignore-scripts` is `false` by default), so a clean audit is not a statement about what those scripts do.
 
 Use `npm install` only when you have deliberately changed a dependency version in `package.json` and want to regenerate the lockfile. For simply installing the project, `npm ci` is the command.
 
@@ -144,21 +140,9 @@ There is no `dotenv` dependency and none is being added, so a `.env` file is **n
 
 **Why the default port is 3002 and not the more familiar 3000.** Port 3000 is not free in this repository: the development compose service publishes it on the host as `"3000:3000"` (`infrastructure/docker/docker-compose.yml:86`), so binding it here would fail for anyone who has `docker compose up` running. 3002 is claimed by nothing else in this repository and stays close enough to 3000 to remain recognizable.
 
-**What `PORT` accepts.** A base-10 integer from 1024 to 65535 — the non-privileged range — and `readConfig()` enforces that range rather than merely documenting it. A negative, fractional, hexadecimal, scientific-notation or non-numeric value, and any port outside the range, is refused with one line on stderr and the documented default 3002 is used instead:
+**What `PORT` accepts.** Ask for a port between 1024 and 65535 — the range a process can bind without special privilege. That range is documented here rather than policed in code: `readConfig()` is `Number(env.PORT) || 3002`, so whatever you set is coerced to a number and handed to `listen()` as it is. Two consequences of that follow, and both are worth knowing before you experiment. The first is that every falsy result of the coercion counts as absent, so an unset, empty, zero or non-numeric `PORT` — `PORT=`, `PORT=0`, `PORT=abc`, `PORT=4010abc` — resolves to 3002 with nothing printed about it; `PORT=0` is therefore not a way to ask for an ephemeral port, which is a testing affordance reached only by calling `startServer({ port: 0 })` in-process. The second is that anything coercing to a truthy number reaches the socket exactly as coerced, including values you may not have meant literally: `PORT=0x50` asks for port 80, because that is what `Number('0x50')` is, and `PORT=1e3` asks for 1000. Port 80 is inside the privileged range, so what you then see depends on who you are — an ordinary user gets a bind failure reported as `EACCES`, and only a privileged process actually gets the socket. A number outside the range above is `listen()`'s to reject, and it rejects synchronously with `ERR_SOCKET_BAD_PORT` — `PORT=65536`, `PORT=-1` and `PORT=1.5` each fail that way as the server starts, rather than quietly falling back to the default. A port in range that another process already holds fails at bind time instead, and the startup path reports it in a single line on stderr naming the code, such as `EADDRINUSE`.
 
-```text
-Ignoring PORT=65536: outside the non-privileged range 1024-65535. Using the default PORT=3002 instead.
-```
-
-An unset, empty or zero `PORT` counts as absent and resolves to 3002 silently, so `PORT=0` is not a way to ask for an ephemeral port; that is a testing affordance reached only by calling `startServer({ port: 0 })` in-process. The enforcement is not decoration: without it `PORT=65536` reached `listen()` and threw `ERR_SOCKET_BAD_PORT` with an uncaught stack trace, and `PORT=0x50` quietly bound privileged port 80.
-
-**What `HOST` accepts, and how exposure is opted into.** A hostname or an IP address, passed through to `listen()` as given — whether it resolves is the resolver's business, not this project's. Binding **every** interface is a deliberate opt-in with exactly two canonical spellings, `HOST=0.0.0.0` for IPv4 and `HOST=::` for IPv6; both are honoured and each really does bind every interface on the machine. **Any** other spelling of a wildcard address is refused with one line on stderr and `localhost` is used instead, so a typo cannot publish the server by accident. The check compares the expanded address rather than the text, which is what makes it complete: one wildcard has many spellings, and all of them are covered —
-
-- the zero-filled numeric forms `getaddrinfo(3)` accepts, such as `0`, `00`, `0x0`, `0.0` and `000.000.000.000`;
-- every IPv6 spelling of the unspecified address, including `::0`, `0:0:0:0:0:0:0:0`, `::0.0.0.0`, `0::0.0.0.0` and the zone-suffixed `::%eth0`;
-- the IPv4-mapped wildcard `::ffff:0.0.0.0` (and `::ffff:0:0`), which listens on every IPv4 interface exactly as `0.0.0.0` does.
-
-A specific address is never caught by it: `::1`, `127.0.0.1` and `::ffff:192.168.1.5` pass through untouched. The default is the safe one — `localhost` is the loopback interface, reachable from this machine and nowhere else — and the exposure decision stays yours, spelled out in full.
+**What `HOST` accepts.** A hostname or an IP address, passed through to `listen()` exactly as you set it. `readConfig()` is `env.HOST || 'localhost'` and nothing further happens to the value: this project adds no check of its own, so whether a name resolves is the resolver's business, and an address this machine does not own simply fails at bind time with the same single stderr line. That matters to a learner because it means the variable does what it appears to do — `HOST=0.0.0.0` for IPv4 and `HOST=::` for IPv6 really bind every interface on the machine, and they are honoured rather than second-guessed because binding every interface is precisely what a container deployment needs; the Python service in this repository documents `0.0.0.0` for that case and defaults to it (`src/backend/.env.example:46-49`, `src/backend/wsgi.py:105`). The default is the safe one: `localhost` is the loopback interface, reachable from this machine and from nowhere else, which is what you want for a server you are running on your own laptop. Reaching past it is a deliberate act, and the decision is the operator's — yours — rather than the server's.
 
 ## The Endpoint Contract
 
@@ -340,7 +324,7 @@ exit status=0
 
 The listening port is released, so a request made afterwards is refused rather than answered.
 
-**Where the signal lands when you start the server through `npm`.** `npm start` does not run `node server.js` directly: it spawns a shell, and the shell runs Node, so there are three processes rather than two. npm 11.19.1 does try to pass termination signals down — its bundled `@npmcli/run-script` installs `SIGINT` and `SIGTERM` handlers and re-sends the signal to the process it spawned — but the process it spawned is that shell, and a shell which has already started `node` need not forward anything to it. Measured here on Linux, where `/bin/sh` is `dash`: `kill -TERM` on the `npm` process ended npm and the shell, while `node server.js` stayed up, kept holding the port, and printed neither shutdown line.
+**Where the signal lands when you start the server through `npm`.** `npm start` does not run `node server.js` directly: it spawns a shell, and the shell runs Node, so there are three processes rather than two. npm 11.4.1 does try to pass termination signals down — its bundled `@npmcli/run-script` installs `SIGINT` and `SIGTERM` handlers and re-sends the signal to the process it spawned — but the process it spawned is that shell, and a shell which has already started `node` need not forward anything to it. Measured here on Linux, where `/bin/sh` is `dash`: `kill -TERM` on the `npm` process ended npm and the shell, while `node server.js` stayed up, kept holding the port, and printed neither shutdown line.
 
 `Ctrl-C` is unaffected by any of this, because the terminal delivers `SIGINT` to every process in the foreground group — Node included — rather than to npm alone. Measured: both shutdown lines, then exit.
 
@@ -361,7 +345,7 @@ Tests:       15 passed, 15 total
 |-------|-------|-----------------|
 | `test/integration/hello-endpoint.test.js` | 6 | The delivered HTTP contract and its boundary: status `200`; `content-type` exactly `text/plain; charset=utf-8`; body exactly `Hello world` with length 11; `content-length` of `11`; no `x-powered-by`; the trailing-slash variant identical; `/HELLO`, `/Hello` and `/hELLo` each `404`; `HEAD /hello` returning `200` with both content headers and no body; the JSON `404` and its fields; the `405` with `Allow: GET, HEAD` |
 | `test/unit/app.test.js` | 3 | `createApp()` returns a configured Express application; `GREETING` is the exact eleven-byte literal; `x-powered-by` is disabled |
-| `test/unit/server.test.js` | 6 | Configuration defaults resolve to `localhost` and `3002`; `HOST` and `PORT` overrides are honoured; `readConfig()` reads `process.env`; the server logs the *bound* port; the termination path logs both lines and exits `0`; a real `process.emit('SIGTERM')` closes the server |
+| `test/unit/server.test.js` | 6 | Configuration defaults resolve to `localhost` and `3002`; `HOST` and `PORT` overrides are honoured; `readConfig()` reads `process.env`; the server logs the *bound* port; the termination path logs both lines and exits `0`; an in-process `process.emit('SIGTERM')` closes the server |
 
 Two more scripts are available:
 
@@ -405,7 +389,7 @@ Eleven files, each with one job:
 hello-node/
 ├── package.json                          # manifest: entry point, scripts, exact dependency versions
 ├── package-lock.json                     # committed lockfile, so `npm ci` is authoritative
-├── .nvmrc                                # pins Node.js 22.23.2 for `nvm use`
+├── .nvmrc                                # pins Node.js 22.16.0 for `nvm use`
 ├── .env.example                          # documents HOST and PORT, the only two variables read
 ├── jest.config.js                        # test discovery, coverage collection, coverage gate
 ├── app.js                                # application assembly: every route, no socket

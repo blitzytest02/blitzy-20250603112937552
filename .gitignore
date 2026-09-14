@@ -399,9 +399,9 @@ newrelic_agent.log
 # - Teaches separation between source code and generated artifacts
 # =============================================================================
 
-!hello-node/.env.example
 # =============================================================================
 # END OF .GITIGNORE
 # Node.js Tutorial Application - Educational Repository Management
 # Total patterns: 100+ comprehensive exclusion rules for clean repository
 # =============================================================================
+!hello-node/.env.example

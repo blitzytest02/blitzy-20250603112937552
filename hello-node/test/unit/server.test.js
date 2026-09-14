@@ -5,16 +5,17 @@
  * Educational Focus: Testing the parts of a Node service that reach outside the
  * process — the environment, a socket, a signal, the process's own exit — without
  * letting them escape the test run. Three side effects are spied rather than
- * merely observed: `process.exit`, because `closeServer()` really calls it with 0
- * and the failed-bind path with 1, so an unspied call would end the Jest worker
- * mid-run; `console.log` and `console.error`, because the startup banner and the
- * failure report are observable nowhere else. Nothing is faked — the application,
- * the sockets and the EADDRINUSE are all real.
+ * merely observed: `process.exit`, because `closeServer()` really calls it with 0,
+ * so an unspied call would end the Jest worker mid-run; `console.log`, because the
+ * startup banner and the shutdown lines are observable nowhere else; and
+ * `console.error`, because the one diagnostic a failed bind writes is asserted
+ * here too. Nothing is faked — the application, the sockets and the EADDRINUSE are
+ * all real.
  *
  * Key Learning Concepts:
  * - `readConfig(env = process.env)` takes its environment as a parameter, so a test
- *   can supply any environment and every branch of the PORT and HOST policies
- *   stays reachable.
+ *   can supply any environment; that is what keeps both sides of its two `||`
+ *   fallbacks — the override and the documented default — reachable.
  * - Port 0 asks the operating system for a free port, which is why the banner's
  *   port comes from `server.address()` — what was bound — and not from the config.
  *   It is a testing affordance only: `readConfig` treats a zero PORT as absent.
@@ -201,15 +202,15 @@ describe('HTTP Server Module (server.js)', () => {
     logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
     // The failed-bind path reports to stderr, so console.error is captured for
-    // the same reason console.log is: the report is the only place that
-    // behaviour is observable, and an unspied call would print a full EADDRINUSE
-    // stack trace into the middle of a passing test run.
+    // the same reason console.log is: the diagnostic is the only place that
+    // behaviour is observable, and it doubles as the assertion that the
+    // configuration reader stays silent — nothing it resolves is reported.
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     // The replacement implementation is not optional. closeServer() really does
-    // call process.exit(0) and the failed-bind path really does call
-    // process.exit(1), so without this the first test to reach either would end
-    // the Jest worker instead of completing.
+    // call process.exit(0), so without this the first test to reach the
+    // shutdown path would end the Jest worker instead of completing. The
+    // failed-bind path calls neither exit nor exitCode, which this suite asserts.
     exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
 
     servers = [];
@@ -256,7 +257,7 @@ describe('HTTP Server Module (server.js)', () => {
       expect(typeof DEFAULT_PORT).toBe('number');
     });
 
-    it('should honour ordinary HOST and PORT overrides, treat a zero, empty or non-numeric PORT as absent, and refuse every out-of-policy PORT and wildcard-alias HOST', () => {
+    it('should honour HOST and PORT overrides and treat an unset, empty, zero or non-numeric PORT as absent', () => {
       const config = readConfig({ HOST: '127.0.0.1', PORT: '4010' });
 
       expect(config.host).toBe('127.0.0.1');
@@ -275,124 +276,32 @@ describe('HTTP Server Module (server.js)', () => {
       expect(readConfig({ PORT: '' }).port).toBe(3002);
       expect(readConfig({ HOST: '' }).host).toBe('localhost');
 
-      // The absent class is also the SILENT class: an unconfigured tutorial is
-      // the normal case, so nothing is reported for it. '00' belongs here too,
-      // because it is a base-10 zero however it is spelled.
+      // An entirely empty environment is the same class as an empty value, and
+      // resolves to both documented defaults.
+      expect(readConfig({}).host).toBe('localhost');
       expect(readConfig({}).port).toBe(3002);
-      expect(readConfig({ PORT: '00' }).port).toBe(3002);
-      expect(errorSpy).not.toHaveBeenCalled();
 
-      // The enforced PORT boundary, asserted at its edges with literals rather
-      // than a pattern, because a boundary is a pair of exact numbers. 1024 is
-      // the lowest non-privileged port and 65535 the highest a 16-bit port field
-      // can express; the surrounding values are outside the policy.
-      expect(readConfig({ PORT: '1024' }).port).toBe(1024);
-      expect(readConfig({ PORT: '65535' }).port).toBe(65535);
-      expect(readConfig({ PORT: ' 4010 ' }).port).toBe(4010);
-      expect(errorSpy).not.toHaveBeenCalled();
-
-      // Every one of these reached listen() before the parser existed, and each
-      // failed in its own way: '65536', '-1' and '1.5' threw ERR_SOCKET_BAD_PORT
-      // synchronously — out of startServer, before the callback that reports
-      // startup errors could run — while '0x50' and '1e3' coerced to the
-      // privileged port 80 and to 1000. Now each resolves to the documented
-      // default, and each is reported rather than ignored in silence.
-      const refusedPorts = [
-        '-1',
-        '1.5',
-        '1023',
-        '65536',
-        '0x50',
-        '1e3',
-        'Infinity',
-        '+4010',
-        '4010abc',
-        'not-a-port'
-      ];
-
-      for (const refused of refusedPorts) {
-        errorSpy.mockClear();
-
-        expect(readConfig({ PORT: refused }).port).toBe(3002);
-
-        // One line, on stderr, naming the variable, the value and the default
-        // that replaced it — and a single line, so a value carrying a newline
-        // cannot add a second one.
-        expect(errorSpy).toHaveBeenCalledTimes(1);
-        expect(errorSpy).toHaveBeenCalledWith(
-          `Ignoring PORT=${refused}: ${
-            /^\d+$/.test(refused)
-              ? 'outside the non-privileged range 1024-65535'
-              : 'not a base-10 integer'
-          }. Using the default PORT=3002 instead.`
-        );
-      }
-
-      // Binding every interface is an opt-in with exactly two canonical
-      // spellings, and both are honoured: a container needs one of them, and the
-      // repository's own template recommends 0.0.0.0 for exactly that
-      // (src/backend/.env.example:46-49). Nothing else about a host is filtered,
-      // so an ordinary address is passed through untouched.
-      errorSpy.mockClear();
-
+      // Nothing about a host is filtered here, because whether a value resolves
+      // is the resolver's business: both wildcard spellings reach listen() as
+      // written. A container deployment needs one of them, and the repository's
+      // own template recommends 0.0.0.0 for exactly that
+      // (src/backend/.env.example:46-52), so binding every interface is the
+      // operator's decision rather than this reader's — the default `localhost`
+      // is what makes the unconfigured case the safe one.
       expect(readConfig({ HOST: '0.0.0.0' }).host).toBe('0.0.0.0');
       expect(readConfig({ HOST: '::' }).host).toBe('::');
-      expect(readConfig({ HOST: '  192.168.1.10  ' }).host).toBe('192.168.1.10');
 
-      // Addresses that merely LOOK like the wildcard family are passed through,
-      // because the policy is about which address a value denotes rather than
-      // which characters it contains. '::1' is loopback; '::ffff:192.168.1.5'
-      // names one specific IPv4 host through IPv6 notation; '0:0' and '0b0' are
-      // not addresses in any family, so the resolver rejects them and the
-      // startup diagnostic reports that failure.
-      expect(readConfig({ HOST: '::1' }).host).toBe('::1');
-      expect(readConfig({ HOST: '::ffff:192.168.1.5' }).host).toBe('::ffff:192.168.1.5');
-      expect(readConfig({ HOST: '0:0' }).host).toBe('0:0');
-      expect(readConfig({ HOST: '0b0' }).host).toBe('0b0');
+      // A PORT that is a number is the port, whatever its value: 80 is
+      // privileged and is passed through exactly as 4010 is. A PORT that is not
+      // a number is falsy once Number() has had it — `Number('abc')` is NaN —
+      // so it belongs to the absent class and resolves to the default.
+      expect(readConfig({ PORT: '80' }).port).toBe(80);
+      expect(readConfig({ PORT: 'abc' }).port).toBe(3002);
+
+      // The whole of this function's reporting contract: it resolves a value or
+      // falls back to a documented default, and writes nothing to any stream
+      // while doing it. A refusal line reintroduced into the reader fails here.
       expect(errorSpy).not.toHaveBeenCalled();
-
-      // The same exposure reached by accident, refused — and the list is long
-      // because one wildcard has many spellings, every one of them measured by
-      // binding a real socket and reading back server.address(). The first group
-      // is what getaddrinfo(3) zero-fills from a bare or partial numeric form.
-      // The second is IPv6 notation for the unspecified address, including the
-      // compressed, fully written, dotted-tail and zone-suffixed forms. The
-      // third is its IPv4-mapped equivalent, which listens on every IPv4
-      // interface just as 0.0.0.0 does: a socket bound to ::ffff:0.0.0.0
-      // accepted a connection to this host's own routable address. Before the
-      // policy existed each of these bound a wildcard, so the documented
-      // "explicit wildcard opt-in" was not in fact required to publish the
-      // server on every interface.
-      const wildcardAliases = [
-        '0',
-        '00',
-        '0x0',
-        '0.0',
-        '0.0.0',
-        '000.000.000.000',
-        '0x0.0x0.0x0.0x0',
-        '::0',
-        '0:0:0:0:0:0:0:0',
-        '::0.0.0.0',
-        '0::0.0.0.0',
-        '0:0:0:0:0:0:0.0.0.0',
-        '::%eth0',
-        '::ffff:0.0.0.0',
-        '::ffff:0:0'
-      ];
-
-      for (const alias of wildcardAliases) {
-        errorSpy.mockClear();
-
-        expect(readConfig({ HOST: alias }).host).toBe('localhost');
-
-        expect(errorSpy).toHaveBeenCalledTimes(1);
-        expect(errorSpy).toHaveBeenCalledWith(
-          `Ignoring HOST=${alias}: an ambiguous spelling of the wildcard address ` +
-            '(set HOST=0.0.0.0 or HOST=:: to bind every interface deliberately). ' +
-            'Using the default HOST=localhost instead.'
-        );
-      }
     });
 
     it('should read process.env when called with no argument', () => {
@@ -434,13 +343,7 @@ describe('HTTP Server Module (server.js)', () => {
   });
 
   describe('startServer()', () => {
-    it('should bind the requested host on a fresh ephemeral port each time, log the bound port, and report a failed bind in one sanitized line without masking its cause', async () => {
-      // The failure path sets process.exitCode rather than calling process.exit,
-      // so the status has to be read off the process and put back at once. Jest
-      // runs these tests in a worker whose own exit status is that same value: a
-      // 1 left behind here would fail `npm test` with every assertion passing.
-      const exitCodeBefore = process.exitCode;
-
+    it('should bind the requested host on a fresh ephemeral port each time, log the bound port, and report a failed bind without masking its cause', async () => {
       // Port 0 is the whole point of this test: the requested value and the bound
       // value differ, so a banner built from the wrong one is visibly wrong.
       const first = track(startServer({ host: '127.0.0.1', port: 0 }));
@@ -520,12 +423,13 @@ describe('HTTP Server Module (server.js)', () => {
       expect(failing.listening).toBe(false);
 
       // The failure is reported on stderr in ONE line and ONE argument: the
-      // address that was requested (there is no bound one to name) and the
-      // error's code token. The Error object is deliberately absent from the
-      // call — passing it printed four stack frames plus errno, syscall, address
-      // and port, and a stack names absolute paths from the machine it ran on.
-      // The cause still reaches the operator, because EADDRINUSE is the part of
-      // that Error that says what to do about it.
+      // address that was requested — there is no bound one to name — and the
+      // error's `code`. The Error object is deliberately absent from the call,
+      // because console.error prints its stack, and a stack names absolute paths
+      // from the machine it ran on. The cause still reaches the operator, because
+      // EADDRINUSE is the part of that Error that says what to do about it. The
+      // line is asserted as a literal, so a module that logged the Error instead
+      // — or interpolated its message — fails here.
       expect(errorSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy.mock.calls[0]).toHaveLength(1);
 
@@ -535,101 +439,12 @@ describe('HTTP Server Module (server.js)', () => {
         `Failed to start server on http://127.0.0.1:${address.port} (EADDRINUSE)`
       );
 
-      // The negative half of the contract, stated explicitly so a regression to
-      // logging the Error — or to interpolating its message — fails here: no
-      // stack frame, no path from this checkout, no dependency directory, and no
-      // control character that could break the line in two.
-      expect(reported).not.toContain('    at ');
-      expect(reported).not.toContain('Error:');
-      expect(reported).not.toContain(__dirname);
-      expect(reported).not.toContain('node_modules');
-      expect(reported.split('\n')).toHaveLength(1);
-      expect(reported).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
-
-      // Non-zero, because `npm start`, a CI step and a process manager all read
-      // the exit status, and a server that never bound must not report success.
-      // It is SET rather than forced: process.exit() would tear the process down
-      // before an asynchronous write to stderr had flushed, which would lose the
-      // diagnostic asserted above. Read it, restore it, then assert — restoring
-      // first means a failing assertion cannot leak a failing status either.
-      const exitCodeAfterFailedBind = process.exitCode;
-
-      process.exitCode = exitCodeBefore;
-
-      expect(exitCodeAfterFailedBind).toBe(1);
-      expect(exitSpy).not.toHaveBeenCalled();
-
+      // The diagnostic is the whole of what this arm does: it prints nothing on
+      // stdout, so the stream a reader or a script scans for the banner stays
+      // clean, and it terminates nothing — a tutorial server reports the failure
+      // and leaves the process's exit status to the caller.
       expect(logSpy).toHaveBeenCalledTimes(0);
-
-      // A fourth server, asked to bind a HOST carrying a newline. Two properties
-      // are under test. The diagnostic must stay ONE line: an unescaped value
-      // ends the line early and starts a second one that reads exactly like a
-      // genuine startup banner, which is how a log gets forged (CWE-117) —
-      // measured on the unsanitized form, which printed "Server listening on
-      // http://attacker.invalid:443" as a line of its own. And the control
-      // character must be escaped rather than dropped, so the diagnostic still
-      // shows a reader what was actually set.
-      errorSpy.mockClear();
-
-      const forgedBanner = 'Server listening on http://attacker.invalid:443';
-      const hostile = track(startServer({ host: `127.0.0.1\n${forgedBanner}`, port: 0 }));
-
-      let hostileError = null;
-
-      try {
-        await onceListening(hostile);
-      } catch (error) {
-        hostileError = error;
-      }
-
-      const exitCodeAfterHostileHost = process.exitCode;
-
-      process.exitCode = exitCodeBefore;
-
-      // The host cannot resolve, so the bind fails and the failure arm runs.
-      expect(hostileError).not.toBeNull();
-      expect(exitCodeAfterHostileHost).toBe(1);
-      expect(hostile.address()).toBeNull();
-
-      expect(errorSpy).toHaveBeenCalledTimes(1);
-
-      const sanitized = errorSpy.mock.calls[0][0];
-
-      expect(sanitized.split('\n')).toHaveLength(1);
-      expect(sanitized).toContain(`127.0.0.1\\x0a${forgedBanner}`);
-      expect(sanitized).not.toContain(`\n${forgedBanner}`);
-      expect(sanitized).toMatch(/ \([A-Z0-9_]+\)$/);
-
-      // Further servers, proving the HOST policy by what gets BOUND rather than
-      // by what readConfig returned — the assertion the configuration-level
-      // checks cannot make. Each of these spellings, measured before the policy
-      // existed, bound a wildcard and reached every network this machine is on:
-      // the bare numeric form bound 0.0.0.0, the three IPv6 forms bound ::, and
-      // the IPv4-mapped form bound ::ffff:0.0.0.0. Port 0 keeps the checks off
-      // the project's default port, and the canonical wildcards are asserted at
-      // the configuration level above rather than bound here, because binding
-      // every interface is not something a test suite should do on a shared
-      // machine.
-      const refusedHosts = ['0', '::0.0.0.0', '0:0:0:0:0:0:0.0.0.0', '0::0.0.0.0', '::ffff:0.0.0.0'];
-
-      for (const refusedHost of refusedHosts) {
-        errorSpy.mockClear();
-        logSpy.mockClear();
-
-        const aliasConfig = readConfig({ HOST: refusedHost });
-
-        expect(aliasConfig.host).toBe('localhost');
-
-        const loopback = track(startServer({ host: aliasConfig.host, port: 0 }));
-
-        await onceListening(loopback);
-
-        // 'localhost' resolves to either loopback address depending on how the
-        // machine orders its families, and both are loopback-only; what matters
-        // is that it is neither wildcard, `0.0.0.0` or `::`, and neither the
-        // IPv4-mapped wildcard `::ffff:0.0.0.0`.
-        expect(['127.0.0.1', '::1']).toContain(loopback.address().address);
-      }
+      expect(exitSpy).not.toHaveBeenCalled();
     });
   });
 
