@@ -54,12 +54,34 @@ This tutorial application is designed to provide hands-on experience with fundam
 
 ### Project Features
 
-- **Single `/hello` endpoint** returning 'Hello world' response demonstrating basic Flask WSGI server functionality
+- **Single `/hello` endpoint** returning a JSON envelope whose `message` field is 'Hello world', demonstrating basic Flask WSGI server functionality
 - **Flask v3.1.1 security features** including automatic JSON serialization and modern security defaults
 - **Comprehensive error handling** with 404 and 500 responses following HTTP standards using Flask decorators
 - **Educational logging and monitoring patterns** for understanding Python web server behavior
 - **Complete test suite with 100% code coverage** demonstrating pytest best practices and Flask testing patterns
 - **Docker containerization support** for deployment learning and environment consistency with Python runtime
+
+### Related Projects
+
+This repository is a migration exemplar, and it holds **two sibling tutorials
+under one source root**. They are siblings rather than alternatives: neither
+replaces the other, and neither project reads the other's code.
+
+- **Python Flask tutorial** — the project this README documents, with its
+  source at `src/backend/`. Its `GET /hello` returns an `application/json`
+  envelope in which `Hello world` is the value of a `message` field
+  [src/backend/app.py:367-411].
+- **Node.js tutorial** — documented at
+  [`src/nodejs-tutorial/README.md`](src/nodejs-tutorial/README.md). Its
+  `GET /hello` returns an 11-byte `text/plain; charset=utf-8` body whose
+  bytes are exactly `Hello world`.
+
+Node.js and Express are the runtime this tutorial migrated *from*, and that
+predecessor now exists in the tree as a runnable project rather than as
+leftover documentation. Each contract has exactly one authority, so the two
+are never conflated: the Flask contract is documented in this README and in
+[`src/backend/README.md`](src/backend/README.md), and the Node.js contract in
+[the Node.js API reference](src/nodejs-tutorial/docs/api-reference.md).
 
 ## Prerequisites
 
@@ -149,19 +171,32 @@ pip-audit
 
 ### 4. Environment Setup (Optional)
 
-Create a `.env` file for custom configuration:
+Create a `.env` file for custom configuration. The application loads it at
+import time with `load_dotenv()` [src/backend/app.py:52], so every value
+below takes effect on the next start:
 
 ```bash
 # Optional environment variables
 FLASK_APP=app.py
 FLASK_ENV=development
-PORT=5000
+PORT=3000
 HOST=localhost
 ```
 
 **Default Configuration:**
-- **PORT**: 5000 (customizable via environment variable)
-- **HOST**: localhost (safe for local development)
+
+- **PORT**: `8000` with no environment variable set — that is the
+  application's own fallback [src/backend/app.py:722]. The template above
+  and `src/backend/.env.example` both supply `3000`
+  [src/backend/.env.example:38], the same port the container image
+  configures [infrastructure/docker/Dockerfile:54]. The code default and the
+  template value are different things, so every command in this README uses
+  the one its own startup path establishes: `8000` when the server is started
+  with no `.env` present, `3000` in the container and after this template is
+  copied into place.
+- **HOST**: `localhost`, which is both the code fallback
+  [src/backend/app.py:721] and the template value
+  [src/backend/.env.example:52], and is safe for local development
 - **FLASK_ENV**: development (enables enhanced debugging)
 
 ## Usage
@@ -175,8 +210,8 @@ HOST=localhost
 source .venv/bin/activate  # macOS/Linux
 # .venv\Scripts\activate  # Windows
 
-# Start the Flask development server
-python -m flask run
+# Start the Flask development server on its own default host and port
+python app.py
 
 # Alternative: Start with Gunicorn for production testing
 gunicorn wsgi:app
@@ -185,72 +220,98 @@ gunicorn wsgi:app
 python -m flask run --port=8080
 
 # Development mode with debug enabled
-FLASK_DEBUG=True python -m flask run
+FLASK_DEBUG=True python app.py
 ```
 
 **Expected Output:**
-```
-🚀 Flask Server Successfully Started!
-============================================================
-⏰ Startup time: 2024-01-15T10:30:00.000Z
-🌐 Server listening on: http://localhost:5000
-📡 Host: localhost
-🔌 Port: 5000
 
-🎯 Available Endpoints:
-   GET  http://localhost:5000/hello  →  Returns "Hello world"
+Started as above with neither `PORT` nor `HOST` exported and no `.env` in
+place, the server binds the code defaults `localhost` and `8000`
+[src/backend/app.py:721-722] and logs the startup banner below
+[src/backend/app.py:725-732]. Every line arrives prefixed by the logging
+timestamp, logger name and level — the format configured at
+[src/backend/app.py:56-58] — which is elided here for readability:
 
-🔧 Testing Commands:
-   curl http://localhost:5000/hello
-   curl -i http://localhost:5000/hello  # Include response headers
-
-🌐 Browser Access:
-   Open: http://localhost:5000/hello
+```text
+🚀 Starting Flask Development Server!
+==================================================
+🌍 Host: localhost
+🔌 Port: 8000
+🎯 URL: http://localhost:8000
+🌐 Endpoints:
+   GET  http://localhost:8000/hello
+   GET  http://localhost:8000/health
+==================================================
 ```
 
 #### Test the Endpoint
 
 **Browser Access:**
-```
-http://localhost:5000/hello
+
+```text
+http://localhost:8000/hello
 ```
 
 **Command Line Testing:**
+
 ```bash
 # Basic request
-curl http://localhost:5000/hello
+curl http://localhost:8000/hello
 
 # Include response headers
-curl -i http://localhost:5000/hello
+curl -i http://localhost:8000/hello
 
 # Test error handling
-curl http://localhost:5000/invalid
+curl http://localhost:8000/invalid
 
-# Test with JSON response format
-curl -H "Accept: application/json" http://localhost:5000/hello
+# Confirm the JSON media type the endpoint already returns
+curl -H "Accept: application/json" http://localhost:8000/hello
 ```
 
 **Expected Responses:**
 
-✅ **Successful Request:**
-```
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Content-Length: 11
+Both responses below come from the development server started above with
+`python app.py`. That path calls `app.run(..., debug=True)`
+[src/backend/app.py:737-742], and Flask's JSON provider indents its output
+while debug is on, so each envelope is pretty-printed here. Through the
+application factory — the path Gunicorn and the pytest suite take — the same
+envelopes are compact: 86 bytes for the success response rather than 99. The
+[API Documentation](#api-documentation) section documents that compact form
+and the complete response header set; the header lines below are abridged to
+the media type, the length and the API version. The `timestamp` field changes
+on every request, and every byte count quoted in this README assumes its
+26-character `datetime.now().isoformat()` rendering
+[src/backend/app.py:393].
 
-Hello world
+✅ **Successful Request:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 99
+X-API-Version: 1.0
+
+{
+  "message": "Hello world",
+  "status": "success",
+  "timestamp": "2026-09-14T18:01:26.253618"
+}
 ```
 
 ❌ **Error Response:**
-```
+
+```http
 HTTP/1.1 404 Not Found
 Content-Type: application/json
+Content-Length: 198
 
 {
-  "status": 404,
-  "message": "Not Found",
+  "error": "Not Found",
+  "message": "The requested resource was not found on this server",
+  "method": "GET",
   "path": "/invalid",
-  "method": "GET"
+  "status": 404,
+  "timestamp": "2026-09-14T18:01:26.253618"
 }
 ```
 
@@ -286,100 +347,184 @@ FLASK_ENV=production gunicorn wsgi:app
 
 #### GET /hello
 
-Returns a simple 'Hello world' greeting demonstrating basic Flask WSGI server functionality.
+Returns a JSON envelope whose `message` field carries the string
+`Hello world`, demonstrating basic Flask WSGI server functionality and
+Flask's `jsonify()` response helper [src/backend/app.py:367-411].
 
 **Request:**
+
 ```http
 GET /hello HTTP/1.1
-Host: localhost:5000
+Host: localhost:8000
+Origin: http://localhost:3000
 ```
 
+The `Origin` header is optional. It is shown because it is what makes the two
+CORS headers appear in the response below.
+
 **Response:**
+
+Captured through the application factory — `create_app(...)`, the path
+Gunicorn and the pytest suite take — where the envelope is compact and
+measures 86 bytes including its trailing newline. The handler builds the
+dictionary in the source order `message`, `timestamp`, `status` and hands it
+to `jsonify()`, which sorts the keys, so the order below is the wire order
+rather than the source order [src/backend/app.py:391-395]:
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Content-Length: 11
+Content-Type: application/json
+Content-Length: 86
+X-API-Version: 1.0
+X-Response-Time: 0.15ms
+X-Request-ID: req_1789409191034
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
+X-Permitted-Cross-Domain-Policies: none
 
-Hello world
+{"message":"Hello world","status":"success","timestamp":"2026-09-14T18:06:31.034989"}
 ```
 
 **Response Headers:**
-- `Content-Type`: `text/plain; charset=utf-8`
-- `Content-Length`: `11`
-- `Server`: `Werkzeug/3.x.x Python/3.12.x` (development)
+
+Every header the application sets on a successful `/hello` response, in the
+order it emits them:
+
+- `Content-Type`: `application/json`, set explicitly by the route handler
+  [src/backend/app.py:403]
+- `Content-Length`: `86` through the application factory, `99` under direct
+  `python app.py` execution, where debug pretty-printing indents the envelope
+- `X-API-Version`: `1.0`, added by the route handler
+  [src/backend/app.py:404]
+- `X-Response-Time`: processing time in milliseconds, formatted to two
+  decimal places by the after-request middleware [src/backend/app.py:342]
+- `X-Request-ID`: per-request trace identifier of the form
+  `req_<epoch-milliseconds>`, assigned by the before-request middleware
+  [src/backend/app.py:317] and copied onto the response
+  [src/backend/app.py:350]
+- `Access-Control-Allow-Origin` and `Vary: Origin`: emitted by Flask-CORS
+  **only when the request carries a matching `Origin`**. The permitted
+  development origins are `http://localhost:3000` and
+  `http://localhost:8000` [src/backend/app.py:271]
+- `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`,
+  `Referrer-Policy`, `Content-Security-Policy` and
+  `X-Permitted-Cross-Domain-Policies`: the security header set applied to
+  every response, with the values shown in the transcript above
+  [src/backend/app.py:239-247]
+- `Server`: **not sent.** The security callback pops this header from every
+  response [src/backend/app.py:237], so neither the Werkzeug nor the Python
+  version is disclosed
 
 **cURL Example:**
+
 ```bash
-curl -i http://localhost:5000/hello
+curl -i http://localhost:8000/hello
 ```
 
 **Python Requests Example:**
+
 ```python
 import requests
 
-response = requests.get('http://localhost:5000/hello')
-print(response.text)  # "Hello world"
+response = requests.get('http://localhost:8000/hello')
+print(response.json()['message'])  # "Hello world"
 print(response.status_code)  # 200
 ```
 
 **JavaScript Fetch Example:**
+
 ```javascript
-fetch('http://localhost:5000/hello')
-  .then(response => response.text())
-  .then(data => console.log(data)); // "Hello world"
+fetch('http://localhost:8000/hello')
+  .then(response => response.json())
+  .then(data => console.log(data.message)); // "Hello world"
 ```
 
 ### Error Responses
 
+Both transcripts below are the compact factory form, matching the success
+response above — the form produced whenever the application is built through
+`create_app(...)`, which is the path a WSGI server and the pytest suite take.
+Started instead with `python app.py`, the same envelopes arrive
+pretty-printed, as the [Usage](#usage) section shows.
+
 #### 404 Not Found
 
-Returned for undefined routes and invalid endpoints using Flask error handlers.
+Returned for undefined routes and invalid endpoints using Flask error
+handlers [src/backend/app.py:501-513].
 
 **Request:**
+
 ```bash
-curl http://localhost:5000/nonexistent
+curl -i http://localhost:8000/nonexistent
 ```
 
 **Response:**
+
+Six fields, shown in the sorted wire order `jsonify()` produces. `path` and
+`method` echo the request that was refused:
+
 ```http
 HTTP/1.1 404 Not Found
 Content-Type: application/json
+Content-Length: 177
 
-{
-  "status": 404,
-  "message": "Not Found",
-  "path": "/nonexistent",
-  "method": "GET"
-}
+{"error":"Not Found","message":"The requested resource was not found on this server","method":"GET","path":"/nonexistent","status":404,"timestamp":"2026-09-14T18:06:31.034989"}
 ```
 
 #### 405 Method Not Allowed
 
-Returned for unsupported HTTP methods on existing endpoints.
+Returned for unsupported HTTP methods on existing endpoints
+[src/backend/app.py:535-552].
 
 **Request:**
+
 ```bash
-curl -X POST http://localhost:5000/hello
+curl -i -X POST http://localhost:8000/hello
 ```
 
 **Response:**
+
+Seven fields, again in sorted wire order, and an `Allow` header built from
+Werkzeug's `error.valid_methods` [src/backend/app.py:551-552]. That header
+carries the method set `GET`, `HEAD` and `OPTIONS`; **its order is not
+stable**, and neither is the order of the matching `allowed_methods` array,
+so assert the set rather than the sequence. The byte count is unaffected,
+because the same three method names are always present:
+
 ```http
 HTTP/1.1 405 Method Not Allowed
 Content-Type: application/json
+Content-Length: 221
+Allow: OPTIONS, HEAD, GET
 
-{
-  "status": 405,
-  "message": "Method Not Allowed"
-}
+{"allowed_methods":["OPTIONS","HEAD","GET"],"error":"Method Not Allowed","message":"The POST method is not allowed for this resource","method":"POST","path":"/hello","status":405,"timestamp":"2026-09-14T18:06:31.034989"}
 ```
 
 ### Security Features
 
 **Flask v3.1.1 Security Enhancements:**
-- **Server header configuration** - Configurable server identification for production
-- **Automatic JSON serialization** - Built-in JSON response handling with security defaults
-- **CORS integration** - Flask-CORS extension for secure cross-origin request handling
-- **Generic error messages** - Prevents information disclosure in production environments
+
+- **Server header removal** - the `Server` header is popped from every
+  response, so neither the Werkzeug nor the Python version is disclosed
+  [src/backend/app.py:237]
+- **Security headers on every response** - `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`,
+  `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Content-Security-Policy: default-src 'self'` and
+  `X-Permitted-Cross-Domain-Policies: none` [src/backend/app.py:239-247]
+- **Automatic JSON serialization** - Built-in JSON response handling with
+  security defaults through Flask's `jsonify()` helper
+- **CORS integration** - Flask-CORS extension for secure cross-origin
+  request handling, restricted to the development origins
+  `http://localhost:3000` and `http://localhost:8000`
+  [src/backend/app.py:271]
+- **Generic error messages** - Prevents information disclosure in production
+  environments
 
 ## Testing
 
@@ -445,30 +590,43 @@ TOTAL                |     105 |        0 |      14 |       0 |   100%  |
 #### Test Examples
 
 **Endpoint Testing with pytest-flask:**
+
+The endpoint returns a JSON envelope, so the greeting is compared as a field
+value rather than as the whole response body [src/backend/app.py:391-404]:
+
 ```python
 # Test /hello endpoint response and headers
 def test_hello_endpoint(client):
-    """Test Flask /hello endpoint returns correct response."""
+    """Test Flask /hello endpoint returns the JSON greeting envelope."""
     response = client.get('/hello')
-    
+
     assert response.status_code == 200
-    assert response.data == b'Hello world'
-    assert response.content_type == 'text/plain; charset=utf-8'
+    assert response.content_type == 'application/json'
+
+    json_data = response.get_json()
+    assert json_data['message'] == 'Hello world'
+    assert json_data['status'] == 'success'
 ```
 
 **Error Handling Testing:**
+
+The 404 handler puts the reason phrase in `error` and a sentence in
+`message`, so each field is asserted against the value the handler actually
+sets [src/backend/app.py:501-508]:
+
 ```python
 # Test 404 error handling with Flask error handlers
 def test_404_error_handling(client):
     """Test Flask 404 error handler returns JSON response."""
     response = client.get('/unknown')
-    
+
     assert response.status_code == 404
     assert response.content_type == 'application/json'
-    
+
     json_data = response.get_json()
     assert json_data['status'] == 404
-    assert json_data['message'] == 'Not Found'
+    assert json_data['error'] == 'Not Found'
+    assert json_data['path'] == '/unknown'
 ```
 
 ## Deployment
@@ -493,7 +651,9 @@ gunicorn --config gunicorn.conf.py wsgi:app
 
 #### Process Management with Supervisor (Optional)
 
-Install and use Supervisor for production process management:
+Install and use Supervisor for production process management. The bind
+address below uses `8000`, the port the application falls back to when no
+`PORT` is exported [src/backend/app.py:722]:
 
 ```bash
 # Install Supervisor
@@ -502,7 +662,7 @@ pip install supervisor
 # Create configuration file
 cat > supervisord.conf << EOF
 [program:flask-tutorial]
-command=gunicorn --bind 0.0.0.0:5000 wsgi:app
+command=gunicorn --bind 0.0.0.0:8000 wsgi:app
 directory=/path/to/project
 user=www-data
 autostart=true
@@ -529,15 +689,19 @@ docker build --target production -t flask-tutorial:prod .
 
 #### Run Docker Containers
 
+The image sets `PORT=3000` [infrastructure/docker/Dockerfile:54] and exposes
+that port [infrastructure/docker/Dockerfile:120], so the container side of
+every mapping below is 3000:
+
 ```bash
 # Run development container with volume mounting
-docker run -p 5000:5000 -v $(pwd)/src/backend:/usr/src/app flask-tutorial:dev
+docker run -p 3000:3000 -v $(pwd)/src/backend:/usr/src/app flask-tutorial:dev
 
 # Run production container with Gunicorn
-docker run -p 5000:5000 flask-tutorial:prod
+docker run -p 3000:3000 flask-tutorial:prod
 
 # Run with custom port
-docker run -p 8080:5000 -e PORT=5000 flask-tutorial:prod
+docker run -p 8080:3000 -e PORT=3000 flask-tutorial:prod
 ```
 
 #### Docker Compose (Optional)
@@ -551,7 +715,7 @@ services:
       context: .
       target: production
     ports:
-      - "5000:5000"
+      - "3000:3000"
     environment:
       - FLASK_ENV=production
     restart: unless-stopped
@@ -635,7 +799,7 @@ railway up
    - **Framework**: Python (Flask)
    - **Build Command**: `pip install -r requirements.txt`
    - **Run Command**: `gunicorn wsgi:app`
-   - **Port**: 5000
+   - **Port**: 8000
 
 ### Environment Configuration
 
@@ -643,7 +807,7 @@ railway up
 
 | Variable | Default | Purpose | Platform Notes |
 |----------|---------|---------|----------------|
-| `PORT` | 5000 | Server port | Heroku/Azure set automatically |
+| `PORT` | 8000 | Server port | Heroku/Azure set automatically |
 | `FLASK_ENV` | development | Environment mode | Set to 'production' for deployment |
 | `HOST` | localhost | Host binding | Use '0.0.0.0' for containerized deployment |
 | `WORKERS` | 1 | Gunicorn worker processes | Increase for production traffic |
@@ -658,10 +822,14 @@ from app import create_app
 app = create_app()
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', '8000'))
+    host = os.getenv('HOST', '0.0.0.0')
     app.run(host=host, port=port)
 ```
+
+Those two fallbacks are the ones `src/backend/wsgi.py` uses
+[src/backend/wsgi.py:105-106]: `8000` for the port, and `0.0.0.0` for the
+host so that a containerized deployment is reachable.
 
 ## Troubleshooting
 
@@ -676,9 +844,9 @@ OSError: [Errno 48] Address already in use
 
 **Solutions:**
 ```bash
-# Find process using port 5000
-lsof -ti:5000 | xargs kill  # macOS/Linux
-netstat -ano | findstr :5000  # Windows
+# Find process using port 8000
+lsof -ti:8000 | xargs kill  # macOS/Linux
+netstat -ano | findstr :8000  # Windows
 
 # Use different port
 FLASK_RUN_PORT=8080 python -m flask run
@@ -775,13 +943,13 @@ gunicorn --log-level debug wsgi:app
 
 ```bash
 # Test endpoint with verbose output
-curl -v http://localhost:5000/hello
+curl -v http://localhost:8000/hello
 
 # Test with specific headers
-curl -H "Accept: application/json" http://localhost:5000/hello
+curl -H "Accept: application/json" http://localhost:8000/hello
 
 # Test timeout behavior
-curl --max-time 5 http://localhost:5000/hello
+curl --max-time 5 http://localhost:8000/hello
 ```
 
 #### Docker Debugging
@@ -824,7 +992,7 @@ python -X dev app.py
 **Monitoring:**
 ```bash
 # Monitor response times
-curl -w "@curl-format.txt" http://localhost:5000/hello
+curl -w "@curl-format.txt" http://localhost:8000/hello
 
 # Create curl-format.txt
 echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.txt

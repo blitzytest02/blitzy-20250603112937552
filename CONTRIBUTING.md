@@ -1,20 +1,33 @@
-# Contributing to Node.js Hello World Tutorial
+# Contributing to the Hello World Tutorial Repository
 
-[![Node.js Version](https://img.shields.io/badge/node.js-v22.16.0%20LTS-brightgreen)](https://nodejs.org/)
-[![Express.js Version](https://img.shields.io/badge/express.js-v5.1.0-blue)](https://expressjs.com/)
+[![Node.js Version](https://img.shields.io/badge/node.js-v24.21.0%20LTS-brightgreen)](https://nodejs.org/)
+[![Express.js Version](https://img.shields.io/badge/express.js-v5.2.1-blue)](https://expressjs.com/)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue)](CODE_OF_CONDUCT.md)
 
 ## Guidelines for Educational Contributions and Collaborative Development
 
-Thank you for your interest in contributing to our **Node.js Hello World Tutorial** application! This project serves as an educational resource for learning Node.js v22.16.0 LTS and Express.js v5.1.0 fundamentals through hands-on development experience.
+Thank you for your interest in contributing to this repository's tutorials!
+The [**Node.js Hello World Tutorial**](src/nodejs-tutorial/README.md) now
+lives in this repository, at `src/nodejs-tutorial`, where it serves
+`GET /hello` on Node.js v24.21.0 LTS with Express.js v5.2.1
+[src/nodejs-tutorial/package.json:9,18]. Its Python
+sibling, the Flask tutorial at `src/backend`, answers the same path with a JSON
+envelope [src/backend/app.py:367-411]. This guide covers contributing to either
+one, and every instruction below names the tutorial it applies to.
 
 ### Our Educational Mission
 
-Our mission is to provide an accessible, high-quality learning environment where developers of all skill levels can contribute to and learn from a real-world Node.js application while building professional development skills. We believe that the best way to learn is through collaborative contribution, mentoring, and hands-on experience with modern web development technologies.
+Our mission is to provide an accessible, high-quality learning environment
+where developers of all skill levels can contribute to and learn from
+real-world HTTP services while building professional development skills. We
+believe that the best way to learn is through collaborative contribution,
+mentoring, and hands-on experience with modern web development technologies.
 
 **Community Values:**
-- **Educational excellence and learning-focused development** - Every contribution should enhance understanding of Node.js and Express.js concepts
+- **Educational excellence and learning-focused development** - Every
+  contribution should deepen understanding of the runtime, framework and HTTP
+  concepts taught by the tutorial it touches
 - **Inclusive collaboration and patient guidance for all skill levels** - We welcome contributors from beginners to experts
 - **Quality code with comprehensive testing and documentation** - Professional standards with educational clarity
 - **Professional development practices and industry standards** - Real-world experience with modern development workflows
@@ -40,7 +53,8 @@ Our mission is to provide an accessible, high-quality learning environment where
 
 ### Types of Contributions
 
-We welcome various types of contributions that enhance the educational value of this Node.js tutorial application:
+We welcome various types of contributions that enhance the educational value
+of the tutorials in this repository:
 
 #### **Code Contributions**
 - **Bug fixes** - Resolve issues and improve reliability
@@ -77,140 +91,217 @@ This project maintains a strong educational focus throughout the contribution pr
 - **Progressive skill building** - Support contributors in developing professional skills
 - **Real-world practices** - Demonstrate industry-standard development workflows
 - **Collaborative learning** - Learn from each other through code reviews and discussions
-- **Professional growth** - Build skills in Node.js, Express.js, testing, and collaboration
+- **Professional growth** - Build skills in the stack you contribute to,
+  testing, and collaboration
 
 ---
 
 ## 🚀 Development Setup
 
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`.** Every step in this
+section - the runtime install, the dependency install, the verification run
+and the troubleshooting entries - sets up that tutorial. Setting up the Flask
+tutorial is documented with it, in `src/backend/README.md`, and needs none of
+these commands.
+
 ### System Requirements
 
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`.** The Flask tutorial
+documents its own Python requirements alongside it, in `src/backend/README.md`.
+
 | Component | Minimum Version | Recommended | Purpose |
-|-----------|----------------|-------------|---------|
-| **Node.js** | v22.16.0 LTS | Latest LTS | JavaScript runtime environment |
-| **npm** | v11.4.1 | Latest | Package manager (bundled with Node.js) |
+| --- | --- | --- | --- |
+| **Node.js** | v24.21.0 LTS | Latest LTS | JavaScript runtime environment |
+| **npm** | v11.19.0 | Latest | Package manager (bundled with Node.js) |
 | **Git** | v2.30.0 | Latest | Version control and collaboration |
 | **Memory** | 200MB RAM | 500MB | Development environment requirements |
 | **Disk Space** | 500MB | 1GB | Dependencies and development tools |
 
+The version is pinned in two places, and neither is a hard gate. `.nvmrc`
+holds the exact string `24.21.0`, which a version manager reads to *select* a
+runtime, while the manifest declares `engines.node` as `>=24.21.0 <25`
+[src/nodejs-tutorial/package.json:9] — a compatibility range npm only *warns*
+about on a mismatch. The `node --version` check in the next step is the one to
+rely on.
+
 ### Step-by-Step Setup
 
-#### 1. **Install Node.js v22.16.0 LTS**
+#### 1. **Install Node.js v24.21.0 LTS**
 
 **Option A: Official Installer (Recommended for beginners)**
 ```bash
-# Visit https://nodejs.org/ and download Node.js v22.16.0 LTS
+# Visit https://nodejs.org/ and download Node.js v24.21.0 LTS
 # Install using the official installer for your operating system
 # This provides the most stable and compatible installation
 
 # Verify installation
-node --version  # Should output: v22.16.0 (or higher)
-npm --version   # Should output: v11.4.1 (or higher)
+node --version  # Should output: v24.21.0 (or higher)
+npm --version   # Should output: 11.19.0 (or higher, bundled with Node.js)
 ```
 
 **Option B: Node Version Manager (Advanced users)**
 ```bash
 # Install nvm (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
 # Restart terminal or source profile
 source ~/.bashrc  # or ~/.zshrc
 
-# Install and use Node.js v22.16.0 LTS
-nvm install 22.16.0
-nvm use 22.16.0
-nvm alias default 22.16.0
+# Install and use Node.js v24.21.0 LTS
+nvm install 24.21.0
+nvm use 24.21.0
+nvm alias default 24.21.0
 
 # Verify installation
-node --version  # Should output: v22.16.0
+node --version  # Should output: v24.21.0
+
+# From the tutorial root, a bare `nvm use` reads the committed .nvmrc instead
+cd src/nodejs-tutorial && nvm use
+# Found <checkout>/src/nodejs-tutorial/.nvmrc with version <24.21.0>
+# Now using node v24.21.0 (npm v11.19.0)
 ```
+
+The post-condition is what matters, not the route: `node --version` must report
+`v24.21.0`. The official installer, `nvm`, a distribution package and the
+release tarball are all acceptable ways to get there, and none of them is a
+dependency of the tutorial [src/nodejs-tutorial/README.md].
 
 #### 2. **Repository Setup and Forking**
 
+Both tutorials live in this one repository, so there is nothing else to clone:
+the Node.js tutorial is the `src/nodejs-tutorial` directory of this checkout,
+not a separate project. The upstream URL below is the repository declared in
+the project metadata [pyproject.toml:145].
+
 ```bash
-# Fork the repository on GitHub (click "Fork" button)
+# Fork this repository on GitHub (click "Fork" button)
 # Clone your fork locally
-git clone https://github.com/YOUR-USERNAME/nodejs-hello-tutorial.git
-cd nodejs-hello-tutorial
+git clone https://github.com/YOUR-USERNAME/flask-hello-world.git
+cd flask-hello-world
 
 # Add upstream remote for staying updated
-git remote add upstream https://github.com/tutorial/nodejs-hello-tutorial.git
+git remote add upstream https://github.com/flask-migration-tutorial/flask-hello-world.git
 
 # Verify remotes
 git remote -v
-# origin    https://github.com/YOUR-USERNAME/nodejs-hello-tutorial.git (fetch)
-# origin    https://github.com/YOUR-USERNAME/nodejs-hello-tutorial.git (push) 
-# upstream  https://github.com/tutorial/nodejs-hello-tutorial.git (fetch)
-# upstream  https://github.com/tutorial/nodejs-hello-tutorial.git (push)
+# origin    https://github.com/YOUR-USERNAME/flask-hello-world.git (fetch)
+# origin    https://github.com/YOUR-USERNAME/flask-hello-world.git (push)
+# upstream  https://github.com/flask-migration-tutorial/flask-hello-world.git (fetch)
+# upstream  https://github.com/flask-migration-tutorial/flask-hello-world.git (push)
 ```
 
 #### 3. **Dependency Installation**
 
+Every npm command in this guide runs from the Node.js tutorial root. The Flask
+tutorial has no npm dependencies at all — its Python requirements are installed
+from `requirements.txt` as `src/backend/README.md` describes.
+
 ```bash
-# Navigate to backend source directory
-cd src/backend
+# Navigate to the Node.js tutorial root
+cd src/nodejs-tutorial
 
-# Install exact dependencies using npm ci (faster, more reliable for CI/CD)
+# Install the exact locked dependency tree (npm ci, because the lockfile is
+# committed: it installs that tree exactly instead of resolving a new one)
 npm ci
+# added 88 packages, and audited 89 packages in 401ms  (elapsed time varies)
+# found 0 vulnerabilities
 
-# Verify critical dependencies are installed
-npm list express  # Should show express@^5.1.0
-npm list jest     # Should show jest@^29.7.0
-npm list supertest # Should show supertest@^7.1.1
+# Verify the two declared dependencies are installed
+npm list express    # Should show express@5.2.1
+npm list supertest  # Should show supertest@7.2.2
 
 # Run security audit
 npm audit
+# found 0 vulnerabilities
 ```
 
+Two packages, both declared at exact versions
+[src/nodejs-tutorial/package.json:17-22]: `express` 5.2.1 at runtime and
+`supertest` 7.2.2 for the tests. There is deliberately no third-party test
+framework, no file watcher, no dotenv loader and no assertion library — the
+Testing Guidelines section below names the Node built-in that replaces each
+one.
+
 #### 4. **Development Environment Verification**
+
+`npm start` runs `node src/server.js` [src/nodejs-tutorial/package.json:12].
+It is a foreground process that never returns on its own, so verify from a
+second terminal and stop it with `Ctrl-C`.
 
 ```bash
 # Start the development server
 npm start
 
-# Expected output:
-# 🚀 Server Successfully Started!
-# ============================================================
-# ⏰ Startup time: 2024-01-15T10:30:00.000Z
-# 🌐 Server listening on: http://localhost:3000
-# 📡 Host: localhost
-# 🔌 Port: 3000
+# Expected output. npm first echoes the two-line script banner - the package
+# name and the command - which is elided here; then the application's own
+# single line of output:
+#
+# Listening on http://127.0.0.1:3000 (GET /hello)
 ```
+
+That line is the only line the application ever writes to stdout, and it
+is interpolated from the host and port actually bound
+[src/nodejs-tutorial/src/server.js:36-41], so it stays truthful when either is
+overridden. `npm run dev` is the watch-mode alternative and prints the same
+line.
 
 **Test the endpoint in a new terminal:**
 ```bash
 # Test the /hello endpoint
-curl http://localhost:3000/hello
+curl http://127.0.0.1:3000/hello
 # Expected response: Hello world
 
 # Test with headers
-curl -i http://localhost:3000/hello
-# Expected: HTTP/1.1 200 OK with "Hello world" body
+curl -i http://127.0.0.1:3000/hello
+# Expected: HTTP/1.1 200 OK
+#           Content-Type: text/plain; charset=utf-8
+#           Content-Length: 11
+#           (blank line)
+#           Hello world
 
-# Stop the server (Ctrl+C in the server terminal)
+# Stop the server: Ctrl-C in the server terminal sends SIGINT, which closes
+# the server cleanly and exits 0 [src/nodejs-tutorial/src/server.js:64-65]
 ```
 
+The contract those two commands verify is documented in full, with every
+header explained, in
+[the tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md).
+
 #### 5. **Run Test Suite**
+
+Neither test command needs a running server: the suite drives the application
+object returned by `createApp()` through `supertest`, so nothing binds a port
+[src/nodejs-tutorial/test/hello.test.js:30-31].
 
 ```bash
 # Execute complete test suite
 npm test
 
-# Expected output:
-# PASS test/unit/server.test.js
-# PASS test/integration/hello-endpoint.test.js
-# 
-# Test Suites: 2 passed, 2 total
-# Tests:       8 passed, 8 total
-# Snapshots:   0 total
-# Time:        2.5s
+# Expected output, with npm's two-line script banner elided and durations
+# omitted because they vary between runs:
+#
+# ✔ GET /hello responds 200
+# ✔ GET /hello body is exactly "Hello world"
+# ✔ GET /hello Content-Type is text/plain; charset=utf-8
+# ✔ unknown path responds 404
+# ℹ tests 4
+# ℹ suites 0
+# ℹ pass 4
+# ℹ fail 0
 
 # Run tests with coverage
 npm run test:coverage
 
-# Expected coverage: 100% across all metrics
-# Lines: 100% | Functions: 100% | Branches: 100% | Statements: 100%
+# Expected: the same four tests, then 100.00 line, branch and function
+# coverage for src/app.js and src/routes/hello.js. src/server.js is absent
+# from the table by design - the suite never loads the module that binds the
+# socket. The --experimental-test-coverage flag behind this script is marked
+# experimental by Node, so treat its output as informative.
 ```
+
+Assert the counts, not the exit status: `node --test` exits `0` on an empty
+suite, so a run that silently discovered nothing still looks green. `tests 4`
+and `pass 4` are the lines that prove the suite ran.
 
 ### IDE and Editor Setup
 
@@ -221,10 +312,8 @@ Install recommended extensions for optimal development experience:
 ```bash
 # Install VS Code extensions
 code --install-extension ms-vscode.vscode-json
-code --install-extension bradlc.vscode-tailwindcss
 code --install-extension esbenp.prettier-vscode
 code --install-extension ms-vscode.vscode-eslint
-code --install-extension orta.vscode-jest
 ```
 
 **VS Code settings.json:**
@@ -235,10 +324,14 @@ code --install-extension orta.vscode-jest
     "source.fixAll.eslint": true
   },
   "javascript.preferences.quoteStyle": "single",
-  "typescript.preferences.quoteStyle": "single",
-  "jest.autoRun": "watch"
+  "typescript.preferences.quoteStyle": "single"
 }
 ```
+
+No test-runner extension or editor setting is listed, and none is needed: the
+tests run on Node's built-in runner, which has no configuration file and no
+editor integration to install. Run them with `npm test` from
+`src/nodejs-tutorial/`, in the editor's terminal or any other.
 
 #### **Alternative Editors**
 
@@ -250,26 +343,45 @@ code --install-extension orta.vscode-jest
 ### Troubleshooting Common Setup Issues
 
 #### **Port 3000 Already in Use**
+
+The first collision to rule out is inside this repository: the Flask
+development container publishes host port 3000
+[infrastructure/docker/docker-compose.yml:86], so running it and the Node.js
+tutorial at the same time contends for one port.
+
 ```bash
 # Find process using port 3000
 lsof -ti:3000 | xargs kill  # macOS/Linux
 netstat -ano | findstr :3000  # Windows
 
-# Or use a different port
-PORT=8080 npm start
+# Or use a different port - PORT=<n> npm start is the documented override
+PORT=3001 npm start
+# Listening on http://127.0.0.1:3001 (GET /hello)
+
+# Second fallback, because the Flask production container publishes host
+# port 3001 [infrastructure/docker/docker-compose.yml:231]
+PORT=3100 npm start
 ```
 
 #### **Node.js Version Issues**
+
+An engine mismatch does not fail the install — npm prints an `EBADENGINE`
+warning and carries on — so check the version explicitly.
+
 ```bash
 # Check current version
 node --version
 
-# Update to v22.16.0 LTS if needed
+# Update to v24.21.0 LTS if needed
 # Download from https://nodejs.org/
-# Or use nvm: nvm install 22.16.0 && nvm use 22.16.0
+# Or use nvm: nvm install 24.21.0 && nvm use 24.21.0
 ```
 
 #### **Permission Issues**
+
+Generic npm tooling advice: it is about your machine's npm installation, not
+about either tutorial in this repository.
+
 ```bash
 # Fix npm permissions on macOS/Linux
 sudo chown -R $(whoami) ~/.npm
@@ -284,6 +396,12 @@ source ~/.bashrc
 ---
 
 ## 📋 Code Standards
+
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`.** Every JavaScript
+example in this section is either quoted from that tutorial's source or
+explicitly marked as an illustrative pattern it does not contain. The Flask
+tutorial's Python standards are governed by the tooling already configured for
+it, `.flake8` and `pyproject.toml`.
 
 ### JavaScript ES6+ Conventions
 
@@ -300,79 +418,114 @@ var express = require('express');
 ```
 
 ```javascript
-// ✅ GOOD: Arrow functions for callbacks
+// ✅ GOOD: Arrow functions for callbacks, with the body in a named constant
+const HELLO_BODY = 'Hello world';
+
 app.get('/hello', (req, res) => {
-  res.status(200).type('text/plain').send('Hello world');
+  res.status(200).type('text/plain').send(HELLO_BODY);
 });
 
 // ✅ GOOD: Template literals for strings
-console.log(`Server listening on port ${PORT}`);
+console.log(`Listening on http://${HOST}:${PORT} (GET /hello)`);
 
-// ✅ GOOD: Destructuring assignment
-const { PORT = 3000, HOST = 'localhost' } = process.env;
+// ✅ GOOD: Destructuring assignment. The tutorial's host default is the
+// loopback address 127.0.0.1, spelled that way in every command, transcript
+// and URL it publishes [src/nodejs-tutorial/src/server.js:24]
+const { PORT = 3000, HOST = '127.0.0.1' } = process.env;
 ```
 
 #### **Educational Code Commenting**
 
+Comments should explain the decision, not restate the syntax. The factory
+below is the shape the tutorial actually ships
+[src/nodejs-tutorial/src/app.js:31-58]; it writes nothing per request, because
+a request logger would put noise in front of the one lesson.
+
 ```javascript
 /**
- * Initialize Express.js v5.1.0 application with educational focus
- * Demonstrates basic HTTP server setup and middleware configuration
- * 
+ * Build a fresh Express.js v5.2.1 application with educational focus.
+ * Demonstrates HTTP server assembly: hardening, one route, one fallback.
+ *
+ * This is a factory, not a shared singleton: every call returns a new
+ * application, which is what lets each test construct its own and drive it
+ * through supertest without binding a port.
+ *
  * @returns {express.Application} Configured Express app instance
  */
 function createApp() {
   const app = express();
-  
+
   // Disable X-Powered-By header for security awareness
   // Express.js v5 security enhancement - prevents framework fingerprinting
   app.disable('x-powered-by');
-  
-  // Educational middleware: Log all incoming requests for learning visibility
-  app.use((req, res, next) => {
-    console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
-    next();
+
+  // Mounted at the application root, because the route module declares the
+  // full path itself - mounting under a prefix would nest that path twice
+  app.use(router);
+
+  // Registered last, so a request reaches it only when no route matched
+  app.use((req, res) => {
+    res.status(404).type('text/plain').send(NOT_FOUND_BODY);
   });
-  
+
   return app;
 }
 ```
 
-### Node.js v22.16.0 LTS Best Practices
+### Node.js v24.21.0 LTS Best Practices
 
 #### **Module Organization**
 
+Three modules, each with one job: the route declares the endpoint, the
+application assembles it, and the server binds it. This is the real
+`src/nodejs-tutorial/src/app.js`, quoted with its comments condensed.
+
 ```javascript
 // ✅ GOOD: Clear module structure
-// File: src/backend/app.js
+// File: src/nodejs-tutorial/src/app.js
 const express = require('express');
-const { createErrorHandler, createNotFoundHandler } = require('./middleware/errors');
-const { helloRoute } = require('./routes/hello');
+const { router } = require('./routes/hello');
+
+// Body of the terminal not-found response, named once
+const NOT_FOUND_BODY = 'Not Found';
 
 /**
- * Creates and configures Express.js application
+ * Creates and configures the Express.js application
  * Educational focus: Demonstrates modular application structure
  */
 function createApp() {
   const app = express();
-  
+
   // Core middleware setup
   app.disable('x-powered-by');  // Security: Remove framework fingerprinting
-  
-  // Route configuration
-  app.use('/hello', helloRoute);
-  
-  // Error handling (must be last)
-  app.use(createNotFoundHandler());
-  app.use(createErrorHandler());
-  
+
+  // Route configuration: the router declares the full path, so mount at root
+  app.use(router);
+
+  // Terminal not-found handler (must be last, after the route mount)
+  app.use((req, res) => {
+    res.status(404).type('text/plain').send(NOT_FOUND_BODY);
+  });
+
   return app;
 }
 
 module.exports = { createApp };
 ```
 
+The factory is the module's whole public interface — `module.exports =
+{ createApp }` — and it is what `src/server.js` requires
+[src/nodejs-tutorial/src/server.js:17] and what `test/hello.test.js` drives
+[src/nodejs-tutorial/test/hello.test.js:31].
+
 #### **Error Handling Patterns**
+
+**Illustrative pattern, not tutorial code.** The tutorial registers no error
+middleware at all: its only fallback is the terminal not-found handler shown
+above [src/nodejs-tutorial/src/app.js:50-55], and an unhandled rejection
+therefore reaches Express's own default handler, which answers `500` with an
+HTML body. The handler below is the shape a contribution that *adds* error
+handling should follow.
 
 ```javascript
 // ✅ GOOD: Comprehensive error handling with educational context
@@ -398,9 +551,14 @@ function createErrorHandler() {
 }
 ```
 
-### Express.js v5.1.0 Patterns
+### Express.js v5.2.1 Patterns
 
 #### **Security Features Utilization**
+
+Of the measures below, only `app.disable('x-powered-by')` is in the tutorial
+[src/nodejs-tutorial/src/app.js:37]; the extra response headers are an
+illustrative pattern, and a route with an `await` in it is illustrative too —
+the tutorial's single handler is synchronous.
 
 ```javascript
 // ✅ GOOD: Leverage Express.js v5 security enhancements
@@ -432,37 +590,40 @@ function setupSecurityMiddleware(app) {
 
 #### **Modern Routing Patterns**
 
+This is the real `src/nodejs-tutorial/src/routes/hello.js`. Note three
+decisions a learner should copy: the router declares the **full** path, so the
+application mounts it at the root; the body is a named constant with exactly
+one definition in the codebase; and the response is one
+status-type-send chain, where the short form `'text/plain'` is what makes
+Express emit `Content-Type: text/plain; charset=utf-8` and derive
+`Content-Length` from the body.
+
 ```javascript
 // ✅ GOOD: Express.js v5 routing with educational clarity
+// File: src/nodejs-tutorial/src/routes/hello.js
 const express = require('express');
+
 const router = express.Router();
+
+// The single definition of the response body: 11 bytes, one interior space
+// and no trailing newline
+const HELLO_BODY = 'Hello world';
 
 /**
  * Hello world endpoint demonstrating Express.js v5 routing
  * Educational focus: Basic HTTP GET handling and response generation
- * 
+ *
  * @route GET /hello
  * @returns {string} Plain text "Hello world" response
  */
-router.get('/', (req, res) => {
-  // Educational timing: Measure response generation time
-  const startTime = process.hrtime.bigint();
-  
-  // Core functionality: Generate hello world response
-  const message = 'Hello world';
-  
-  // Educational metrics: Calculate response time
-  const endTime = process.hrtime.bigint();
-  const responseTime = Number(endTime - startTime) / 1000000; // Convert to milliseconds
-  
-  // Educational logging: Show response metrics
-  console.log(`📤 Response generated in ${responseTime.toFixed(2)}ms`);
-  
-  // HTTP response with proper Content-Type
-  res.status(200).type('text/plain').send(message);
+router.get('/hello', (req, res) => {
+  // HTTP response with proper status and Content-Type. No timing
+  // instrumentation: the endpoint publishes no performance target, so
+  // measuring one here would be noise
+  res.status(200).type('text/plain').send(HELLO_BODY);
 });
 
-module.exports = { helloRoute: router };
+module.exports = { router, HELLO_BODY };
 ```
 
 ### Naming Conventions
@@ -488,219 +649,252 @@ const handler = endpoint();
 
 #### **File and Module Naming**
 
+The Node.js tutorial is eleven files, and this is all of them. There is no
+health route, no middleware directory and no utility module: a single-endpoint
+service that needed either would be teaching the wrong lesson.
+
+```text
+src/nodejs-tutorial/
+├── README.md                 # Install, run, verify, test, stop
+├── package.json              # engines.node, four scripts, two exact deps
+├── package-lock.json         # lockfileVersion 3, the tree npm ci installs
+├── .nvmrc                    # 24.21.0, the version a manager selects
+├── .env.example              # PORT and HOST, each annotated with its default
+├── src/
+│   ├── server.js             # HTTP server initialization and signals
+│   ├── app.js                # Express application factory
+│   └── routes/
+│       └── hello.js          # Hello endpoint route handler
+├── test/
+│   └── hello.test.js         # Four assertions against the contract
+└── docs/
+    ├── api-reference.md      # The endpoint contract, in full
+    └── walkthrough.md        # Annotated tour of the code above
 ```
-src/backend/
-├── app.js                    # Main Express application factory
-├── server.js                 # HTTP server initialization
-├── routes/
-│   ├── hello.js             # Hello endpoint route handler
-│   └── health.js            # Health check endpoint (future)
-├── middleware/
-│   ├── errors.js            # Error handling middleware
-│   ├── logging.js           # Request logging middleware
-│   └── security.js          # Security headers middleware
-└── utils/
-    ├── config.js            # Configuration management
-    └── validation.js        # Input validation helpers
-```
+
+A contribution that adds a module adds it here, and updates this tree in the
+same change.
 
 ---
 
 ## 🧪 Testing Guidelines
 
-### Jest Framework Configuration
+### Test Runner Configuration
 
-#### **Jest v29.7.0 Setup**
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`.** The Flask tutorial
+is tested with pytest, under `src/backend/tests/`.
 
-```javascript
-// jest.config.js - Educational testing configuration
-module.exports = {
-  // Node.js testing environment for server-side code
-  testEnvironment: 'node',
-  
-  // Coverage collection configuration for educational transparency
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/**/*.test.js',
-    '!src/**/node_modules/**'
-  ],
-  
-  // Educational coverage thresholds - aim for 100%, minimum 95%
-  coverageThreshold: {
-    global: {
-      branches: 95,
-      functions: 100,
-      lines: 95,
-      statements: 95
-    }
-  },
-  
-  // Test file patterns for clear organization
-  testMatch: [
-    '**/test/**/*.test.js',
-    '**/test/**/*.spec.js'
-  ],
-  
-  // Educational test reporting for learning visibility
-  verbose: true,
-  collectCoverage: true,
-  coverageReporters: ['text', 'lcov', 'html']
-};
+#### **`node --test` setup - there is no configuration file**
+
+The tutorial uses Node's built-in test runner. It is stable in the supported
+runtime, ships with it, and needs no config file, no reporter and no
+transform, which is why the manifest declares four scripts and no runner
+settings at all [src/nodejs-tutorial/package.json:11-16].
+
+```json
+{
+  "scripts": {
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
+  }
+}
 ```
+
+Three properties of the runner are worth knowing before you change anything:
+
+- **Discovery.** When it meets a directory named `test`, it treats every
+  `.js`, `.cjs` and `.mjs` file inside it as a test file, whether or not the
+  filename matches a test-naming convention. That is what makes bare
+  `node --test` find `test/hello.test.js`.
+- **The test script takes no path argument, deliberately.** Adding one that
+  points at a directory breaks the runner: both `node --test test/` and
+  `node --test test` fail, because the directory is resolved as an entry
+  module. The output is
+  `Error: Cannot find module '<checkout>/src/nodejs-tutorial/test'` with
+  `code: 'MODULE_NOT_FOUND'`, a `✖ test` line, `fail 1`, and exit status `1`.
+  Bare `node --test` works, and so does an explicit file path such as
+  `node --test test/hello.test.js`. Do not "tidy" the script by adding the
+  directory.
+- **An empty suite exits `0`.** A run that discovers nothing reports
+  `tests 0` and succeeds, and the coverage table then prints `100.00` over
+  nothing at all. Assert `tests 4` and `pass 4`, never just the exit status.
 
 #### **Test Organization Structure**
 
-```
-test/
-├── unit/                    # Unit tests for individual functions
-│   ├── app.test.js         # Express app configuration tests
-│   ├── server.test.js      # HTTP server lifecycle tests
-│   └── routes/
-│       └── hello.test.js   # Hello endpoint unit tests
-├── integration/            # Integration tests for complete workflows  
-│   ├── hello-endpoint.spec.js  # End-to-end endpoint testing
-│   └── error-handling.spec.js  # Error response testing
-├── fixtures/               # Test data and mock objects
-│   ├── responses.js        # Expected response fixtures
-│   └── requests.js         # Sample request data
-└── helpers/                # Test utility functions
-    ├── setup.js           # Test environment setup
-    └── assertions.js      # Custom Jest matchers
+One test file, holding four flat `test()` declarations - no suite nesting, no
+fixtures directory and no custom matchers, because a four-assertion contract
+needs none of them.
+
+```text
+src/nodejs-tutorial/
+└── test/
+    └── hello.test.js   # Four assertions against the published contract
 ```
 
 ### Supertest HTTP Testing
 
+`supertest` 7.2.2 is the one devDependency
+[src/nodejs-tutorial/package.json:20-22]. It is handed the application object
+the factory returns, never a base URL, so the suite binds no fixed port and
+needs no server running.
+
 #### **Endpoint Testing Patterns**
 
-```javascript
-// test/integration/hello-endpoint.spec.js
-const request = require('supertest');
-const { createApp } = require('../../src/backend/app');
+This is the real `src/nodejs-tutorial/test/hello.test.js`, quoted with its
+comments condensed. Four flat `test()` declarations, one concern each - the
+runner reports `tests 4` and `suites 0`.
 
-describe('Hello Endpoint Integration Tests', () => {
-  let app;
-  
-  beforeAll(() => {
-    // Educational setup: Create fresh app instance for testing
-    app = createApp();
-  });
-  
-  describe('GET /hello', () => {
-    it('should return "Hello world" with correct headers and status', async () => {
-      // Educational test: Comprehensive endpoint validation
-      const response = await request(app)
-        .get('/hello')
-        .expect(200)                           // Status code assertion
-        .expect('Content-Type', /text\/plain/); // Content-Type validation
-      
-      // Response body validation with educational context
-      expect(response.text).toBe('Hello world');
-      expect(response.text).toHaveLength(11);
-      
-      // Educational assertions: Response timing and headers
-      expect(response.headers).toHaveProperty('content-length', '11');
-      expect(response.headers).not.toHaveProperty('x-powered-by');
-    });
-    
-    it('should respond within performance target (<100ms)', async () => {
-      // Educational performance testing
-      const startTime = Date.now();
-      
-      await request(app)
-        .get('/hello')
-        .expect(200);
-      
-      const responseTime = Date.now() - startTime;
-      
-      // Educational assertion: Performance awareness
-      expect(responseTime).toBeLessThan(100);
-      console.log(`📊 Response time: ${responseTime}ms (target: <100ms)`);
-    });
-  });
-  
-  describe('Error Handling', () => {
-    it('should return 404 for undefined routes with educational error format', async () => {
-      const response = await request(app)
-        .get('/nonexistent')
-        .expect(404)
-        .expect('Content-Type', /application\/json/);
-      
-      // Educational error response validation
-      expect(response.body).toMatchObject({
-        status: 404,
-        message: 'Not Found',
-        path: '/nonexistent'
-      });
-      expect(response.body).toHaveProperty('timestamp');
-    });
-  });
+```javascript
+// src/nodejs-tutorial/test/hello.test.js
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const request = require('supertest');
+const { createApp } = require('../src/app');
+
+test('GET /hello responds 200', async () => {
+  // A fresh application per test, so no state is shared between them
+  const res = await request(createApp()).get('/hello');
+
+  // Proves the router is mounted and the path is reachable
+  assert.strictEqual(res.status, 200);
+});
+
+test('GET /hello body is exactly "Hello world"', async () => {
+  const res = await request(createApp()).get('/hello');
+
+  // Compared against the literal rather than against the route module's own
+  // constant, so a typo introduced there fails here instead of matching
+  // itself. Plain text arrives in res.text; res.body is empty for non-JSON
+  assert.strictEqual(res.text, 'Hello world');
+
+  // 11 bytes means one interior space and no trailing newline. Measured on
+  // the body itself, so it proves the bytes rather than the header's claim
+  assert.strictEqual(Buffer.byteLength(res.text), 11);
+});
+
+test('GET /hello Content-Type is text/plain; charset=utf-8', async () => {
+  const res = await request(createApp()).get('/hello');
+
+  // Compared in full, so a dropped charset parameter fails
+  assert.strictEqual(res.headers['content-type'], 'text/plain; charset=utf-8');
+});
+
+test('unknown path responds 404', async () => {
+  const res = await request(createApp()).get('/unknown');
+
+  // Proves the terminal handler in ../src/app is reached and answers
+  assert.strictEqual(res.status, 404);
 });
 ```
+
+Between them the four prove the whole published contract: that the route
+exists, that the body is byte-exact, that the media type carries its charset
+parameter, and that an unmatched path reaches the terminal handler. Note what
+they do **not** assert - `Date`, `Connection` and `Keep-Alive` are
+transport-dependent, so no test pins them
+[src/nodejs-tutorial/docs/api-reference.md].
+
+#### **Translating matcher-style test idioms**
+
+Test code carried over from the matcher-style framework this tutorial replaced
+with the built-in runner needs four mechanical substitutions, and no others.
+
+| Matcher-style idiom | Replacement |
+| --- | --- |
+| nested `describe()` / `it()` | flat `test()` from `node:test` |
+| `expect(a).toBe(b)` | `assert.strictEqual(a, b)` |
+| `expect(h).not.toHaveProperty('x')` | `assert.strictEqual(h['x'], undefined)` |
+| `.expect(200)` chained on the request | `assert.strictEqual(res.status, 200)` |
 
 ### Coverage Requirements and Quality Metrics
 
 #### **Coverage Targets**
 
+`node --test --experimental-test-coverage` reports three metrics per file, so
+those are the three tracked here; there is no separate statement column.
+
 | Coverage Type | Target | Minimum Acceptable | Rationale |
-|---------------|--------|-------------------|-----------|
+| --- | --- | --- | --- |
 | **Line Coverage** | 100% | 95% | Complete code execution validation |
 | **Function Coverage** | 100% | 100% | All functions must be tested |
 | **Branch Coverage** | 100% | 95% | All code paths validated |
-| **Statement Coverage** | 100% | 95% | Complete statement execution |
+
+The tutorial reports `100.00` on all three for `src/app.js` and
+`src/routes/hello.js`. `src/server.js` is **absent** from that table rather
+than uncovered: the suite drives the application object and never loads the
+module that binds the socket.
 
 #### **Test-Driven Development Process**
 
+**Illustrative only.** The Node.js tutorial serves exactly one endpoint and a
+second one is outside its scope; this is the shape a contribution proposing
+one would start from, written with the runner the tutorial uses.
+
 ```javascript
-// Example: TDD process for new feature
-describe('Health Check Endpoint (TDD Example)', () => {
-  it('should return server status information', async () => {
-    // 1. Write failing test first (Red)
-    const response = await request(app)
-      .get('/health')
-      .expect(200)
-      .expect('Content-Type', /application\/json/);
-    
-    // 2. Define expected response structure
-    expect(response.body).toMatchObject({
-      status: 'OK',
-      uptime: expect.any(Number),
-      timestamp: expect.any(String),
-      version: '1.0.0'
-    });
-    
-    // 3. Implement feature to make test pass (Green)
-    // 4. Refactor for educational clarity (Refactor)
-  });
+// Example: TDD process for a new feature
+test('health endpoint reports server status (TDD example)', async () => {
+  // 1. Write the failing test first (Red)
+  const res = await request(createApp()).get('/health');
+
+  // 2. Define the expected response contract
+  assert.strictEqual(res.status, 200);
+  assert.match(res.headers['content-type'], /^application\/json/);
+  assert.strictEqual(res.body.status, 'OK');
+  assert.strictEqual(typeof res.body.uptime, 'number');
+
+  // 3. Implement the feature to make the test pass (Green)
+  // 4. Refactor for educational clarity (Refactor)
 });
 ```
 
 #### **Educational Testing Practices**
 
+**Illustrative only**, and deliberately built on a throwaway application
+rather than the tutorial's: what it demonstrates is a framework behaviour, not
+a contract the tutorial publishes.
+
 ```javascript
 // Educational test with comprehensive learning comments
-describe('Express.js v5 Features Demonstration', () => {
-  it('should demonstrate automatic promise rejection handling', async () => {
-    // Educational context: Express.js v5 automatically forwards rejected promises
-    // to error handling middleware without manual .catch() blocks
-    
-    // Create route that returns rejected promise
-    app.get('/test-promise-rejection', async (req, res) => {
-      // This rejected promise is automatically caught by Express.js v5
-      throw new Error('Educational example: Automatic promise handling');
-    });
-    
-    const response = await request(app)
-      .get('/test-promise-rejection')
-      .expect(500);
-    
-    // Educational assertion: Error was handled by middleware
-    expect(response.body.message).toContain('Educational example');
-    console.log('✅ Express.js v5 automatic promise handling working correctly');
+// Express.js v5 forwards a rejected promise to the error handling chain with
+// no manual .catch() block anywhere
+test('Express.js v5 forwards a rejected promise automatically', async () => {
+  const scratch = express();
+
+  scratch.get('/test-promise-rejection', async () => {
+    throw new Error('Educational example: Automatic promise handling');
   });
+
+  const res = await request(scratch).get('/test-promise-rejection');
+
+  // With no error middleware registered, Express's own default handler answers
+  // 500 with an HTML body and logs the stack server-side. Assert the status
+  // and media type only: the default handler's markup is not a contract
+  assert.strictEqual(res.status, 500);
+  assert.match(res.headers['content-type'], /^text\/html/);
 });
 ```
 
-### Performance Testing Requirements with pytest-benchmark
+Note what this does **not** assert: a JSON error envelope with a `message`
+field. The tutorial registers no error middleware, so there is none to assert
+[src/nodejs-tutorial/src/app.js:50-55]. A contribution that adds one adds its
+assertions with it.
+
+### Performance Testing Requirements with pytest-benchmark (Flask tutorial)
+
+**Scope: the Python Flask tutorial at `src/backend`, not the Node.js
+tutorial.** Everything in this subsection is pytest and Flask code: `client`
+is a Flask test client, and the `/hello` it calls is the Flask endpoint, which
+answers with an 86-byte JSON envelope [src/backend/app.py:367-411] rather than
+the 11-byte plain-text body the Node.js tutorial serves
+[src/nodejs-tutorial/docs/api-reference.md]. It sits in this document because
+performance testing is a repository-wide topic; it is retained and labelled
+rather than removed, so the guidance is not lost, but do not read it as
+applying to the Node.js tutorial.
+
+**The Node.js tutorial publishes no performance target and no benchmark
+suite.** Its tests are the four contract assertions listed above, and a
+contribution that wants to add a timing claim to it must first capture the
+measurement that backs the claim.
 
 #### **Response Time Validation using pytest-benchmark**
 
@@ -807,6 +1001,11 @@ class TestPerformanceRequirements:
 
 ## 🔄 Pull Request Process
 
+**Scope: the repository as a whole.** The branch strategy, commit format,
+template and review process below apply to a change in either tutorial, or in
+the shared documentation. Where a step runs a command, the command names the
+tutorial it belongs to.
+
 ### Branch Management Strategy
 
 #### **Git Workflow**
@@ -896,7 +1095,7 @@ Educational improvements:
 |------|-------------|----------|
 | **Add** | New features or capabilities | `Add: rate limiting middleware`, `Add: logging system` |
 | **Fix** | Bug fixes and corrections | `Fix: memory leak in request handling`, `Fix: Windows path issues` |
-| **Update** | Improvements to existing features | `Update: Express.js to v5.1.0`, `Update: error messages` |
+| **Update** | Improvements to existing features | `Update: Express.js to v5.2.1`, `Update: error messages` |
 | **Docs** | Documentation changes only | `Docs: API documentation update`, `Docs: setup guide` |
 | **Test** | Testing additions or modifications | `Test: integration test coverage`, `Test: performance benchmarks` |
 | **Refactor** | Code restructuring without functionality changes | `Refactor: extract error handling`, `Refactor: modularize routes` |
@@ -944,12 +1143,12 @@ Detailed list of modifications to code, documentation, or configuration.
 ### Design Decisions
 Explanation of technical choices and their rationale.
 
-### Node.js v22.16.0 LTS Compatibility
-- [ ] Verified compatibility with Node.js v22.16.0 LTS
-- [ ] Uses modern JavaScript ES6+ features appropriately  
-- [ ] Leverages Node.js v22 performance improvements where applicable
+### Node.js v24.21.0 LTS Compatibility
+- [ ] Verified compatibility with Node.js v24.21.0 LTS
+- [ ] Uses modern JavaScript ES6+ features appropriately
+- [ ] Stays inside the declared `engines.node` range `>=24.21.0 <25`
 
-### Express.js v5.1.0 Integration
+### Express.js v5.2.1 Integration
 - [ ] Utilizes Express.js v5 security features (ReDoS protection)
 - [ ] Implements automatic promise rejection handling
 - [ ] Follows Express.js v5 best practices and patterns
@@ -964,16 +1163,19 @@ Explanation of technical choices and their rationale.
 - [ ] Target 100% coverage achieved where possible
 
 ### Testing Framework Usage
-- [ ] Jest v29.7.0 testing patterns followed
-- [ ] Supertest v7.1.1 used for HTTP endpoint testing
-- [ ] Test organization follows established conventions
+- [ ] `node --test` patterns followed: flat `test()`, no runner config file
+- [ ] `node:assert/strict` used for assertions
+- [ ] Supertest v7.2.2 used for HTTP endpoint testing against `createApp()`
+- [ ] Reported counts asserted (`tests N` / `pass N`), not just exit status
 - [ ] Educational test examples demonstrate best practices
 
 ### Performance Validation
-- [ ] Response time targets maintained (<100ms for /hello endpoint)
-- [ ] Memory usage within educational constraints (<50MB)
-- [ ] Server startup time acceptable (<5 seconds)
-- [ ] Concurrent request handling tested appropriately
+- [ ] Any performance claim added is backed by a captured measurement
+- [ ] No documented transcript left stale: a change under
+      `src/nodejs-tutorial/` outside a `.md` file means re-running
+      `npm ci && npm test && npm run test:coverage` and replacing every
+      transcript whose output moved
+- [ ] Startup and response behaviour unchanged, or the change documented
 
 ## Quality Assurance Checklist
 
@@ -1008,17 +1210,19 @@ Explanation of technical choices and their rationale.
 ## CI/CD Integration
 
 ### Automated Checks
-- [ ] GitHub Actions CI pipeline passes
+- [ ] GitHub Actions CI pipeline passes (Python jobs only - the workflows
+      contain no Node or npm step, so a Node.js change is verified locally)
 - [ ] All automated tests execute successfully
 - [ ] Code coverage thresholds are met
 - [ ] Security scanning shows no critical issues
 - [ ] Linting passes without errors
 
 ### Quality Gates
-- [ ] 100% test pass rate achieved
-- [ ] Coverage minimum threshold (95%) enforced  
+- [ ] 100% test pass rate achieved, asserted on the reported counts
+- [ ] Coverage minimum threshold (95%) met - the runner reports coverage, it
+      does not fail a run for missing it, so this one is checked by reading
 - [ ] No critical or high severity vulnerabilities
-- [ ] Performance requirements maintained
+- [ ] No documented command or transcript left inaccurate by the change
 - [ ] Documentation completeness validated
 
 ### Deployment Readiness
@@ -1035,8 +1239,8 @@ Explanation of technical choices and their rationale.
 | Criteria | Weight | Description | Key Checkpoints |
 |----------|--------|-------------|-----------------|
 | **Educational Value** | 40% | Learning enhancement and educational impact | Does this improve Node.js concept understanding? Are Express.js v5 patterns clear? Is educational progression maintained? |
-| **Technical Quality** | 30% | Code quality, performance, and technical excellence | Node.js v22 best practices? Express.js v5 patterns? Error handling? Performance targets? |
-| **Testing Completeness** | 20% | Testing coverage and quality validation | Jest patterns followed? Supertest used correctly? 95% coverage met? Edge cases tested? |
+| **Technical Quality** | 30% | Code quality, performance, and technical excellence | Node.js v24 best practices? Express.js v5 patterns? Error handling? Measured claims? |
+| **Testing Completeness** | 20% | Testing coverage and quality validation | `node --test` patterns followed? Supertest used correctly? 95% coverage met? Edge cases tested? |
 | **Documentation Quality** | 10% | Documentation clarity and educational standards | Educational comments? Documentation updated? Examples clear? Accessibility addressed? |
 
 #### **Review Process Timeline**
@@ -1049,6 +1253,10 @@ Explanation of technical choices and their rationale.
 
 #### **Review Communication Standards**
 
+The template below applies to **the repository as a whole** - a review of
+either tutorial uses it. The filled-in example text happens to describe a
+Node.js change; substitute the equivalent for a Flask one.
+
 ```markdown
 ## Review Feedback Template
 
@@ -1058,8 +1266,9 @@ Explanation of technical choices and their rationale.
 **Educational Progression**: Maintains learning flow and builds on previous concepts
 
 ### Technical Quality ✅
-**Code Standards**: Follows Node.js v22 best practices and ES6+ conventions
-**Performance**: Response time within targets (<100ms measured)
+**Code Standards**: Follows Node.js v24 best practices and ES6+ conventions
+**Performance**: No documented transcript invalidated; any timing claim is
+backed by a captured run
 **Security**: Utilizes Express.js v5 security features appropriately
 
 ### Suggested Improvements
@@ -1076,13 +1285,20 @@ Explanation of technical choices and their rationale.
 
 #### **Automated Quality Gates**
 
+The checks below are the jobs the workflow in this repository actually
+defines. It is a **Python-only pipeline** - `.github/workflows/ci.yml` and
+`cd.yml` contain no `node` or `npm` step anywhere - so there is no Node status
+check to require, and a change to the Node.js tutorial is verified with the
+local commands in the Testing Guidelines section above.
+
 ```yaml
 # All PRs must pass these automated checks:
 required_status_checks:
-  - "CI Pipeline / Test Suite (22.16.0)"    # Node.js v22.16.0 LTS testing
-  - "CI Pipeline / Test Suite (22.x)"       # Latest v22.x compatibility  
-  - "CI Pipeline / Security Scan"           # Dependency vulnerability scan
-  - "CI Pipeline / Quality Gate"            # Coverage and performance validation
+  - "CI Pipeline / Test Suite (3.12)"       # Python matrix [ci.yml:40-47]
+  - "CI Pipeline / Test Suite (3.11)"       # Python matrix [ci.yml:40-47]
+  - "CI Pipeline / Test Suite (3.10)"       # Python matrix [ci.yml:40-47]
+  - "CI Pipeline / Security Scan"           # Dependency scan [ci.yml:127]
+  - "CI Pipeline / Quality Gate"            # Coverage gate [ci.yml:209]
 
 # Branch protection rules
 enforce_admins: false
@@ -1097,10 +1313,15 @@ restrictions:
 
 #### **Pre-merge Validation**
 
+The first three commands are the Node.js tutorial's, and run from
+`src/nodejs-tutorial`; each resolves to one of its four scripts or to an npm
+built-in. A Flask-only change is validated with pytest instead, as
+`src/backend/README.md` describes.
+
 ```bash
-# Maintainer pre-merge checklist:
+# Maintainer pre-merge checklist, from src/nodejs-tutorial:
 # 1. All automated checks passing
-npm run test:ci && echo "✅ Tests passed"
+npm test && echo "✅ Tests passed"
 
 # 2. Coverage threshold met
 npm run test:coverage && echo "✅ Coverage acceptable"
@@ -1119,114 +1340,119 @@ echo "✅ Documentation reflects changes"
 
 ## 📚 Documentation Standards
 
+**Scope: the repository as a whole**, with one caveat stated where it matters:
+the JavaScript examples are the Node.js tutorial's own modules, and the
+endpoint-documentation rule below points at that tutorial's API reference as
+the single authority for its contract.
+
 ### Code Comment Guidelines
+
+The JavaScript examples in this section are the Node.js tutorial's own
+modules; Python docstring conventions for the Flask tutorial are governed by
+the tooling configured for it.
 
 #### **Educational Comment Style**
 
 ```javascript
 /**
- * Creates Express.js application with educational middleware configuration
- * 
- * Educational Focus: Demonstrates Express.js v5.1.0 application setup patterns
- * including security middleware, request logging, and error handling chain.
- * 
+ * Creates the Express.js application with educational middleware configuration
+ *
+ * Educational Focus: Demonstrates Express.js v5.2.1 application setup patterns
+ * including framework hardening, route mounting, and the terminal handler.
+ *
  * Key Learning Concepts:
- * - Express application factory pattern
- * - Middleware execution order and chaining  
+ * - Express application factory pattern, returning a new app per call
+ * - Middleware execution order and chaining
  * - Security best practices (X-Powered-By removal)
- * - Error handling middleware placement
- * 
+ * - Terminal not-found handler placement, after the route mount
+ *
  * @returns {express.Application} Configured Express application instance
  * @example
  * const app = createApp();
- * const server = app.listen(3000, () => {
- *   console.log('Server listening on port 3000');
+ * const server = app.listen(3000, '127.0.0.1', () => {
+ *   console.log('Listening on http://127.0.0.1:3000 (GET /hello)');
  * });
  */
 function createApp() {
   const app = express();
-  
+
   // Security Enhancement: Remove Express.js framework fingerprinting
   // Educational Note: This prevents attackers from knowing we use Express.js
   // Express.js v5 feature: Configurable X-Powered-By header removal
   app.disable('x-powered-by');
-  
-  // Educational Middleware: Request logging for development learning
-  // Demonstrates middleware concept and request lifecycle visibility
-  app.use((req, res, next) => {
-    const timestamp = new Date().toISOString();
-    console.log(`📥 ${req.method} ${req.path} - ${timestamp}`);
-    // Always call next() to continue to the next middleware
-    next();
+
+  // Route configuration: the router declares the full path, so it is mounted
+  // at the application root rather than under a prefix
+  app.use(router);
+
+  // Terminal handler, registered last: a request reaches it only when no
+  // route above it matched. Express 5 falls through to here for an
+  // unsupported method on a matched path too, so it answers both cases
+  app.use((req, res) => {
+    res.status(404).type('text/plain').send(NOT_FOUND_BODY);
   });
-  
+
   return app;
 }
 ```
+
+Two comment habits are worth copying from that module: every comment explains
+a decision rather than restating the call beneath it, and the absences are
+commented too - the reason there is no request logger, and the reason there is
+no `405`, are both written down where a reader looks for them
+[src/nodejs-tutorial/src/app.js:50-55].
 
 #### **Function Documentation Standards**
 
 ```javascript
 /**
- * Handles HTTP GET requests to /hello endpoint
- * 
+ * Handles HTTP GET requests to the /hello endpoint
+ *
  * Educational Purpose: Demonstrates basic Express.js route handler pattern
  * and HTTP response generation with proper status codes and content types.
- * 
+ *
  * Learning Objectives:
  * - Understanding HTTP request/response cycle
- * - Express.js route handler signature (req, res, next)
+ * - Express.js route handler signature (req, res)
  * - HTTP status codes and Content-Type headers
- * - Response timing and performance measurement
- * 
+ * - Why the response body is a named constant, defined once
+ *
  * @param {express.Request} req - Express request object containing client request data
  * @param {express.Response} res - Express response object for sending data back to client
- * @param {express.NextFunction} next - Express next function for error handling
- * 
+ *
  * @returns {void} Sends HTTP response directly, no return value
- * 
+ *
  * @example
- * // Usage in Express router
- * app.get('/hello', helloHandler);
- * 
+ * // Usage in the route module
+ * router.get('/hello', helloHandler);
+ *
  * // Client request:
  * // GET /hello HTTP/1.1
- * // Host: localhost:3000
- * 
- * // Server response:
+ * // Host: 127.0.0.1:3000
+ * //
+ * // Server response: see docs/api-reference.md for the full contract
  * // HTTP/1.1 200 OK
  * // Content-Type: text/plain; charset=utf-8
  * // Content-Length: 11
- * // 
+ * //
  * // Hello world
  */
-function helloHandler(req, res, next) {
-  try {
-    // Educational Timing: Measure response generation performance
-    const startTime = process.hrtime.bigint();
-    
-    // Core Business Logic: Generate hello world response
-    const message = 'Hello world';
-    
-    // Performance Measurement: Calculate processing time
-    const endTime = process.hrtime.bigint();
-    const processingTime = Number(endTime - startTime) / 1000000; // Convert to milliseconds
-    
-    // Educational Logging: Show performance metrics for learning
-    console.log(`📤 Response generated in ${processingTime.toFixed(2)}ms`);
-    
-    // HTTP Response: Send with appropriate status and content type
-    // Status 200: OK - Request succeeded
-    // Content-Type: text/plain - Simple text response
-    res.status(200).type('text/plain').send(message);
-    
-  } catch (error) {
-    // Error Handling: Forward to Express.js v5 error middleware
-    // Express.js v5 automatically handles promise rejections
-    next(error);
-  }
+function helloHandler(req, res) {
+  // HTTP Response: Send with appropriate status and content type
+  // Status 200: OK - Request succeeded
+  // Content-Type: the short form 'text/plain' is what makes Express emit
+  // text/plain; charset=utf-8 and derive Content-Length from the body
+  res.status(200).type('text/plain').send(HELLO_BODY);
 }
 ```
+
+Three habits that docblock demonstrates. It documents only the parameters the
+handler takes - there is no `next` in the signature, because nothing here
+forwards an error. It points at the contract's authority instead of copying
+it, keeping the one-line `@example` response sketch and no more. And it
+explains the effect of `type('text/plain')` rather than repeating the call,
+which is the difference between a comment that earns its line and one that
+does not.
 
 ### README.md Maintenance Standards
 
@@ -1242,66 +1468,70 @@ function helloHandler(req, res, next) {
 
 #### **API Documentation Format**
 
+The `GET /hello` contract lives in exactly one place:
+[the Node.js tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md).
+It is the single authority for the status, the body and its byte count, the
+media type, every response header, and the not-found, `HEAD`, `OPTIONS` and
+conditional-request behaviours - and every value in it was captured from a
+running server rather than written from expectation.
+
+This section used to carry a second copy of that contract. It is now a link,
+deliberately: two documents describing one endpoint is how a single path came
+to be documented in this repository with four different ports and three
+different response bodies. **Document an endpoint by pointing at the
+authority, not by restating it:**
+
 ```markdown
 ### GET /hello
 
-Returns a simple 'Hello world' greeting demonstrating basic HTTP server functionality.
+Returns a simple 'Hello world' greeting demonstrating basic HTTP server
+functionality.
 
-**Educational Focus**: Demonstrates Express.js route handling, HTTP status codes, and response formatting.
+**Educational Focus**: Demonstrates Express.js route handling, HTTP status
+codes, and response formatting.
 
-#### Request
-```http
-GET /hello HTTP/1.1
-Host: localhost:3000
-Accept: text/plain
-```
-
-#### Response
-```http
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
-Content-Length: 11
-
-Hello world
-```
-
-#### Response Headers
-- `Content-Type`: `text/plain; charset=utf-8` - Indicates plain text response
-- `Content-Length`: `11` - Response body length in bytes
-- `X-Powered-By`: *Disabled* - Security feature prevents framework fingerprinting
-
-#### Performance Characteristics
-- **Target Response Time**: < 100ms
-- **Memory Usage**: < 1MB per request
-- **Concurrent Requests**: Supports up to 100 simultaneous requests
+**Contract**: see [the API reference](docs/api-reference.md) - status, body,
+media type, every response header, and the behaviour of every other method
+and path, in full. Nothing about the contract is repeated here.
 
 #### Learning Concepts
+
 - HTTP GET method handling
-- Express.js route parameter processing
+- Express.js routing and the status-type-send chain
 - Response status code usage (200 OK)
-- Content-Type header configuration
-- Performance measurement and monitoring
-
-#### cURL Examples
-```bash
-# Basic request
-curl http://localhost:3000/hello
-
-# Include response headers
-curl -i http://localhost:3000/hello
-
-# Measure response time
-curl -w "Response time: %{time_total}s\n" http://localhost:3000/hello
+- Content-Type header configuration, charset parameter included
 ```
 
-#### JavaScript Fetch Example
+Learning concepts are that section's own content, so they stay in it.
+Performance characteristics are not: the three claims this section used to
+publish - a response-time target, a per-request memory ceiling and a
+concurrency figure - were never measured against this service, correspond to
+nothing in a four-assertion suite, and are gone rather than carried forward. A
+performance number belongs in documentation only alongside the captured run
+that produced it.
+
+**Client examples may stay**, because they show a reader how to call an
+endpoint rather than restating what it answers. Write the host as `127.0.0.1`,
+the spelling the tutorial uses everywhere:
+
+```bash
+# Basic request
+curl http://127.0.0.1:3000/hello
+
+# Include response headers
+curl -i http://127.0.0.1:3000/hello
+
+# Measure response time - a measurement, not a published target
+curl -w "Response time: %{time_total}s\n" http://127.0.0.1:3000/hello
+```
+
 ```javascript
-// Modern browser fetch API
-fetch('http://localhost:3000/hello')
+// Modern browser fetch API. response.text() is the reader a text/plain body
+// needs; the Flask sibling's JSON envelope would need response.json()
+fetch('http://127.0.0.1:3000/hello')
   .then(response => response.text())
   .then(data => console.log(data)) // "Hello world"
   .catch(error => console.error('Error:', error));
-```
 ```
 
 ### Educational Content Standards
@@ -1317,7 +1547,7 @@ Every documentation update must include:
 - **HTTP Server Fundamentals**: Understanding request/response cycles and HTTP protocol
 - **Express.js Framework Mastery**: Learning middleware, routing, and application structure
 - **Node.js Runtime Concepts**: Understanding event loop, modules, and performance
-- **Testing Best Practices**: Implementing comprehensive test coverage with Jest and Supertest
+- **Testing Best Practices**: Implementing comprehensive test coverage with Node's built-in test runner and Supertest
 - **Professional Development Skills**: Git workflow, code review, and collaborative development
 
 ### Secondary Objectives  
@@ -1360,6 +1590,10 @@ Every documentation update must include:
 
 ## 🐛 Issue Reporting
 
+**Scope: the repository as a whole.** Every template, timeline and triage rule
+below applies to an issue about either tutorial; say which one an issue
+concerns, because the two answer `/hello` differently.
+
 ### Issue Types and Categories
 
 #### **Bug Reports**
@@ -1367,7 +1601,9 @@ Every documentation update must include:
 Use our comprehensive bug report template for all bug submissions:
 
 **Required Information:**
-- **Environment details** (Node.js version, OS, Express.js version)
+- **Environment details**: which tutorial, the OS, and the versions that
+  apply to it - Node.js and Express.js for `src/nodejs-tutorial`, Python and
+  Flask for `src/backend`
 - **Detailed reproduction steps** from fresh installation
 - **Expected vs. actual behavior** with specific examples
 - **Error logs and console output** with stack traces
@@ -1380,7 +1616,7 @@ Use our comprehensive bug report template for all bug submissions:
 ```markdown
 ---
 name: Feature Request
-about: Suggest educational enhancements for the Node.js tutorial
+about: Suggest educational enhancements for a tutorial in this repository
 title: '[FEATURE] Brief description of enhancement'
 labels: ['enhancement', 'educational-value']
 ---
@@ -1443,9 +1679,12 @@ Any additional educational resources or examples to include.
 | **Learning Support** | Help with tutorial completion | "Unable to start server", "Test failures" |
 | **Educational Ideas** | Suggestions for learning improvements | "Additional endpoints to teach", "Better error examples" |
 | **Show and Tell** | Share learning achievements | "My first Node.js project", "Extended tutorial implementations" |
-| **Q&A** | Technical questions and answers | "Express.js v5 features", "Jest testing patterns" |
+| **Q&A** | Technical questions and answers | "Express.js v5 features", "`node --test` patterns" |
 
 #### **Issue Triage Process**
+
+Generic to the repository: the same flow runs whichever tutorial an issue is
+about.
 
 ```mermaid
 flowchart TD
@@ -1489,7 +1728,7 @@ flowchart TD
 - **Technical Issues**: @core-maintainers
 - **Educational Content**: @documentation-team  
 - **Community Support**: @community-mentors
-- **Security Concerns**: security@nodejs-tutorial.example.com
+- **Security Concerns**: security@example.com
 
 ### Escalation Process
 1. Add comment with @maintainers mention
@@ -1502,11 +1741,14 @@ flowchart TD
 
 ## 🔒 Security Guidelines
 
+**Scope: the repository as a whole** for reporting and disclosure; the
+framework-specific subsections below say which tutorial they describe.
+
 ### Vulnerability Reporting
 
 #### **Responsible Disclosure Process**
 
-**Security Contact**: security@nodejs-tutorial.example.com
+**Security Contact**: security@example.com
 
 ```markdown
 ## Security Vulnerability Report Template
@@ -1515,10 +1757,10 @@ flowchart TD
 Brief description of the security issue discovered.
 
 ### Affected Components
-- Node.js version impact
-- Express.js components affected
-- Dependencies involved
-- Tutorial sections impacted
+- Which tutorial: src/nodejs-tutorial or src/backend
+- Runtime version impact (Node.js, or Python)
+- Framework components affected (Express.js, or Flask)
+- Dependencies involved, and the tutorial sections impacted
 
 ### Vulnerability Details
 - Attack vector description
@@ -1548,6 +1790,14 @@ Recommended fixes or workarounds.
 | **Disclosure** | Coordinated | Public advisory, patch release | Community notification |
 
 ### Express.js v5 Security Features
+
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`.** Of the measures
+below, the one it actually applies is `app.disable('x-powered-by')`
+[src/nodejs-tutorial/src/app.js:37], which is why `X-Powered-By` is absent
+from every response on every path and method. The rest - the extra response
+headers, the async route, the per-request logging - are the pattern a
+contribution that adds them should follow, not a description of what the
+tutorial does today.
 
 #### **Framework Security Utilization**
 
@@ -1589,10 +1839,18 @@ function setupSecurityMiddleware(app) {
 
 #### **npm Audit Integration**
 
+**Scope: the Node.js tutorial at `src/nodejs-tutorial`**, whose two declared
+packages are the only npm dependencies in this repository. The Flask
+tutorial's Python dependencies are audited with the tooling configured for it.
+
 ```bash
+# Every command below runs from the Node.js tutorial root
+cd src/nodejs-tutorial
+
 # Regular security auditing workflow
 # Run before every contribution
 npm audit
+# found 0 vulnerabilities
 
 # Fix automatically resolvable vulnerabilities
 npm audit fix
@@ -1605,6 +1863,14 @@ npm audit --json > security-audit.json
 ```
 
 #### **Dependency Update Strategy**
+
+`npm audit`, `npm outdated` and `npm update` are npm built-ins and need no
+script to wrap them, which is why the tutorial's manifest declares only four:
+`start`, `dev`, `test` and `test:coverage`
+[src/nodejs-tutorial/package.json:11-16]. The block below is therefore **a
+suggestion for a project of your own**, not a description of scripts this
+repository provides — running `npm run security-check` here fails with a
+missing-script error.
 
 ```json
 {
@@ -1643,6 +1909,10 @@ npm audit --json > security-audit.json
 ```
 
 #### **Security Documentation Standards**
+
+**Illustrative pattern.** The Node.js tutorial registers no error middleware,
+so the handler below is not in it [src/nodejs-tutorial/src/app.js:50-55]; it
+is the documentation standard a contribution that adds one should meet.
 
 ```javascript
 /**
@@ -1695,6 +1965,11 @@ function secureErrorHandler(err, req, res, next) {
 
 ## 🏆 Recognition Program
 
+**Scope: the repository as a whole.** Recognition is not tied to a tutorial: a
+contribution to `src/nodejs-tutorial`, to `src/backend`, or to the shared
+documentation counts the same. The contributor names and milestones below are
+illustrative examples of the format, not a record of real people.
+
 ### Contributor Acknowledgment
 
 #### **Recognition Criteria**
@@ -1718,7 +1993,7 @@ function secureErrorHandler(err, req, res, next) {
 
 ### ⭐⭐⭐ Gold Contributors  
 - **@contributor4** - Community mentor, beginner guidance specialist
-- **@contributor5** - Performance optimization, Node.js v22 features
+- **@contributor5** - Performance optimization, Node.js v24 features
 
 ### ⭐⭐ Silver Contributors
 - **@contributor6** - Security enhancements, Express.js v5 features
@@ -1815,9 +2090,9 @@ Celebrating successful first-time contributors to encourage continued participat
 ### 📈 Skill Progression Recognition
 Acknowledging growth and skill development:
 
-- **Node.js Mastery**: Advanced Node.js v22 LTS feature utilization
+- **Node.js Mastery**: Advanced Node.js v24 LTS feature utilization
 - **Express.js Expertise**: Professional Express.js v5 implementation
-- **Testing Excellence**: Comprehensive Jest and Supertest usage
+- **Testing Excellence**: Comprehensive `node --test` and Supertest usage
 - **Documentation Mastery**: Outstanding educational writing
 
 ### 🌟 Community Building Recognition
@@ -1865,7 +2140,8 @@ flowchart LR
 - **20+ merged pull requests** with educational value
 - **Active code review participation** with constructive feedback
 - **Community mentoring experience** supporting new contributors
-- **Technical expertise** in Node.js v22 LTS and Express.js v5
+- **Technical expertise** in the stack of the tutorial you maintain: Node.js
+  v24 LTS with Express.js v5, or Python with Flask
 - **Educational leadership** in learning experience improvement
 
 ### Maintainer Responsibilities
@@ -1885,8 +2161,14 @@ flowchart LR
 
 ---
 
-**🎓 Thank you for contributing to the Node.js Hello World Tutorial!** 
+**🎓 Thank you for contributing to the Hello World Tutorial Repository!**
 
-Your contributions help create an exceptional learning environment where developers of all skill levels can master Node.js v22.16.0 LTS and Express.js v5.1.0 fundamentals through hands-on collaborative development. Together, we're building more than just a tutorial – we're fostering a community of learners, mentors, and professional developers committed to educational excellence and inclusive collaboration.
+Your contributions help create an exceptional learning environment where
+developers of all skill levels can master HTTP server fundamentals — with
+Node.js v24.21.0 LTS and Express.js v5.2.1 in `src/nodejs-tutorial`, or Python
+and Flask in `src/backend` — through hands-on collaborative development.
+Together, we're building more than just a tutorial – we're fostering a
+community of learners, mentors, and professional developers committed to
+educational excellence and inclusive collaboration.
 
 **Happy coding and learning!** 🚀
