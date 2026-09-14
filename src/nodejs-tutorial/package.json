@@ -1,0 +1,24 @@
+{
+  "name": "nodejs-hello-tutorial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Single-endpoint Node.js tutorial service: GET /hello returns the 11-byte body \"Hello world\" as text/plain.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
+  },
+  "dependencies": {
+    "express": "5.2.1"
+  },
+  "devDependencies": {
+    "supertest": "7.2.2"
+  }
+}

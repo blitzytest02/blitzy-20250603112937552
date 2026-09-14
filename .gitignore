@@ -1,9 +1,10 @@
 # =============================================================================
-# .gitignore for Node.js Tutorial Application
-# Node.js v22.16.0 LTS with Express.js v5.1.0
+# .gitignore for the /hello tutorial repository
+# Covers the Python Flask tutorial (src/backend) and the Node.js tutorial
+# (src/nodejs-tutorial); runtime versions are pinned by each project, not here.
 # =============================================================================
 # This file specifies intentionally untracked files that Git should ignore.
-# Educational Node.js tutorial application for demonstrating /hello endpoint
+# Educational tutorial repository demonstrating a /hello endpoint twice over
 # =============================================================================
 
 # =============================================================================
@@ -20,6 +21,9 @@
 .env.test.local
 .env.production.local
 *.env
+
+# Committed environment templates (no secrets) - exempted from the patterns above
+!.env.example
 
 # Private Keys and Certificates
 *.key
@@ -401,6 +405,6 @@ newrelic_agent.log
 
 # =============================================================================
 # END OF .GITIGNORE
-# Node.js Tutorial Application - Educational Repository Management
+# /hello tutorial repository - Educational Repository Management
 # Total patterns: 100+ comprehensive exclusion rules for clean repository
 # =============================================================================
