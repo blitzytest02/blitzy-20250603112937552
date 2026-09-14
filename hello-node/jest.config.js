@@ -1,29 +1,29 @@
 /**
- * Jest configuration for the hello-node tutorial project.
- *
- * Educational Focus:
- *   Shows how a Node project declares its test discovery and its coverage gate
- *   in one place, so `npm test` behaves identically for every learner.
- *
- * Key Learning Concepts:
- *   - testMatch accepts BOTH `*.test.js` and `*.spec.js` under test/, so unit and
- *     integration suites can use either extension without a config change.
- *   - coverageThreshold is the machine-enforced gate: branches 95, functions 100,
- *     lines 95, statements 95 (the values CONTRIBUTING.md:529-536 specifies).
+ * Jest configuration for the hello-node tutorial: it governs which test files are
+ * discovered, which modules coverage is measured from, and the coverage gate that
+ * `npm test`, `npm run test:coverage` and `npm run test:ci` all enforce.
  */
 module.exports = {
   // Server-side code: no browser globals, no jsdom.
   testEnvironment: 'node',
 
-  // Both extensions are collected; see CONTRIBUTING.md:539-542.
+  // Both extensions are collected (CONTRIBUTING.md:539-542), so either naming
+  // convention works: a unit suite named *.test.js and an integration suite named
+  // *.spec.js are each discovered with no change to this file.
   testMatch: ['**/test/**/*.test.js', '**/test/**/*.spec.js'],
 
-  // Coverage is always collected, and only from the two runtime modules.
+  // Coverage is always collected, and only from the two runtime modules. They are
+  // named exactly because this project has no src/ directory to glob.
   collectCoverage: true,
   collectCoverageFrom: ['app.js', 'server.js'],
+
+  // 'text' prints the table in the terminal; 'lcov' writes coverage/lcov.info.
   coverageReporters: ['text', 'lcov'],
 
-  // Enforced minimum; 100% is the target the project actually reaches.
+  // The machine-enforced gate, and the source of these four numbers is
+  // CONTRIBUTING.md:529-536. The enforced minimum is 95/100/95/95 while both
+  // modules actually achieve 100% on every metric, so the gate and the figure the
+  // project reaches are deliberately different numbers.
   coverageThreshold: {
     global: {
       branches: 95,
