@@ -20,10 +20,10 @@ const NOT_FOUND_BODY = 'Not Found';
 /**
  * Build a fresh Express application.
  *
- * This is a factory, not a shared singleton: every call assembles and returns a
- * new application. That is what lets each test construct its own application
- * and drive it through supertest without binding a port — and why src/server.js
- * is absent from the coverage table while this module reports 100%.
+ * This is a factory, not a shared singleton: every call returns a new
+ * application. That is what lets each test build its own and drive it through
+ * supertest, which needs no pre-started server and no fixed port — and why the
+ * coverage table reports this module at 100% and src/server.js not at all.
  *
  * @returns {import('express').Express} A newly assembled Express application,
  *   ready to be handed to `listen()` or to an HTTP assertion library.

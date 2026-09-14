@@ -1,10 +1,12 @@
 # `GET /hello` API reference
 
 This document is the single authority for the HTTP contract of the Node.js
-tutorial service. Every value in it was captured from a running server on
-Node 24.21.0 rather than written from expectation, and the transcripts below
-are the captured output. The code behind the contract is explained in
-[the annotated walkthrough](walkthrough.md).
+tutorial service. Every value it publishes as a transcript was captured from a
+running server on Node 24.21.0 rather than written from expectation. The
+matrix rows marked *inferred* are the deliberate exception and are excluded
+from that claim: they carry no transcript, and the legend beside the matrix
+states how each of them is known instead. The code behind the contract is
+explained in [the annotated walkthrough](walkthrough.md).
 
 ## Overview
 
@@ -29,9 +31,12 @@ and a not-found fall-through would be wrong about them:
 
 ### The successful representation
 
-These values hold for every `200` response on `/hello`, and only for it. The
-`404`, `OPTIONS` and `304` responses carry different or absent values, as the
-matrix further down sets out.
+These values are the representation `GET /hello` returns, and the derived
+`HEAD /hello` returns the same headers without the body. They are not the
+values of every `200`: the automatic `OPTIONS` answer is a `200` too, and it
+carries a different media type, a different length and a different body. The
+`404` and `304` responses differ again. The matrix further down sets each case
+out.
 
 | Field | Value |
 | --- | --- |
@@ -67,11 +72,20 @@ These hold regardless of which response is returned.
 | Authentication | None, on any path or method |
 | Versioning | None — no version prefix and no version header |
 
-The two defaults are literals in the server entry point
-[src/nodejs-tutorial/src/server.js:24] and
-[src/nodejs-tutorial/src/server.js:34]; every command documented in this
-tutorial uses them unchanged. Loopback binding is deliberate, so the tutorial
-server is not reachable from the network.
+The two defaults are literals in the server entry point — the `DEFAULT_HOST`
+constant [src/nodejs-tutorial/src/server.js:33] and the `DEFAULT_PORT`
+constant [src/nodejs-tutorial/src/server.js:43]; every command documented in
+this tutorial uses them unchanged. Loopback binding is deliberate, so the
+tutorial server is not reachable from the network.
+
+An override is validated before anything is bound, so not every value is
+accepted: blank or unset takes the default, a `PORT` must be a whole number
+from 1024 to 65535 [src/nodejs-tutorial/src/server.js:122-144], and a `HOST`
+must contain no whitespace and no control characters
+[src/nodejs-tutorial/src/server.js:152-171]. A value that breaks either rule
+is refused with one line on standard error and an exit status of `1`, and no
+socket is opened at all — so the responses documented here are served only on
+a binding the entry point accepted.
 
 ### The complete method and path matrix
 
@@ -80,10 +94,20 @@ different things:
 
 - **executed** — a transcript captured from a running server is published
   below for that row.
-- **inferred** — no transcript is published. The behaviour follows from the
-  same terminal not-found handler [src/nodejs-tutorial/src/app.js:50-55] as
-  the executed rows above it, and it is covered by the unknown-path assertion
-  in `test/hello.test.js` rather than by a transcript of its own.
+- **inferred** — no transcript is published for that row and no automated
+  assertion covers it. It is known from the source and from Express's own
+  routing: a request that matches no route reaches the same terminal
+  not-found handler [src/nodejs-tutorial/src/app.js:50-55] that produced the
+  executed `404` transcripts, and a `HEAD` response never carries a body.
+
+What the automated suite proves is narrower than either column. The four
+tests in `test/hello.test.js` pin the status, the body bytes and the media
+type of `GET /hello`, and the status, body, byte count and media type of one
+unmatched `GET` [src/nodejs-tutorial/test/hello.test.js:37-102]. They assert
+nothing about the other methods and nothing about the `HEAD`, `OPTIONS` or
+conditional-`304` behaviours. Everything beyond those two paths rests on the
+captured transcripts below or, for the inferred rows, on the source reasoning
+above.
 
 | Request | Response | Evidence |
 | --- | --- | --- |
@@ -98,10 +122,12 @@ different things:
 | `HEAD`, unmatched path | 404 headers, no body | inferred |
 
 Each compressed cell is expanded by the section that carries its transcript.
-In full: the `404` rows are `text/plain; charset=utf-8` with
-`Content-Length: 9` and the body `Not Found`; the `304` row carries no body,
-no `Content-Type` and no `Content-Length`; and the `OPTIONS` row carries
-`Content-Type: text/plain` with no charset parameter, plus
+In full: every `404` row carries `text/plain; charset=utf-8` with
+`Content-Length: 9`, and all of them send the nine-byte body `Not Found`
+except one — `HEAD` on an unmatched path advertises that same length and sends
+no body at all, because a `HEAD` response never carries one. The `304` row
+carries no body, no `Content-Type` and no `Content-Length`; and the `OPTIONS`
+row carries `Content-Type: text/plain` with no charset parameter, plus
 `X-Content-Type-Options: nosniff` and a nine-byte body. `OPTIONS` on an
 unmatched path has no matched route and therefore no method list for Express
 to answer with, so it receives the ordinary `404`.
@@ -132,8 +158,8 @@ Accept: text/plain
 ```
 
 The host is written `127.0.0.1` here and everywhere else in this tutorial,
-matching the literal default in the server entry point
-[src/nodejs-tutorial/src/server.js:24].
+matching the `DEFAULT_HOST` literal in the server entry point
+[src/nodejs-tutorial/src/server.js:33].
 
 ## The 200 response
 
@@ -165,8 +191,11 @@ status, the media type, the eleven-byte length, the `ETag`, and the body.
 
 Every request the single route does not match reaches the terminal handler
 registered last in the application [src/nodejs-tutorial/src/app.js:50-55].
-That handler answers `404` with a nine-byte `text/plain` body, and it is the
-only other response the service can produce.
+That handler answers `404` with a nine-byte `text/plain` body, and that `404`
+is the only response the tutorial's own code produces besides the `200` on
+`GET /hello`. The service returns two more that no handler here writes: the
+automatic `OPTIONS` answer and the conditional `304`, both supplied by Express
+and both documented in their own sections below.
 
 ### The unmatched-path 404
 
@@ -269,8 +298,10 @@ GET, HEAD
 
 Two details of this response are easy to miss and both matter. Its
 `Content-Type` carries **no charset parameter**, unlike every other response
-the service returns. And the nine-byte body *is* the allowed-method list
-itself, the same string as the `Allow` header.
+that sends a `Content-Type` at all: the `200` and the `404` both spell out
+`charset=utf-8`, and the `304` sends no `Content-Type` to compare with. And
+the nine-byte body *is* the allowed-method list itself, the same string as the
+`Allow` header.
 
 Neither source module registers `OPTIONS` or defines an `Allow` header. Both
 come from Express, which derives the method list from the single registered
@@ -374,9 +405,10 @@ response; the tutorial registers a single `GET` handler and nothing else
 
 The `405` a production API would return in place of the fall-through is
 **deliberately omitted** here, not overlooked. The Flask application in this
-same repository does return it: its handler builds a `405` envelope and sets
-`response.headers['Allow']` from the framework's own method list
-[src/backend/app.py:536-547]. The tutorial keeps Express 5's real behaviour
+same repository does return it: its handler builds the `405` envelope, hands
+it to `jsonify()` and sets the status [src/backend/app.py:535-547], and then
+sets `response.headers['Allow']` from the framework's own method list
+[src/backend/app.py:550-552]. The tutorial keeps Express 5's real behaviour
 and documents it truthfully instead of adding a handler that would make the
 two projects look alike when they are not.
 
@@ -398,6 +430,37 @@ two projects look alike when they are not.
 - `X-Powered-By`: *disabled* — Express would advertise itself with this header
   on every response; it is switched off once, during assembly
   [src/nodejs-tutorial/src/app.js:37], so it appears on no response at all.
+
+### Security headers, and the production alternative
+
+Between them, the list above, the `Allow` header on the automatic `OPTIONS`
+answer and the transport lines noted earlier account for every header this
+service sends. Reading that set the other way round is the point of this
+subsection: the security headers a production service is expected to send are
+**absent** here. There is no `Strict-Transport-Security`, no
+`Content-Security-Policy`, no `X-Frame-Options`, no `Referrer-Policy`, and no
+`X-Content-Type-Options` on the `200` or on the `404` — the `nosniff` header
+listed above is sent by Express on the `OPTIONS` answer and nowhere else. The
+application registers no security-header middleware at all
+[src/nodejs-tutorial/src/app.js:31-58].
+
+That omission is deliberate, for the same reason the `405` is: the tutorial
+serves one public, read-only greeting on the loopback interface, and every
+middleware layer it does not have is one fewer construct between a learner and
+the route. It is **not** a pattern to carry into a production service. The
+production alternative is a dedicated security-header middleware mounted ahead
+of the routes — `helmet` is the package Express's own production
+best-practices guidance recommends for exactly this, and it sets that family
+of headers from a single `app.use()` call. The Flask application in this
+repository does the same job by hand: it names `X-Content-Type-Options`,
+`X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`,
+`Content-Security-Policy` and `X-Permitted-Cross-Domain-Policies`, then
+applies every one of them to each outgoing response
+[src/backend/app.py:240-251].
+
+Naming that alternative changes nothing above it. The headers this service
+sends are the headers the transcripts show, and adding the middleware would
+add headers no transcript here records.
 
 ### Optional byte-exactness confirmation
 
@@ -457,8 +520,11 @@ whereas the tutorial's eleven bytes *are* the greeting.
 
 The divergence is resolved by scope, not by compromise. The tutorial
 implements the plain reading of its own requirement, that the response bytes
-are the quoted string, and it matches the contract this repository's
-contribution guide already published for the endpoint
-[CONTRIBUTING.md:1246-1272]. The Flask application keeps its JSON envelope
+are the quoted string — which is also the contract this repository's
+contribution guide had published for the endpoint before any implementation
+existed to serve it. That guide no longer states the contract itself: its
+`API Documentation Format` section points here for it, and documents the
+endpoint by linking rather than by restating
+[CONTRIBUTING.md:1980-2016]. The Flask application keeps its JSON envelope
 untouched. Documenting the difference explicitly is what keeps either project
 from asserting a contract its own application does not serve.

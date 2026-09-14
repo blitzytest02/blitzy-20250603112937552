@@ -24,6 +24,10 @@ ENV/
 .env.production.local
 .env.*
 
+# Committed environment template (no secrets), exempted from the above.
+# Required here as well as at the root: Git applies this deeper file last.
+!.env.example
+
 # Testing and Coverage (pytest and coverage.py)
 .pytest_cache/
 .coverage

@@ -137,12 +137,15 @@ This command downloads Flask v3.1.1, pytest, coverage tools, and creates the vir
 The application supports environment-based configuration for deployment flexibility using python-dotenv:
 
 **Environment Variables:**
+
 - `PORT`: Server port. With no environment present the code default is
   `8000` [src/backend/app.py:722], [src/backend/wsgi.py:106],
   [src/backend/wsgi.py:503]. The value `3000` is supplied by the optional
   environment template and by the container configuration
-  [src/backend/.env.example:38], [infrastructure/docker/Dockerfile:54], so
-  copying `.env.example` to `.env` is what makes the server listen on 3000.
+  [src/backend/.env.example:38], [infrastructure/docker/Dockerfile:54]. Two
+  routes therefore make the server listen on 3000: copy the template as
+  shown below, or export `PORT=3000` in the shell before starting, as the
+  Usage section does.
 - `HOST`: Host address (default: `localhost`) [src/backend/app.py:721]. The
   WSGI factory path used for container binding defaults to `0.0.0.0`
   instead [src/backend/wsgi.py:105]; the two startup paths are distinct and
@@ -152,6 +155,7 @@ The application supports environment-based configuration for deployment flexibil
 - `SECRET_KEY`: Flask secret key for session security
 
 **Example .env file (optional):**
+
 ```bash
 PORT=3000
 HOST=localhost
@@ -159,6 +163,21 @@ FLASK_ENV=development
 FLASK_DEBUG=true
 SECRET_KEY=your-secret-key-change-in-production
 ```
+
+`src/backend/.env.example` already contains these values, so the copy step
+is a single command run from `src/backend`:
+
+```bash
+cp .env.example .env
+```
+
+Two consequences of that file are worth knowing before you run anything.
+It sets `PORT=3000` [src/backend/.env.example:38], which is what makes the
+`localhost:3000` commands in this document resolve. It also sets
+`FLASK_DEBUG=true`, which switches the application factory into debug mode
+[src/backend/app.py:156], and Flask then pretty-prints JSON instead of
+sending it compact — so the `/hello` body grows from 86 bytes to 99. The
+Usage section below states which byte count belongs to which startup path.
 
 ### Verification Steps
 
@@ -197,6 +216,11 @@ that production path.
 # Using WSGI entry point (recommended)
 # Starts a development server only when FLASK_ENV=development is set
 export FLASK_ENV=development
+# Without PORT the same path binds 8000; 3000 is the port used below
+export PORT=3000
+# Without HOST the banner reports the factory fallback 0.0.0.0 while the
+# development server still binds localhost — export it to make both agree
+export HOST=localhost
 python wsgi.py
 
 # Alternative: Using Flask CLI
@@ -205,40 +229,110 @@ set FLASK_APP=app.py     # Windows
 flask run --host=localhost --port=3000
 
 # Production deployment with Gunicorn
+# Run this in a shell where FLASK_ENV is production or unset: Gunicorn
+# imports wsgi:application, which reads FLASK_ENV like any other path
 gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4
 ```
 
-**Port used by each startup path:** the banner below reports `3000` because
-the environment supplies `PORT=3000` from the optional template
-[src/backend/.env.example:38] that the Environment Configuration section
-above instructs you to copy. With no environment file present the same
-development path falls back to `8000` [src/backend/wsgi.py:503]. Every
-`localhost:3000` transcript in the rest of this document therefore assumes
-the development path with the template-supplied port.
+**Port and host used by each startup path:** the three exports above are
+what make the banner report `localhost:3000` on a clean checkout.
+`FLASK_ENV=development` satisfies the development-server gate
+[src/backend/wsgi.py:495]; `PORT=3000` replaces the `8000` fallback that the
+same path uses when the variable is absent [src/backend/wsgi.py:503]; and
+`HOST=localhost` overrides the `0.0.0.0` fallback that the WSGI factory uses
+for its banner [src/backend/wsgi.py:105], which would otherwise disagree
+with the `localhost` the development server actually binds
+[src/backend/wsgi.py:502]. Copying the environment template instead of
+exporting `PORT` and `HOST` produces the same values, because the template
+sets both [src/backend/.env.example:38], [src/backend/.env.example:52] and
+`load_dotenv()` reads the file at import time [src/backend/app.py:52]; it
+additionally sets `FLASK_DEBUG=true`, which changes nothing about the
+binding. Every
+`localhost:3000` command in the rest of this document assumes the
+development path started exactly as shown above.
 
-**Expected Output (with `FLASK_ENV=development`):**
+**JSON body size is decided by debug state, not by the server.** Two
+separate mechanisms switch debug on, neither of which consults
+`FLASK_DEBUG` — which is why setting that variable to `false` does not get
+you compact output on a development-environment start:
+
+- `FLASK_ENV=development` makes the WSGI settings pass set `DEBUG=True` on
+  the application itself [src/backend/wsgi.py:176-182]. That applies to
+  **any** server importing `wsgi:application` under that variable, Gunicorn
+  included — measured through `wsgi:application`, `FLASK_ENV=development`
+  gives a 99-byte body and `FLASK_ENV=production` an 86-byte one.
+- The development server then forces `debug=True` a second time, through
+  `application.run(..., debug=True)` [src/backend/wsgi.py:506].
+
+So the transcripts started with the exports above are **99 bytes**
+pretty-printed, and the compact **86-byte** single-line body comes from a
+path where debug is off: Gunicorn or `flask run` in a shell with `FLASK_ENV`
+set to `production` or unset, and the pytest suite's test client. Each
+transcript below names the environment it was captured under.
+
+**Expected Output (captured from `FLASK_ENV=development HOST=localhost
+PORT=3000 python wsgi.py`):**
 
 ```text
-🚀 WSGI Application Successfully Initialized!
-============================================================
-⏰ Startup time: 2024-01-01T12:00:00.000000
-🌐 Application available at: http://localhost:3000
-📡 Host: localhost
-🔌 Port: 3000
+🚀 WSGI Application Ready for Production Deployment!
+======================================================================
+⏰ Initialization time: 2026-09-14T19:46:23.214817
+🐍 Python version: 3.13.7
+🌶️  Flask framework: Production WSGI application
+🔌 WSGI configuration: localhost:3000
+📡 Process ID: 35923
+🖥️  Platform: linux
 
-📋 Runtime Information:
-   Python version: 3.12.0
-   Flask environment: development
-   Flask debug mode: True
-   Process ID: 12345
+[ ... five further logged blocks and the memory report elided ]
 
-🎯 Available Endpoints:
-   GET  http://localhost:3000/hello  →  Returns 'Hello world'
-   GET  http://localhost:3000/health →  Health check endpoint
-============================================================
+🧪 Development mode: Starting Flask development server...
+⚠️  Warning: Development server not suitable for production
+🎓 Educational Note: Use Gunicorn for production deployment
+ * Serving Flask app 'app'
+ * Debug mode: on
+[ ... werkzeug's "this is a development server" warning elided ]
+ * Running on http://localhost:3000
+Press CTRL+C to quit
 ```
 
-The server typically starts within 2 seconds and consumes less than 75MB of memory during operation.
+**How to read that transcript.** Every line except the three `*`-prefixed
+ones is emitted through Python's `logging` module and reaches the console
+prefixed with `<timestamp> - <logger> - INFO -` and a space; that prefix is
+elided above to keep the block readable. The first bracketed line stands in
+for five further logged blocks — WSGI server deployment commands, the
+endpoint list, testing commands, container notes and educational notes
+[src/backend/wsgi.py:397-429] — followed by a memory report that logs the
+process RSS and compares it against a 75 MB target
+[src/backend/wsgi.py:355-366]. The banner header itself is
+`WSGI Application Ready for Production Deployment!` even on the development
+path, because the same initialisation routine serves both
+[src/backend/wsgi.py:388].
+
+**Values that change between runs.** `⏰ Initialization time` and
+`📡 Process ID` differ on every start. `🐍 Python version` reports the
+interpreter actually in use — `3.13.7` in the captured run, and any
+Python 3.12 or newer is supported. `🔌 WSGI configuration` echoes whatever
+`HOST` and `PORT` resolve to, which is `localhost:3000` only because the
+`HOST` and `PORT` exports above are in effect. This line comes from
+`create_wsgi_application`, whose own `HOST` fallback is `0.0.0.0`
+[src/backend/wsgi.py:105], so with `HOST` unset the same run logs
+`0.0.0.0:3000` here while the development server still binds `localhost`
+from its own separate fallback [src/backend/wsgi.py:502] — two values for
+one start, which is why the export is shown.
+
+**Debug mode is reported twice, with different answers, and both are
+correct.** The application factory logs `🐞 Debug mode: False` from
+`app.config['DEBUG']` [src/backend/app.py:211] because `FLASK_DEBUG` was
+never set, while Werkzeug prints `Debug mode: on` because `wsgi.py` calls
+`application.run(..., debug=True)` [src/backend/wsgi.py:506]. The second one
+governs the wire format: it is why the `/hello` body in the next section
+comes back indented rather than compact.
+
+Startup cost is logged rather than guaranteed. The captured run reported
+`RSS (Resident Set Size): 33.90 MB` at initialisation and the module warns
+only once RSS passes 75 MB [src/backend/wsgi.py:362-366]; that threshold is
+a monitoring target in the code, not a limit this tutorial enforces or
+benchmarks.
 
 ### Testing the /hello Endpoint
 
@@ -258,27 +352,35 @@ curl http://localhost:3000/hello
 {
   "message": "Hello world",
   "status": "success",
-  "timestamp": "2024-01-01T12:00:00.000000"
+  "timestamp": "2026-09-14T19:46:23.425078"
 }
 ```
 
 The handler builds this three-field envelope and `jsonify()` sorts its keys,
 so the wire order is `message`, `status`, `timestamp`
-[src/backend/app.py:367-411], [src/backend/app.py:391-399]. It is shown
-pretty-printed above for readability; the application factory sends it
-compact on the wire as a single line, as the header transcript under
-Command Line Testing Examples below shows. The `timestamp` value is
-generated per request and therefore differs on every call.
+[src/backend/app.py:367-411], [src/backend/app.py:391-399]. Indented exactly
+as shown is how the development server sends it, because that path runs with
+`debug=True` [src/backend/wsgi.py:506] and Flask pretty-prints JSON whenever
+the application is in debug mode. A debug-disabled factory path — Gunicorn,
+or the pytest suite's test client — sends the same envelope compact on one
+line, as the API Documentation transcript further below shows. The
+`timestamp` value is generated per request and therefore differs on every
+call.
 
 **HTTP Response Details:**
+
 - Status Code: `200 OK` [src/backend/app.py:400]
 - Content-Type: `application/json` [src/backend/app.py:403]
-- Content-Length: `86` — the compact-JSON body produced by the application
-  factory (`create_app('production')`, `'development'` or `'testing'`, the
-  path Gunicorn and the test suite take). Direct `python app.py` execution
-  yields `99` bytes instead, because debug pretty-printing inserts spaces
-  after the JSON separators [src/backend/app.py:367-411].
-- Response Time: < 50ms
+- Content-Length: `99` on the development-server path documented above,
+  where debug is on and `jsonify()` pretty-prints the envelope
+  [src/backend/wsgi.py:176-182], [src/backend/wsgi.py:506]. The same
+  envelope measures `86` bytes compact wherever debug is off — Gunicorn or
+  `flask run` with `FLASK_ENV` set to `production` or unset, and the pytest
+  suite's test client [src/backend/app.py:367-411].
+- Response Time: measured per request and returned in the `X-Response-Time`
+  header [src/backend/app.py:342]. The captured request on this path
+  reported `0.18ms`; the application records that figure rather than
+  guaranteeing any bound, and this tutorial publishes no benchmark.
 
 ### Command Line Testing Examples
 
@@ -287,42 +389,62 @@ generated per request and therefore differs on every call.
 curl -i http://localhost:3000/hello
 ```
 
-**Output with headers:**
+**Output with headers**, captured from the development server started as
+shown above:
 
 ```http
 HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.13.7
+Date: Mon, 14 Sep 2026 19:46:23 GMT
 Content-Type: application/json
-Content-Length: 86
+Content-Length: 99
 X-API-Version: 1.0
-X-Response-Time: 1.83ms
-X-Request-ID: req_1704110400000
+X-Response-Time: 0.18ms
+X-Request-ID: req_1789415183425
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
 Referrer-Policy: strict-origin-when-cross-origin
 Content-Security-Policy: default-src 'self'
 X-Permitted-Cross-Domain-Policies: none
-Date: Mon, 01 Jan 2024 12:00:00 GMT
+Connection: close
 
-{"message":"Hello world","status":"success","timestamp":"2024-01-01T12:00:00.000000"}
+{
+  "message": "Hello world",
+  "status": "success",
+  "timestamp": "2026-09-14T19:46:23.425078"
+}
 ```
 
-The `86`-byte `Content-Length` is the application-factory (compact JSON)
-body; direct `python app.py` execution yields `99` bytes because of debug
-pretty-printing [src/backend/app.py:367-411]. The handler itself sets only
-`Content-Type` and `X-API-Version` [src/backend/app.py:403-404]; the
-security headers come from the after-request hook
-[src/backend/app.py:240-251], and the timing and tracing headers from
-[src/backend/app.py:342] and [src/backend/app.py:350].
+The `99`-byte `Content-Length` and the indented body follow from debug being
+on for this start — set once by `FLASK_ENV=development`
+[src/backend/wsgi.py:176-182] and again by the development server itself
+[src/backend/wsgi.py:506]. With debug off the same envelope is compact and
+86 bytes long, exactly as the API Documentation transcript below
+shows. The handler itself sets only `Content-Type` and
+`X-API-Version` [src/backend/app.py:403-404]; the security headers come from
+the after-request hook [src/backend/app.py:240-251], and the timing and
+tracing headers from [src/backend/app.py:342] and [src/backend/app.py:350].
 
 `Date`, `X-Response-Time`, `X-Request-ID` and the `timestamp` value vary per
-request, so the values above are illustrative rather than reproducible.
+request, so those four values are illustrative rather than reproducible.
 
-This `curl` sends no `Origin` header, so no CORS headers appear in the
-response. When a request does carry a matching `Origin`, Flask-CORS adds
-`Access-Control-Allow-Origin: http://localhost:3000` and `Vary: Origin`; the
-allowed origins are `http://localhost:3000` and `http://localhost:8000`
-[src/backend/app.py:271].
+The `Server` header is written by the Werkzeug development server itself
+before the application's headers are applied, so the application-level
+removal at [src/backend/app.py:237] cannot suppress it; the signature it
+discloses is one more reason the development server is not a deployment
+target.
+
+**CORS headers appear even on a request that carries no `Origin`**, which is
+what the transcript above shows. Flask-CORS is configured with the allowed
+origins `http://localhost:3000` and `http://localhost:8000`
+[src/backend/app.py:271], and its behaviour splits three ways: with no
+`Origin` header it sends the first configured origin,
+`Access-Control-Allow-Origin: http://localhost:3000`, together with
+`Vary: Origin`; with a matching `Origin` it echoes that origin instead; with
+an origin outside the allowed list it sends neither header.
 
 **Testing health check endpoint:**
 ```bash
@@ -363,35 +485,57 @@ Accept: application/json
 
 ### Response Format and Headers
 
-**Successful Response (200 OK):**
+**Successful Response (200 OK)** — the compact form, as a path with debug
+off sends it: Gunicorn or `flask run` in a shell where `FLASK_ENV` is
+`production` or unset, and the pytest test client:
 
 ```http
 HTTP/1.1 200 OK
+Server: gunicorn
+Date: Mon, 14 Sep 2026 20:00:14 GMT
+Connection: close
 Content-Type: application/json
 Content-Length: 86
 X-API-Version: 1.0
-X-Response-Time: 1.83ms
-X-Request-ID: req_1704110400000
+X-Response-Time: 0.16ms
+X-Request-ID: req_1789416014407
+Access-Control-Allow-Origin: http://localhost:3000
+Vary: Origin
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
 Referrer-Policy: strict-origin-when-cross-origin
 Content-Security-Policy: default-src 'self'
 X-Permitted-Cross-Domain-Policies: none
-Date: Mon, 01 Jan 2024 12:00:00 GMT
 
-{"message":"Hello world","status":"success","timestamp":"2024-01-01T12:00:00.000000"}
+{"message":"Hello world","status":"success","timestamp":"2026-09-14T20:00:14.407199"}
 ```
 
-The `86`-byte `Content-Length` is the application-factory (compact JSON)
-body, and direct `python app.py` execution yields `99` bytes
-[src/backend/app.py:367-411]. This endpoint sends no `Cache-Control` header:
-the handler sets only `Content-Type` and `X-API-Version`
-[src/backend/app.py:403-404], and the remaining headers are added by the
-after-request hooks [src/backend/app.py:240-251], [src/backend/app.py:342],
-[src/backend/app.py:350]. The two CORS headers appear only when the request
-carries a matching `Origin` [src/backend/app.py:271], as described under
-Command Line Testing Examples above.
+That block was captured from `gunicorn wsgi:application --bind
+localhost:3000 --workers 1`, which leaves `FLASK_ENV` unset and therefore
+builds the production factory with debug off. `Server: gunicorn` identifies
+the serving layer rather than the application, and `Date`,
+`X-Response-Time`, `X-Request-ID` and the `timestamp` value differ on every
+request.
+
+The `86`-byte `Content-Length` counts the compact single-line envelope plus
+its trailing newline, which is what `jsonify()` produces while the
+application is **not** in debug mode [src/backend/app.py:367-411]. Any
+debug-enabled path pretty-prints the same envelope to `99` bytes, as the
+Usage transcript above shows, and there are four of them: the development
+server started by `wsgi.py` [src/backend/wsgi.py:506], **Gunicorn or any
+other server importing `wsgi:application` with `FLASK_ENV=development`**
+[src/backend/wsgi.py:176-182], direct `python app.py` execution, and a
+factory created with `FLASK_DEBUG=true` [src/backend/app.py:156]. This
+endpoint sends no `Cache-Control` header: the handler sets only
+`Content-Type` and `X-API-Version` [src/backend/app.py:403-404], and the
+remaining headers are added by the after-request hooks
+[src/backend/app.py:240-251], [src/backend/app.py:342],
+[src/backend/app.py:350]. The two CORS headers are present here because
+Flask-CORS sends the first configured origin even to a request with no
+`Origin` header [src/backend/app.py:271], and are absent only for an origin
+outside the allowed list, as described under Command Line Testing Examples
+above.
 
 **Response Body:** JSON object with `message`, `status` and `timestamp`
 fields, the `message` field carrying `Hello world`
@@ -425,48 +569,95 @@ belongs to this endpoint only — `GET /hello` does not send it.
 
 The application implements comprehensive error handling following HTTP standards using Flask error handlers:
 
+`jsonify()` sorts every error body into alphabetical key order, so the field
+order below is the wire order rather than the order the handlers build.
+Both captured blocks come from the development server, which indents the
+JSON because it runs with `debug=True` [src/backend/wsgi.py:506]; the
+compact byte count a debug-disabled factory path would send is given with
+each one. Only the headers specific to each error are listed: every error
+response also carries the same `Server`, `Date`, CORS, security and timing
+headers as the successful transcript above, and those lines are omitted here
+so the error-specific fields stand out.
+
 **404 Not Found - Route not found:**
+
 ```http
-HTTP/1.1 404 Not Found
+HTTP/1.1 404 NOT FOUND
 Content-Type: application/json
+Content-Length: 198
 
 {
-  "status": 404,
   "error": "Not Found",
-  "message": "The requested resource was not found",
-  "path": "/invalid",
+  "message": "The requested resource was not found on this server",
   "method": "GET",
-  "timestamp": "2024-01-01T12:00:00.000000"
+  "path": "/invalid",
+  "status": 404,
+  "timestamp": "2026-09-14T19:46:23.429728"
 }
 ```
+
+The `message` wording is fixed in the handler and ends `not found on this
+server`; `path` and `method` echo the request that missed
+[src/backend/app.py:502-513]. Compact, that body is 173 bytes for the
+`/invalid` path shown — a longer request path makes it longer.
 
 **405 Method Not Allowed - Invalid HTTP method:**
+
 ```http
-HTTP/1.1 405 Method Not Allowed
+HTTP/1.1 405 METHOD NOT ALLOWED
 Content-Type: application/json
+Content-Length: 268
+Allow: OPTIONS, HEAD, GET
 
 {
-  "status": 405,
+  "allowed_methods": [
+    "OPTIONS",
+    "HEAD",
+    "GET"
+  ],
   "error": "Method Not Allowed",
-  "message": "The POST method is not allowed for this endpoint",
-  "path": "/hello",
+  "message": "The POST method is not allowed for this resource",
   "method": "POST",
-  "timestamp": "2024-01-01T12:00:00.000000"
+  "path": "/hello",
+  "status": 405,
+  "timestamp": "2026-09-14T19:46:23.434044"
 }
 ```
+
+Three details of that response are easy to get wrong. The `message` ends
+`not allowed for this resource`, with the offending method interpolated
+[src/backend/app.py:536-547]. The body carries an `allowed_methods` array
+and the response carries a matching `Allow` header, both built from
+Werkzeug's `error.valid_methods` [src/backend/app.py:541],
+[src/backend/app.py:551-552]. And that list is an **unordered set** —
+`{GET, HEAD, OPTIONS}` — not a sequence: the same request emitted
+`OPTIONS, HEAD, GET` through the development server and
+`OPTIONS, GET, HEAD` through the pytest test client, so assert membership
+and never position. Compact, the body is 221 bytes.
 
 **500 Internal Server Error:**
+
 ```http
-HTTP/1.1 500 Internal Server Error
+HTTP/1.1 500 INTERNAL SERVER ERROR
 Content-Type: application/json
 
 {
-  "status": 500,
   "error": "Internal Server Error",
-  "message": "An internal server error occurred",
-  "timestamp": "2024-01-01T12:00:00.000000"
+  "message": "An unexpected error occurred while processing your request",
+  "request_id": "req_1789416014407",
+  "status": 500,
+  "timestamp": "2026-09-14T20:00:14.407199"
 }
 ```
+
+That shape is read from the handler rather than captured, because the
+tutorial application has no route that fails on demand. It carries five
+fields rather than four: the extra `request_id` repeats the per-request
+identifier assigned in the before-request hook [src/backend/app.py:316] and
+echoed in the `X-Request-ID` header, which is what ties a client-visible
+error to a server log line. The message is the generic
+`An unexpected error occurred while processing your request`, and no stack
+trace is ever placed in the body [src/backend/app.py:586-592].
 
 ### Example Requests and Responses
 
@@ -781,11 +972,14 @@ OSError: [Errno 98] Address already in use
    ```
 
 2. **Use alternative port:**
+
    ```bash
-   PORT=3001 python wsgi.py
-   
-   # Or with Flask CLI
-   flask run --port 3001
+   # FLASK_ENV=development is required: without it wsgi.py initialises the
+   # WSGI application, prints Gunicorn guidance and starts no server
+   FLASK_ENV=development PORT=3001 python wsgi.py
+
+   # Or with Flask CLI, which takes the port as a flag instead
+   flask --app app.py run --host localhost --port 3001
    ```
 
 3. **Check for other applications:**
@@ -920,10 +1114,12 @@ curl: (7) Failed to connect to localhost port 3000
    ```
 
 2. **Check Flask application logs:**
+
    ```bash
-   # Enable debug logging
-   FLASK_DEBUG=true python wsgi.py
-   
+   # FLASK_ENV=development is what starts a server at all; FLASK_DEBUG=true
+   # additionally puts the factory itself into debug mode
+   FLASK_ENV=development FLASK_DEBUG=true python wsgi.py
+
    # Or with verbose pytest
    pytest -s -v
    ```
@@ -1041,11 +1237,32 @@ Explore advanced Flask patterns and extensions:
 
 ## Performance Characteristics
 
-- **Startup Time**: < 2 seconds
-- **Memory Usage**: < 75MB during operation (Python runtime included)
-- **Response Time**: < 50ms for /hello endpoint
-- **Concurrent Requests**: 100+ supported through WSGI and thread pools
-- **Test Execution**: < 10 seconds for complete test suite
+This tutorial publishes no performance benchmark, so the entries below state
+what the application measures and what a single captured run observed — not
+a guarantee, a service level, or a figure any test enforces.
+
+- **Startup Time**: not measured by the application. The captured
+  development-server start logged its initialisation timestamp only
+  [src/backend/wsgi.py:387-390]
+- **Memory Usage**: measured with `psutil` at initialisation, on each
+  handled signal, at shutdown and on an uncaught exception, then compared
+  against a 75 MB monitoring target that logs a warning when exceeded
+  [src/backend/wsgi.py:355-366]. The captured run reported `33.90 MB` RSS at
+  initialisation on Python 3.13.7
+- **Response Time**: measured per request and returned in the
+  `X-Response-Time` header [src/backend/app.py:342]. The captured `/hello`
+  requests reported `0.16ms` under Gunicorn and `0.18ms` under the
+  development server, each from one request on an idle container
+- **Concurrent Requests**: determined entirely by the serving layer, not by
+  this application, and not benchmarked here. The Gunicorn command
+  documented in the Usage section asks for four synchronous workers
+  (`--workers 4`), while the one-worker invocation named under Response
+  Format and Headers was used only to capture that transcript. The
+  development server runs threaded by default, because `wsgi.py` passes no
+  `threaded` argument to `application.run` and Flask's own default is on
+  [src/backend/wsgi.py:506]
+- **Test Execution**: not benchmarked. Time `pytest` on your own machine if
+  you need a figure for it
 
 ## Security Considerations
 

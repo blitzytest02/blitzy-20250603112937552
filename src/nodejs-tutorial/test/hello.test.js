@@ -4,11 +4,11 @@
  * Endpoint test suite for the Node.js tutorial service.
  * Replaces the Jest/Supertest test suite with Node's built-in node:test runner.
  *
- * Four assertions prove that the published GET /hello contract holds. Each one
+ * Four tests prove that the published GET /hello contract holds. Each one
  * drives the application object returned by the factory in ../src/app rather
- * than a running server, so the suite needs no server started and binds no
- * fixed port — supertest manages the transport itself. The contract under test
- * is documented in ../docs/api-reference.md, which is its single authority.
+ * than a running server, so the suite pre-starts none and needs no fixed port —
+ * supertest starts a transient listener on an ephemeral one. The contract is
+ * documented in ../docs/api-reference.md, its single authority.
  *
  * Educational Purpose:
  * - Shows flat node:test declarations replacing Jest's nested suite organisation
@@ -22,7 +22,7 @@
  * - A fresh application per test via createApp(), so no state is shared
  * - Plain-text body read from res.text, because res.body is empty for non-JSON
  * - Byte-length assertion pinning the 11-byte body and its absent trailing newline
- * - Unknown-path case exercising the terminal not-found handler in ../src/app
+ * - Unknown-path case pinning the terminal handler's body, bytes and type
  */
 
 const { test } = require('node:test');
@@ -83,4 +83,20 @@ test('unknown path responds 404', async () => {
 
   // Validate 404 status code
   assert.strictEqual(res.status, 404);
+
+  // Validate the not-found body by direct equality against the literal. The
+  // status alone cannot prove the registered handler ran: Express answers an
+  // unmatched path with a 404 of its own when no terminal handler exists. The
+  // literal is spelled out rather than imported from ../src/app for the same
+  // reason the body assertion above spells its own out — an assertion that
+  // imported NOT_FOUND_BODY would compare it with itself and could never fail.
+  assert.strictEqual(res.text, 'Not Found');
+
+  // Validate the body length: nine bytes, measured on the received body, so
+  // the HTML error page Express sends by default cannot satisfy it.
+  assert.strictEqual(Buffer.byteLength(res.text), 9);
+
+  // Validate the media type in full. The handler sends plain text; Express's
+  // default 404 is text/html, so this is what distinguishes the two.
+  assert.strictEqual(res.headers['content-type'], 'text/plain; charset=utf-8');
 });

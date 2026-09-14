@@ -6,7 +6,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
 [![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
 
-A comprehensive Python Flask tutorial application demonstrating fundamental WSGI web server concepts using Flask v3.1.1 and Python 3.12+ through hands-on HTTP server implementation with a single `/hello` endpoint returning 'Hello world'.
+A comprehensive Python Flask tutorial application demonstrating fundamental WSGI web server concepts using Flask v3.1.1 and Python 3.12+ through hands-on HTTP server implementation, built around a `/hello` endpoint returning 'Hello world' and a `/health` endpoint for monitoring.
 
 ## Table of Contents
 
@@ -54,7 +54,7 @@ This tutorial application is designed to provide hands-on experience with fundam
 
 ### Project Features
 
-- **Single `/hello` endpoint** returning a JSON envelope whose `message` field is 'Hello world', demonstrating basic Flask WSGI server functionality
+- **`/hello` greeting endpoint** returning a JSON envelope whose `message` field is 'Hello world' [src/backend/app.py:367], served alongside the `/health` monitoring endpoint [src/backend/app.py:426], demonstrating basic Flask WSGI server functionality
 - **Flask v3.1.1 security features** including automatic JSON serialization and modern security defaults
 - **Comprehensive error handling** with 404 and 500 responses following HTTP standards using Flask decorators
 - **Educational logging and monitoring patterns** for understanding Python web server behavior
@@ -185,19 +185,20 @@ HOST=localhost
 
 **Default Configuration:**
 
-- **PORT**: `8000` with no environment variable set — that is the
-  application's own fallback [src/backend/app.py:722]. The template above
-  and `src/backend/.env.example` both supply `3000`
-  [src/backend/.env.example:38], the same port the container image
-  configures [infrastructure/docker/Dockerfile:54]. The code default and the
-  template value are different things, so every command in this README uses
-  the one its own startup path establishes: `8000` when the server is started
-  with no `.env` present, `3000` in the container and after this template is
-  copied into place.
+- **PORT**: `8000` with no environment variable set — the fallback that
+  `python app.py` [src/backend/app.py:722] and `python wsgi.py`
+  [src/backend/wsgi.py:106] apply. The Flask CLI does not use it and applies
+  its own default instead, which is why every `python -m flask run` command
+  below names its port explicitly. The template above and
+  `src/backend/.env.example` both supply `3000`
+  [src/backend/.env.example:38], the port the container image configures
+  [infrastructure/docker/Dockerfile:54]; each command uses the value its own
+  startup path establishes.
 - **HOST**: `localhost`, which is both the code fallback
   [src/backend/app.py:721] and the template value
   [src/backend/.env.example:52], and is safe for local development
-- **FLASK_ENV**: development (enables enhanced debugging)
+- **FLASK_ENV**: `development`, read by the application [src/backend/app.py:155]
+  and by `wsgi.py` [src/backend/wsgi.py:495]; Flask 3's CLI reads `FLASK_DEBUG`
 
 ## Usage
 
@@ -214,7 +215,7 @@ source .venv/bin/activate  # macOS/Linux
 python app.py
 
 # Alternative: Start with Gunicorn for production testing
-gunicorn wsgi:app
+gunicorn wsgi:application
 
 # Custom port development mode
 python -m flask run --port=8080
@@ -334,11 +335,11 @@ curl http://localhost:8080/hello
 
 **Environment-Specific Configuration:**
 ```bash
-# Enhanced development debugging
-FLASK_DEBUG=True python -m flask run
+# Enhanced development debugging, on the port this README documents
+FLASK_DEBUG=True python -m flask run --port=8000
 
 # Production mode testing
-FLASK_ENV=production gunicorn wsgi:app
+FLASK_ENV=production gunicorn wsgi:application
 ```
 
 ## API Documentation
@@ -367,9 +368,9 @@ CORS headers appear in the response below.
 Captured through the application factory — `create_app(...)`, the path
 Gunicorn and the pytest suite take — where the envelope is compact and
 measures 86 bytes including its trailing newline. The handler builds the
-dictionary in the source order `message`, `timestamp`, `status` and hands it
-to `jsonify()`, which sorts the keys, so the order below is the wire order
-rather than the source order [src/backend/app.py:391-395]:
+dictionary in the source order `message`, `timestamp`, `status`
+[src/backend/app.py:391-395] and hands it to `jsonify()`
+[src/backend/app.py:399]; the keys arrive sorted, as the capture below shows:
 
 ```http
 HTTP/1.1 200 OK
@@ -416,9 +417,11 @@ order it emits them:
   `X-Permitted-Cross-Domain-Policies`: the security header set applied to
   every response, with the values shown in the transcript above
   [src/backend/app.py:239-247]
-- `Server`: **not sent.** The security callback pops this header from every
-  response [src/backend/app.py:237], so neither the Werkzeug nor the Python
-  version is disclosed
+- `Server`: **not sent by the application.** The security callback pops it
+  from every response the application builds [src/backend/app.py:237], which
+  is why the factory capture above carries none. The Werkzeug development
+  server writes its own `Server` and `Date` headers ahead of these, so a
+  live `python app.py` reply does disclose those two versions
 
 **cURL Example:**
 
@@ -509,9 +512,9 @@ Allow: OPTIONS, HEAD, GET
 
 **Flask v3.1.1 Security Enhancements:**
 
-- **Server header removal** - the `Server` header is popped from every
-  response, so neither the Werkzeug nor the Python version is disclosed
-  [src/backend/app.py:237]
+- **Server header removal** - the application pops the `Server` header from
+  every response it builds [src/backend/app.py:237]; the development server
+  and any WSGI server in front of it still add their own
 - **Security headers on every response** - `X-Content-Type-Options: nosniff`,
   `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`,
   `Referrer-Policy: strict-origin-when-cross-origin`,
@@ -640,13 +643,13 @@ def test_404_error_handling(client):
 source .venv/bin/activate
 
 # Run with Gunicorn for production testing
-gunicorn wsgi:app
+gunicorn wsgi:application
 
 # Custom port and workers for production
-gunicorn --bind 0.0.0.0:8080 --workers 2 wsgi:app
+gunicorn --bind 0.0.0.0:8080 --workers 2 wsgi:application
 
 # With configuration file
-gunicorn --config gunicorn.conf.py wsgi:app
+gunicorn --config gunicorn.conf.py wsgi:application
 ```
 
 #### Process Management with Supervisor (Optional)
@@ -662,7 +665,7 @@ pip install supervisor
 # Create configuration file
 cat > supervisord.conf << EOF
 [program:flask-tutorial]
-command=gunicorn --bind 0.0.0.0:8000 wsgi:app
+command=gunicorn --bind 0.0.0.0:8000 wsgi:application
 directory=/path/to/project
 user=www-data
 autostart=true
@@ -755,14 +758,14 @@ heroku open
 
 **Required Heroku Files:**
 - `runtime.txt`: `python-3.12.0`
-- `Procfile`: `web: gunicorn wsgi:app`
+- `Procfile`: `web: gunicorn wsgi:application`
 
 #### Azure Web Apps Deployment
 
 1. Create Azure Web App with Python 3.12 runtime
 2. Configure deployment settings:
    - **Runtime**: Python 3.12
-   - **Startup Command**: `gunicorn wsgi:app`
+   - **Startup Command**: `gunicorn wsgi:application`
    - **App Settings**: Configure environment variables
 
 ```bash
@@ -798,18 +801,19 @@ railway up
 2. Configure app settings:
    - **Framework**: Python (Flask)
    - **Build Command**: `pip install -r requirements.txt`
-   - **Run Command**: `gunicorn wsgi:app`
+   - **Run Command**: `gunicorn wsgi:application`
    - **Port**: 8000
 
 ### Environment Configuration
 
-**Required Environment Variables for Deployment:**
+**Deployment Environment Variables** — the defaults below are the ones
+`src/backend/wsgi.py` applies when a WSGI server imports it:
 
 | Variable | Default | Purpose | Platform Notes |
 |----------|---------|---------|----------------|
 | `PORT` | 8000 | Server port | Heroku/Azure set automatically |
-| `FLASK_ENV` | development | Environment mode | Set to 'production' for deployment |
-| `HOST` | localhost | Host binding | Use '0.0.0.0' for containerized deployment |
+| `FLASK_ENV` | production | Environment mode | `development` makes `wsgi.py` start a development server [src/backend/wsgi.py:495] |
+| `HOST` | 0.0.0.0 | Host binding | Direct `python app.py` falls back to `localhost` [src/backend/app.py:721] |
 | `WORKERS` | 1 | Gunicorn worker processes | Increase for production traffic |
 
 **Platform-Specific Configuration:**
@@ -819,17 +823,24 @@ railway up
 import os
 from app import create_app
 
-app = create_app()
+flask_env = os.getenv('FLASK_ENV', 'production')
+host = os.getenv('HOST', '0.0.0.0')
+port = int(os.getenv('PORT', '8000'))
 
-if __name__ == "__main__":
-    port = int(os.getenv('PORT', '8000'))
-    host = os.getenv('HOST', '0.0.0.0')
-    app.run(host=host, port=port)
+# Imported by the WSGI server as wsgi:application
+application = create_app(flask_env)
+
+# Run a development server only when FLASK_ENV asks for one
+if __name__ == "__main__" and flask_env == 'development':
+    application.run(host=host, port=port)
 ```
 
-Those two fallbacks are the ones `src/backend/wsgi.py` uses
-[src/backend/wsgi.py:105-106]: `8000` for the port, and `0.0.0.0` for the
-host so that a containerized deployment is reachable.
+Those three fallbacks are the ones `src/backend/wsgi.py` uses on the imported
+path [src/backend/wsgi.py:104-106]: `production` for the mode, `0.0.0.0` for
+the host so a containerized deployment is reachable, and `8000` for the port.
+The callable is named `application`, which is what `wsgi:application` selects
+[src/backend/wsgi.py:531]; started directly instead, `python app.py` falls
+back to `localhost` [src/backend/app.py:721].
 
 ## Troubleshooting
 
@@ -844,15 +855,15 @@ OSError: [Errno 48] Address already in use
 
 **Solutions:**
 ```bash
-# Find process using port 8000
-lsof -ti:8000 | xargs kill  # macOS/Linux
+# 1. List what holds port 8000 and confirm the process is yours
+lsof -i :8000                 # macOS/Linux
 netstat -ano | findstr :8000  # Windows
 
-# Use different port
-FLASK_RUN_PORT=8080 python -m flask run
+# 2. Stop only the PID you just confirmed, with SIGTERM
+kill -15 <process-id>         # kill -9 only if it ignores SIGTERM
 
-# Kill specific process
-kill -9 <process-id>
+# Or leave that process alone and use a different port
+FLASK_RUN_PORT=8080 python -m flask run
 ```
 
 #### Python Version Compatibility
@@ -929,14 +940,14 @@ pip install Flask==3.1.1
 #### Verbose Logging
 
 ```bash
-# Enable Flask debug mode
-FLASK_DEBUG=True python -m flask run
+# Enable Flask debug mode (Flask 3 reads FLASK_DEBUG, not FLASK_ENV)
+FLASK_DEBUG=True python -m flask run --port=8000
 
-# Enhanced logging level
-FLASK_ENV=development python -m flask run
+# Same run using the CLI's own debug flag instead of the variable
+python -m flask run --debug --port=8000
 
 # Gunicorn debug mode
-gunicorn --log-level debug wsgi:app
+gunicorn --log-level debug wsgi:application
 ```
 
 #### Network Testing
@@ -1163,7 +1174,7 @@ See [LICENSE](LICENSE) file for complete license text and terms.
 ### Version History
 
 - **v2.0.0** - Migration to Python 3.12+ and Flask 3.1.1 from Node.js/Express.js
-- Features: Single /hello endpoint, comprehensive pytest testing, Docker support with python:3.12-alpine
+- Features: /hello greeting and /health monitoring endpoints, comprehensive pytest testing, Docker support with python:3.12-alpine
 - Educational focus: Python WSGI fundamentals and Flask application patterns
 
 ---

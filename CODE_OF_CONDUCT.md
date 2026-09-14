@@ -107,18 +107,51 @@ We as members, contributors, and leaders pledge to make participation in our **H
 
 **Primary Contact:** Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement.
 
-#### Reporting Channels:
-- **Email:** conduct@example.com *(Confidential reporting with identity protection)*
-- **GitHub Issues:** Private issue with @maintainers tag *(Private repository for sensitive reports)*
-- **Direct Message:** Any project maintainer via GitHub DM *(Direct confidential communication)*
+#### Reporting Channels
 
-**Response Commitment:** All complaints will be reviewed and investigated promptly and fairly within 24 hours acknowledgment and 48 hours investigation start.
+Use these channels in the order given. Each tier leaves you with a next
+step, and every tier is confidential except the one marked public, which
+carries no details of the incident.
+
+1. **Primary - a maintainer's own published contact details.** Contact a
+   maintainer privately using the contact details that maintainer publishes
+   on their own GitHub profile. Identify the maintainers of this repository
+   from its contributors list and its commit history, which name the people
+   who review and merge work here. A maintainer may publish an email
+   address or another private channel on that profile; when one is
+   published, that is the route to use.
+2. **Fallback, always available - ask publicly for a private channel.** If
+   no maintainer publishes contact details, open a public issue that asks a
+   maintainer to open a private channel with you. **That issue must carry
+   no details of the incident and no names of the people involved.**
+   Incident details and identities never go in a public issue. A maintainer
+   can then reply through a private route, and the report itself travels
+   there and not through the issue.
+3. **Escalation - GitHub's own abuse and harassment reporting.** Report to
+   GitHub itself, through [GitHub's guidance on reporting abuse](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam),
+   when the person to be reported is the maintainer who would receive the
+   report, or when no maintainer responds. That channel is handled by
+   GitHub Support and exists independently of this repository and of its
+   maintainers.
+
+**No Conduct Mailbox:** This repository publishes no dedicated conduct or
+enforcement mailbox, so no report is ever sent to an unmonitored address.
+Establishing such a mailbox, or enabling another private intake for conduct
+reports, is an action a repository maintainer must take; until one exists,
+the three tiers above are the whole of the reporting path.
+
+**Response Commitment:** All complaints will be reviewed and investigated
+promptly and fairly, with acknowledgment within 24 hours and an
+investigation started within 48 hours. Because reports reach maintainers
+through the channels above rather than through a monitored mailbox, those
+intervals and the investigation timings below are targets rather than
+guarantees.
 
 **Confidentiality Guarantee:** All community leaders are obligated to respect the privacy and security of the reporter of any incident.
 
 ### Investigation Process
 
-**Initial Response:** Maintainers will acknowledge receipt of reports within 24 hours and begin investigation within 48 hours.
+**Initial Response:** Maintainers aim to acknowledge receipt of reports within 24 hours and to begin investigation within 48 hours. Both are targets rather than guarantees, for the reason given under Response Commitment above.
 
 #### Investigation Steps:
 1. Gather information from all parties involved
@@ -128,7 +161,7 @@ We as members, contributors, and leaders pledge to make participation in our **H
 5. Determine appropriate response based on severity and intent
 6. Communicate decisions to all parties involved
 
-**Timeline:** Most investigations will be completed within 7 days of initial report.
+**Timeline:** Most investigations aim to be completed within 7 days of initial report; this too is a target rather than a guarantee.
 
 **Transparency:** Decisions and reasoning will be documented for consistency and community learning.
 
@@ -345,7 +378,28 @@ We as members, contributors, and leaders pledge to make participation in our **H
 
 ## Contact Information
 
-**Enforcement Contact:** project-maintainers@example.com
+**Enforcement Contact, primary:** A maintainer, reached privately using the
+contact details that maintainer publishes on their own GitHub profile.
+Identify the maintainers of this repository from its contributors list and
+its commit history; a maintainer may publish an email address or another
+private channel on that profile, and a published channel is the route to
+use. Confidentiality is preserved on this route.
+
+**Enforcement Contact, fallback:** Where no maintainer publishes contact
+details, a public issue that asks a maintainer to open a private channel
+with you. That issue must carry no details of the incident and no names of
+the people involved; incident details and identities never go in a public
+issue, and the report itself travels through the private route a maintainer
+opens in reply.
+
+**No Conduct Mailbox:** This repository publishes no dedicated conduct or
+enforcement mailbox. Establishing one, or enabling another private intake
+for conduct reports, is an action a repository maintainer must take.
+
+**Escalation Contact:** [GitHub's guidance on reporting abuse](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam),
+which routes to GitHub Support, for a report that concerns the maintainer
+who would receive it or that no maintainer answers. That channel exists
+independently of this repository.
 
 **Community Type:** Educational Open Source
 
