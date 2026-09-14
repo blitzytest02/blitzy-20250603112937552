@@ -1,0 +1,185 @@
+/**
+ * Assembles the Express application for the hello-node tutorial and registers every
+ * route it serves, without ever binding a socket.
+ *
+ * Educational Focus: Demonstrates why application *assembly* is separated from the
+ * HTTP *server*. This module's only job is to build a fully configured Express
+ * application and hand it back; it never calls listen(), never reads process.env and
+ * never chooses a port — `server.js` owns all three. That separation is what lets the
+ * test suites exercise these routes in-process: a test calls createApp() and drives
+ * the returned application through supertest, so no server has to be running, no port
+ * has to be free, and nothing has to be torn down afterwards. A module that both
+ * registered routes and bound a port could not be imported by a test without binding
+ * one.
+ *
+ * Key Learning Concepts:
+ * - The Express application factory pattern: a named function returning a brand-new,
+ *   fully configured app, so each caller (and each test) gets an isolated instance
+ *   with no shared state.
+ * - Route registration order is load-bearing, not cosmetic: the GET handler, then the
+ *   method guard on the same path, then the terminal unmatched-path handler. Express
+ *   walks registrations in the order they were added, so moving any one of the three
+ *   changes the status a client receives.
+ * - Setting a media type explicitly with res.type() instead of trusting the
+ *   framework's content-type inference.
+ * - Exact-path matching: case sensitivity is a routing *setting*, not a default, so a
+ *   service that documents one path has to ask for it.
+ * - The difference between 405 Method Not Allowed (the path exists, the method does
+ *   not) and 404 Not Found (there is no such path at all).
+ *
+ * @module app
+ * @returns {express.Application} Through its createApp() factory: a configured
+ *   Express application instance with every route registered and no socket bound.
+ * @example
+ * const { createApp } = require('./app');
+ * const app = createApp();
+ */
+
+const express = require('express');
+
+/**
+ * The exact greeting the service returns to the calling HTTP client.
+ *
+ * Educational Note: This is the literal response body, not a message *about* the
+ * response — eleven bytes, capital `H`, lowercase `w`, a single space, no punctuation
+ * and no trailing newline. It MUST NOT be reworded, reformatted, localized or wrapped
+ * in a JSON envelope: a client that receives `{"message":"Hello world",...}` has
+ * received a document describing the greeting rather than the greeting itself. (The
+ * sibling Flask service in this repository does exactly that at the same path; this
+ * module deliberately does not imitate it.)
+ *
+ * Keeping the literal in a single exported constant is also what lets the unit test
+ * assert it without duplicating the string.
+ *
+ * @constant {string}
+ */
+const GREETING = 'Hello world';
+
+/**
+ * The one and only path this service serves successfully.
+ *
+ * Educational Note: Declared once and reused by both registrations below, so the
+ * successful route and its method guard can never drift apart.
+ *
+ * @constant {string}
+ */
+const HELLO_PATH = '/hello';
+
+/**
+ * The value advertised in the `Allow` header of a 405 response.
+ *
+ * Educational Note: HTTP requires a 405 to name the methods the target resource does
+ * support, and this value names both of them. `HEAD` appears alongside `GET` because
+ * Express services HEAD requests through the registered GET handler (see below), so
+ * the path genuinely accepts both — even though the guard that sends this header is
+ * only ever reached by the *other* methods.
+ *
+ * @constant {string}
+ */
+const ALLOWED_METHODS = 'GET, HEAD';
+
+/**
+ * Creates and configures the Express application that serves `GET /hello`.
+ *
+ * Educational Focus: Shows the whole surface of a single-endpoint service in one
+ * readable factory — two application settings followed by three registrations, in an
+ * order that decides what a client gets back. The returned application is inert until
+ * something binds it, which is precisely what makes it testable.
+ *
+ * Key Learning Concepts:
+ * - Application settings (app.set / app.disable) configure the router and the
+ *   response, and must be applied before requests are served.
+ * - A successful route, a method guard on the same path, and a terminal catch-all
+ *   together define a closed contract: every request receives a definite answer.
+ * - Response helpers chain: res.status().type().send() and res.status().set().json().
+ *
+ * @returns {express.Application} Configured Express application instance, with all
+ *   routes registered and no socket bound.
+ * @example
+ * const app = createApp();
+ * // Exercised in-process by the tests, with no listening port:
+ * //   await request(app).get('/hello').expect(200);
+ * // Bound to a real socket only by server.js:
+ * //   app.listen(3002, 'localhost', () => console.log('listening'));
+ */
+function createApp() {
+  const app = express();
+
+  // Educational Note: Express matches route paths CASE-INSENSITIVELY unless this
+  // setting is enabled — that is the framework default, not an accident of this code.
+  // Measured on Express 5.1.0: with the setting left alone, GET /HELLO, /Hello and
+  // /hELLo each returned 200 and the greeting, which would make the single documented
+  // endpoint reachable at an unbounded number of paths. With it enabled, those same
+  // three requests fall through to the terminal 404 below.
+  app.set('case sensitive routing', true);
+
+  // Educational Note: `strict routing` is deliberately left DISABLED (its default), so
+  // the one registration below serves both /hello and /hello/ — measured: identical
+  // status, body and media type. The asymmetry with case sensitivity is intentional: a
+  // trailing slash is a typing convention for the same resource, whereas a different
+  // casing is a different path.
+
+  // Security Enhancement: Remove Express's `X-Powered-By` response header so the
+  // service does not advertise its framework to every client.
+  // Educational Note: Framework fingerprinting tells an attacker which CVEs to try.
+  // This is the only piece of production hygiene a tutorial this small needs.
+  app.disable('x-powered-by');
+
+  // Registration 1 of 3 — the only endpoint that answers successfully.
+  // Express services `HEAD /hello` through this same handler (returning these headers
+  // with no body), because HTTP requires HEAD to be identical to GET minus the body.
+  // That is why HEAD is never rejected by the guard below.
+  app.get(HELLO_PATH, (req, res) => {
+    // Educational Note: `.type('text/plain')` is required, not cosmetic. Express infers
+    // `text/html` for a string handed to res.send(), so without this call the client
+    // would be told to render the greeting as markup. The explicit call produces
+    // `Content-Type: text/plain; charset=utf-8`, and Express derives
+    // `Content-Length: 11` from the eleven-byte body.
+    res.status(200).type('text/plain').send(GREETING);
+  });
+
+  // Registration 2 of 3 — the method guard for the same path.
+  // Educational Note: Its position is load-bearing. It must come AFTER the app.get
+  // above (otherwise it would swallow the successful GET) and BEFORE the terminal
+  // handler below. Measured: a bare app.get followed only by a catch-all answers
+  // POST /hello with 404, because no registration claimed the path for that method —
+  // the 405 exists only because this handler does.
+  app.all(HELLO_PATH, (req, res) => {
+    res
+      .status(405)
+      // HTTP requires a 405 response to name the methods the target supports.
+      .set('Allow', ALLOWED_METHODS)
+      .json({
+        status: 405,
+        message: 'Method Not Allowed',
+        path: HELLO_PATH,
+        method: req.method,
+        timestamp: new Date().toISOString()
+      });
+  });
+
+  // Registration 3 of 3 — the terminal unmatched-path handler.
+  // Educational Note: Registered with app.use() and no path, it matches everything
+  // that reached this point, which is every request the two registrations above did
+  // not answer: `/`, `/health`, `/HELLO` and anything else. Its position last is what
+  // makes it terminal; registered earlier it would shadow the greeting.
+  // The error bodies are JSON while the success body is plain text, and that contrast
+  // is deliberate: the greeting is a literal string because a literal string is what
+  // was asked for, whereas an error is a structured report best read by a machine.
+  app.use((req, res) => {
+    res.status(404).json({
+      status: 404,
+      message: 'Not Found',
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  return app;
+}
+
+// Educational Note: CommonJS exports (this project declares "type": "commonjs").
+// The shape is contract: server.js requires createApp to bind it, and the test suites
+// require both names — createApp to drive the routes, GREETING to assert the literal.
+module.exports = { createApp, GREETING };
