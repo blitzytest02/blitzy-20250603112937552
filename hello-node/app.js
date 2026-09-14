@@ -55,12 +55,9 @@ const express = require('express');
  * sibling Flask service in this repository does exactly that at the same path; this
  * module deliberately does not imitate it.)
  *
- * Holding the literal in a single module-level constant and exporting it is also what
- * lets the unit suite read this module's own canonical value directly instead of
- * keeping a private copy of the production constant. The suite then compares that
- * value with an independently written contract literal, `toBe('Hello world')`. That
- * second literal is necessary rather than duplication to be removed: comparing the
- * export with itself would be tautological and could not detect a changed greeting.
+ * The literal is held in one module-level constant and exported so that the route
+ * below and any consumer needing the greeting read this single canonical value rather
+ * than keeping a copy of their own.
  *
  * @constant {string}
  */
@@ -160,7 +157,6 @@ function createApp() {
   app.all(HELLO_PATH, (req, res) => {
     res
       .status(405)
-      // HTTP requires a 405 response to name the methods the target supports.
       .set('Allow', ALLOWED_METHODS)
       .json({
         status: 405,
