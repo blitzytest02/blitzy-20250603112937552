@@ -20,7 +20,7 @@
 .env.test.local
 .env.production.local
 *.env
-# Exception: the tutorial environment template must be committable
+# Exception to .env.* above: the tutorial's non-secret configuration template is committed
 !src/nodejs-tutorial/.env.example
 
 # Private Keys and Certificates
