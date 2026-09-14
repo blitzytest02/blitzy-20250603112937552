@@ -5,17 +5,22 @@
  * Educational Focus: Shows how to test the parts of a Node service that reach
  * outside the process — the environment, a real TCP socket, a POSIX signal and the
  * process's own exit — without letting any of them escape into the test run.
- * Exactly two of those side effects are replaced with Jest spies rather than
+ * Exactly three of those side effects are replaced with Jest spies rather than
  * merely observed, and each for a different reason. `process.exit` is intercepted
- * because `closeServer()` genuinely calls it: left alone, the very first shutdown
- * assertion would terminate the Jest worker mid-run and the suite would report a
- * crashed worker instead of a result. `console.log` is captured because the log
- * output is the only place the startup banner's correctness is observable — the
- * requirement is that the banner reports the port that was actually BOUND rather
- * than the one that was requested, and the difference between those two values
- * exists nowhere except in the text that was printed. Everything else here is the
- * real thing: a real Express application, a real http.Server on a real ephemeral
- * port, and a real signal delivered through the process event emitter. Nothing is
+ * because `closeServer()` genuinely calls it with 0 and the failed-bind path
+ * genuinely calls it with 1: left alone, the very first of those assertions would
+ * terminate the Jest worker mid-run and the suite would report a crashed worker
+ * instead of a result. `console.log` is captured because the log output is the
+ * only place the startup banner's correctness is observable — the requirement is
+ * that the banner reports the port that was actually BOUND rather than the one
+ * that was requested, and the difference between those two values exists nowhere
+ * except in the text that was printed. `console.error` is captured because the
+ * startup-failure report goes to stderr, which is likewise observable nowhere
+ * else, and because an uncaptured call would print a full EADDRINUSE stack trace
+ * into the middle of a passing run and read as a broken suite. Everything else
+ * here is the real thing: a real Express application, real http.Servers on real
+ * ephemeral ports, a real failed bind against a port this suite already holds,
+ * and a real signal delivered through the process event emitter. Nothing is
  * mocked at module level and no fake server or fake application is used.
  *
  * The sibling Python suite solves the same problem from the opposite direction:
@@ -39,7 +44,9 @@
  *   absent, so PORT=0 resolves to the documented default 3002 and never requests
  *   an ephemeral port.
  * - server.address() reports the address that was really bound, and it is the only
- *   honest source of the port number once port 0 is in play.
+ *   honest source of the port number once port 0 is in play. The same is true of
+ *   the interface: the banner prints the host it was CONFIGURED with, so only
+ *   address().address shows which interface the socket is really on.
  * - Graceful shutdown is asynchronous. server.close() announces completion through
  *   a callback, so a test has to wait on the 'close' event before asserting what
  *   that callback printed — and must wait on the event itself rather than papering
@@ -48,6 +55,12 @@
  *   call adds SIGTERM and SIGINT listeners that the module never removes, so this
  *   suite removes them in teardown; without that, a handler left over from one
  *   test fires during the next one and tries to close a server that is long gone.
+ *   Teardown removes only the handlers this suite installed, identified by
+ *   comparing the process's current listeners against a snapshot taken before the
+ *   test ran, and leaves every inherited listener attached. `process` is a shared
+ *   emitter: a test that cleaned up with removeAllListeners() would also delete
+ *   handlers belonging to the runner or to a later suite, which is cleanup by
+ *   demolition and makes the result depend on which tests ran first.
  */
 
 // The single module under test. From `hello-node/test/unit/` this path resolves
@@ -64,6 +77,99 @@ const {
 } = require('../../server');
 
 /**
+ * The signals `server.js` registers a graceful-shutdown handler for.
+ *
+ * Educational Note: This list is restated here rather than imported, because the
+ * module's export shape is a contract of exactly five names — startServer,
+ * closeServer, readConfig, DEFAULT_HOST and DEFAULT_PORT — and widening the
+ * public API of the thing under test to make a test easier is the wrong trade.
+ * Restating it also makes the assertion below meaningful: the test iterates the
+ * signals the AAP requires, so dropping one from the module's own list breaks a
+ * test instead of quietly agreeing with it.
+ *
+ * @constant {string[]}
+ */
+const TERMINATION_SIGNALS = ['SIGTERM', 'SIGINT'];
+
+/**
+ * Records which signal listeners exist right now, per termination signal.
+ *
+ * Educational Note: `process.rawListeners()` is used rather than
+ * `process.listeners()` because the two differ for a handler registered with
+ * `once()`: listeners() unwraps it and returns the original function, while
+ * rawListeners() returns the one-shot wrapper that is actually in the emitter's
+ * list. Only the wrapper can be removed and re-added without losing its
+ * fire-once behaviour, so the snapshot has to hold the raw form for a foreign
+ * once-listener to survive this suite intact.
+ *
+ * @returns {Map<string, Function[]>} Listener arrays keyed by signal name.
+ */
+function snapshotSignalListeners() {
+  return new Map(
+    TERMINATION_SIGNALS.map((signal) => [signal, process.rawListeners(signal)])
+  );
+}
+
+/**
+ * Removes only the signal listeners that appeared after a snapshot was taken.
+ *
+ * Educational Note: This is the difference between isolating a test and
+ * vandalising the process. `startServer()` registers a handler per termination
+ * signal on every call and never removes one, so a suite that left them attached
+ * would fire a stale handler against an already-closed server in the next test.
+ * The fix is to remove exactly those handlers by identity — everything the
+ * snapshot did not already contain — and never to touch a listener this suite
+ * did not install. Node's own documentation warns that removeAllListeners() is
+ * bad practice when other components may own listeners on the same emitter, and
+ * `process` is the most shared emitter there is.
+ *
+ * @param {Map<string, Function[]>} snapshot Result of snapshotSignalListeners().
+ * @returns {void}
+ */
+function removeSignalListenersAddedSince(snapshot) {
+  snapshot.forEach((known, signal) => {
+    process
+      .rawListeners(signal)
+      .filter((listener) => !known.includes(listener))
+      .forEach((listener) => process.removeListener(signal, listener));
+  });
+}
+
+/**
+ * Temporarily detaches the listeners a snapshot recorded for one signal.
+ *
+ * Educational Note: `process.emit(signal)` fans out to EVERY listener for that
+ * signal, not just the one the running test registered. Detaching the ones that
+ * were already there keeps a real emission from reaching a handler this suite
+ * does not own — the runner's, an instrumentation hook's, one an earlier suite
+ * left attached — whose side effects would otherwise be attributed to the
+ * assertions that follow the emission. They go back in the `finally` of the
+ * emitting test, so the failure of an assertion cannot strand them.
+ *
+ * Note what this helper is NOT for: a handler installed by an earlier iteration
+ * of the caller's own loop never reaches it, because each iteration removes what
+ * it added before the next one begins.
+ *
+ * @param {string} signal Signal whose pre-existing listeners should step aside.
+ * @param {Function[]} known Listeners recorded for that signal by the snapshot.
+ * @returns {() => void} Restores every listener this call detached. Restoring
+ *   appends them, so their order relative to each other is preserved and they
+ *   end up after any handler added in between — which is then removed by
+ *   removeSignalListenersAddedSince(), leaving the emitter exactly as found.
+ */
+function detachSignalListeners(signal, known) {
+  const detached = process
+    .rawListeners(signal)
+    .filter((listener) => known.includes(listener));
+
+  detached.forEach((listener) => process.removeListener(signal, listener));
+
+  return () => {
+    detached.forEach((listener) => process.on(signal, listener));
+  };
+}
+
+/**
  * Waits for a server to finish binding its socket.
  *
  * Educational Note: This is always called in the same synchronous turn as the
@@ -72,16 +178,42 @@ const {
  * to a later tick — so the event cannot have been missed. And because the module's
  * own listen callback was registered on that same event first, it has already run
  * (and already printed the banner) by the time this promise settles. The 'error'
- * listener turns a bind failure into a clean test failure instead of an unhandled
- * 'error' event, which would take the whole worker down.
+ * listener turns a bind failure into an awaitable rejection, which is how the
+ * failed-bind test below observes the error.
+ *
+ * It is deliberately NOT what keeps that failure from becoming an unhandled
+ * 'error' event. Express has already registered the module's own listen callback
+ * as `server.once('error', ...)`, so the event always has a listener whether or
+ * not this helper adds one — measured, with the server's error-listener count
+ * sitting at 1 the instant listen() returns and the process surviving a failed
+ * bind with no listener of ours attached at all.
+ *
+ * The two handlers are named and paired, each removing the other before it
+ * settles the promise, and that is not tidiness. A promise settles once: had the
+ * 'error' handler stayed attached after 'listening' resolved, a later error on
+ * that server would call reject() on an already-settled promise, where it is
+ * silently discarded — the failure would vanish instead of failing a test, and
+ * the dead listener would keep the socket's error path pointing at a closure
+ * nothing can observe for the rest of the server's life.
  *
  * @param {import('http').Server} server The server returned by startServer().
- * @returns {Promise<void>} Resolves once the socket is listening.
+ * @returns {Promise<void>} Resolves once the socket is listening; rejects with
+ *   the server's own Error if the bind fails first.
  */
 function onceListening(server) {
   return new Promise((resolve, reject) => {
-    server.once('listening', resolve);
-    server.once('error', reject);
+    const onListening = () => {
+      server.removeListener('error', onError);
+      resolve();
+    };
+
+    const onError = (error) => {
+      server.removeListener('listening', onListening);
+      reject(error);
+    };
+
+    server.once('listening', onListening);
+    server.once('error', onError);
   });
 }
 
@@ -108,39 +240,78 @@ function onceClosed(server) {
 describe('HTTP Server Module (server.js)', () => {
   /** @type {jest.SpyInstance} Records every console.log call, printing none. */
   let logSpy;
+  /** @type {jest.SpyInstance} Records every console.error call, printing none. */
+  let errorSpy;
   /** @type {jest.SpyInstance} Intercepts process.exit so the worker survives. */
   let exitSpy;
-  /** @type {import('http').Server|null} Server opened by the running test. */
-  let server;
+  /** @type {import('http').Server[]} Every server the running test opened. */
+  let servers;
+  /** @type {Map<string, Function[]>} Signal listeners present before the test. */
+  let signalListenersBefore;
+
+  /**
+   * Registers a server for teardown and hands it straight back.
+   *
+   * A single test here opens three sockets, so ownership is a list rather than
+   * one variable: every server that reaches teardown still listening is closed,
+   * and one that never bound at all is skipped.
+   *
+   * @param {import('http').Server} opened Server returned by startServer().
+   * @returns {import('http').Server} The same server, for use in an expression.
+   */
+  function track(opened) {
+    servers.push(opened);
+
+    return opened;
+  }
 
   beforeEach(() => {
     // Suppressing the output keeps the report readable while still recording
     // every call, which is what the banner and shutdown assertions read back.
     logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
+    // The failed-bind path reports to stderr, so console.error is captured for
+    // the same reason console.log is: the report is the only place that
+    // behaviour is observable, and an unspied call would print a full EADDRINUSE
+    // stack trace into the middle of a passing test run.
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     // The replacement implementation is not optional. closeServer() really does
-    // call process.exit(0), so without this the first test to reach the shutdown
-    // path would end the Jest worker instead of completing.
+    // call process.exit(0) and the failed-bind path really does call
+    // process.exit(1), so without this the first test to reach either would end
+    // the Jest worker instead of completing.
     exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
 
-    server = null;
+    servers = [];
+
+    // Taken before the test runs so teardown can tell the handlers this suite
+    // installed from the handlers it inherited.
+    signalListenersBefore = snapshotSignalListeners();
   });
 
   afterEach(async () => {
     // Release the socket of any test that opened one and did not close it, so
-    // Jest exits cleanly with no open handle and no need for --forceExit.
-    if (server && server.listening) {
-      await new Promise((resolve) => server.close(resolve));
+    // Jest exits cleanly with no open handle and no need for --forceExit. The
+    // listening guard skips both the servers a test already closed and the one
+    // whose bind deliberately failed.
+    for (const opened of servers) {
+      if (opened.listening) {
+        await new Promise((resolve) => opened.close(resolve));
+      }
     }
-    server = null;
+    servers = [];
 
     // Load-bearing, not boilerplate: startServer() registers a SIGTERM and a
     // SIGINT listener on every call and never removes them. Left in place they
     // accumulate across tests, so the signal test would fire a stale handler
     // against an already-closed server and repeated runs would trip Node's
-    // max-listeners warning.
-    process.removeAllListeners('SIGTERM');
-    process.removeAllListeners('SIGINT');
+    // max-listeners warning. Only the listeners added during this test are
+    // removed, matched by identity against the snapshot above: every listener
+    // that was already attached — Jest's own, an instrumentation hook's, a
+    // future suite's — is left exactly where it was found. Symmetric isolation
+    // is the point; a process-wide removeAllListeners() would leave the worker
+    // in a state this suite never had the right to create.
+    removeSignalListenersAddedSince(signalListenersBefore);
 
     jest.restoreAllMocks();
   });
@@ -161,7 +332,7 @@ describe('HTTP Server Module (server.js)', () => {
       expect(typeof DEFAULT_PORT).toBe('number');
     });
 
-    it('should honour HOST and PORT when the environment overrides them', () => {
+    it('should honour ordinary HOST and PORT overrides and treat a zero, empty or non-numeric PORT as absent', () => {
       const config = readConfig({ HOST: '127.0.0.1', PORT: '4010' });
 
       expect(config.host).toBe('127.0.0.1');
@@ -170,6 +341,26 @@ describe('HTTP Server Module (server.js)', () => {
       // The assertion is on the number 4010, so the string '4010' would fail it.
       expect(config.port).toBe(4010);
       expect(typeof config.port).toBe('number');
+
+      // The documented fallback class, asserted rather than assumed. readConfig
+      // falls back with `||`, so every falsy result of Number() lands on the
+      // default: an empty PORT, a non-numeric PORT (Number('not-a-port') is NaN)
+      // and PORT=0 (Number('0') is 0) all resolve to 3002.
+      //
+      // PORT=0 is the one that needs stating, because it is the one a reader
+      // might expect to mean something else. It is deliberately NOT a request
+      // for an ephemeral port: this reader treats a zero as absent, so the
+      // server binds the documented default instead of whatever the operating
+      // system happened to hand out. An ephemeral port is a testing affordance
+      // reached only by calling startServer({ port: 0 }) directly, never through
+      // the environment. These four assertions are what make that rule break a
+      // test if the fallback is ever loosened, since both `||` branches are
+      // already covered by the two tests around this one and a coverage report
+      // would therefore stay green.
+      expect(readConfig({ PORT: '0' }).port).toBe(3002);
+      expect(readConfig({ PORT: '' }).port).toBe(3002);
+      expect(readConfig({ PORT: 'not-a-port' }).port).toBe(3002);
+      expect(readConfig({ HOST: '' }).host).toBe('localhost');
     });
 
     it('should read process.env when called with no argument', () => {
@@ -211,22 +402,32 @@ describe('HTTP Server Module (server.js)', () => {
   });
 
   describe('startServer()', () => {
-    it('should log the bound port when listen is called with port 0', async () => {
+    it('should bind the requested host on a fresh ephemeral port each time, log the bound port, and report a failed bind without masking its error', async () => {
       // Port 0 is the whole point of this test: the requested value and the bound
       // value differ, so a banner built from the wrong one is visibly wrong.
-      server = startServer({ host: '127.0.0.1', port: 0 });
+      const first = track(startServer({ host: '127.0.0.1', port: 0 }));
 
-      await onceListening(server);
+      await onceListening(first);
 
-      const boundPort = server.address().port;
+      // The socket's own view of what it bound, read once. This is the only
+      // authority on the question: the banner interpolates config.host as a
+      // literal, so a module that stopped passing the host to listen() — and so
+      // bound the wildcard interface, reachable from every network this machine
+      // is on — would keep printing "http://127.0.0.1:..." and every log
+      // assertion below would still pass. Only address() distinguishes them, and
+      // it reports '0.0.0.0' or '::' in that case rather than the loopback
+      // address that was asked for.
+      const address = first.address();
 
-      expect(server.listening).toBe(true);
-      expect(typeof boundPort).toBe('number');
-      expect(boundPort).toBeGreaterThan(0);
+      expect(first.listening).toBe(true);
+      expect(address.address).toBe('127.0.0.1');
+      expect(address.family).toBe('IPv4');
+      expect(typeof address.port).toBe('number');
+      expect(address.port).toBeGreaterThan(0);
 
       // The two banner lines, built from the port the operating system chose.
-      expect(logSpy).toHaveBeenCalledWith(`Server listening on http://127.0.0.1:${boundPort}`);
-      expect(logSpy).toHaveBeenCalledWith(`Try: curl http://127.0.0.1:${boundPort}/hello`);
+      expect(logSpy).toHaveBeenCalledWith(`Server listening on http://127.0.0.1:${address.port}`);
+      expect(logSpy).toHaveBeenCalledWith(`Try: curl http://127.0.0.1:${address.port}/hello`);
       expect(logSpy).toHaveBeenCalledTimes(2);
 
       // The assertion that stops the two above being tautological: had the module
@@ -234,12 +435,85 @@ describe('HTTP Server Module (server.js)', () => {
       // "http://127.0.0.1:0" — an address no client can call.
       expect(logSpy.mock.calls[0][0]).not.toContain(':0');
       expect(logSpy.mock.calls[1][0]).not.toContain(':0');
+
+      // A second server, asking for port 0 exactly as the first did, while the
+      // first still holds its port. A positive bound port on its own proves very
+      // little — a regression to listen(config.port || DEFAULT_PORT, ...) would
+      // send both of these requests to the fixed default 3002, so this second
+      // bind would fail outright and the port could not possibly differ. Two
+      // distinct ports from two identical requests is what an ephemeral
+      // allocation looks like and what a fixed port cannot produce.
+      logSpy.mockClear();
+
+      const second = track(startServer({ host: '127.0.0.1', port: 0 }));
+
+      await onceListening(second);
+
+      const secondPort = second.address().port;
+
+      expect(second.listening).toBe(true);
+      expect(second.address().address).toBe('127.0.0.1');
+      expect(typeof secondPort).toBe('number');
+      expect(secondPort).not.toBe(address.port);
+
+      expect(logSpy).toHaveBeenCalledWith(`Server listening on http://127.0.0.1:${secondPort}`);
+      expect(logSpy).toHaveBeenCalledWith(`Try: curl http://127.0.0.1:${secondPort}/hello`);
+      expect(logSpy).toHaveBeenCalledTimes(2);
+
+      // A third server, deliberately asking for the port the FIRST one is still
+      // listening on. This is a real EADDRINUSE from the operating system with
+      // nothing mocked: no fake listen, no stubbed error, no module-level fake.
+      // Express 5 delivers the failure to the same callback that would otherwise
+      // print the banner (express/lib/application.js:598-606), which is why the
+      // module has to branch on the callback's error argument — without that
+      // branch it reaches server.address().port on a null address and dies with a
+      // TypeError, and the EADDRINUSE never gets reported at all.
+      logSpy.mockClear();
+
+      const failing = track(startServer({ host: '127.0.0.1', port: address.port }));
+
+      let caught = null;
+
+      try {
+        // The repaired onceListening() rejects with the server's own Error, so
+        // the failure is awaited here rather than raced against.
+        await onceListening(failing);
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).not.toBeNull();
+      expect(caught.code).toBe('EADDRINUSE');
+
+      // Nothing bound, and the module knew better than to read a port off it.
+      expect(failing.address()).toBeNull();
+      expect(failing.listening).toBe(false);
+
+      // The failure is reported on stderr, naming the address that was REQUESTED
+      // (there is no bound one to name), and carrying the original Error by
+      // identity. The identity comparison is the load-bearing part: it is what
+      // proves the cause that reached the operator is the operating system's
+      // EADDRINUSE and not a secondary TypeError raised while formatting it.
+      expect(errorSpy).toHaveBeenCalledWith(
+        `Failed to start server on http://127.0.0.1:${address.port}`,
+        caught
+      );
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      // Non-zero, because `npm start`, a CI step and a process manager all read
+      // the exit status, and a server that never bound must not report success.
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(exitSpy).toHaveBeenCalledTimes(1);
+
+      // And no banner: a failed bind announces no address, so the success arm
+      // did not run at all.
+      expect(logSpy).toHaveBeenCalledTimes(0);
     });
   });
 
   describe('closeServer()', () => {
     it('should log shutdown and exit 0 when called with a signal name', async () => {
-      server = startServer({ host: '127.0.0.1', port: 0 });
+      const server = track(startServer({ host: '127.0.0.1', port: 0 }));
       await onceListening(server);
 
       // Discard the startup banner so the shutdown output can be asserted as a
@@ -276,29 +550,72 @@ describe('HTTP Server Module (server.js)', () => {
   });
 
   describe('signal handling', () => {
-    it('should close the server when SIGTERM is emitted on the process', async () => {
-      server = startServer({ host: '127.0.0.1', port: 0 });
-      await onceListening(server);
+    it('should close the server when each of SIGTERM and SIGINT is emitted on the process', async () => {
+      // Both signals are exercised behaviourally, one at a time against its own
+      // fresh server, and the loop is the assertion. Coverage cannot do this job:
+      // startServer() registers both handlers from a single arrow function in one
+      // loop, so the first emission marks that function covered and Istanbul
+      // reports 100% whether the module's list holds one signal or two. Drop
+      // 'SIGINT' from it and nothing about the coverage report changes — but
+      // process.emit returns true only when the signal had a listener, so the
+      // iteration for a signal the module stopped registering returns false and
+      // fails here. That is the only place in this suite where the second half of
+      // the AAP's graceful-termination requirement is actually held.
+      for (const signal of TERMINATION_SIGNALS) {
+        // Taken before the startServer() call so the handlers it is about to add
+        // can be told apart from everything that was already attached — both for
+        // the isolated emission below and for this iteration's own cleanup.
+        const before = snapshotSignalListeners();
 
-      logSpy.mockClear();
+        const server = track(startServer({ host: '127.0.0.1', port: 0 }));
+        await onceListening(server);
 
-      // A real signal through the real event emitter, which runs the listener
-      // startServer() registered rather than a handler this test reached into the
-      // module for. process.emit returns true only if a listener was present, so
-      // this assertion also proves the registration happened.
-      expect(process.emit('SIGTERM')).toBe(true);
+        // Discard this iteration's startup banner and its predecessor's exit, so
+        // both are asserted as complete, per-signal sequences.
+        logSpy.mockClear();
+        exitSpy.mockClear();
 
-      await onceClosed(server);
+        // process.emit() fans out to every listener for the signal, so any
+        // handler this suite does not own — the runner's, an instrumentation
+        // hook's, one left attached by a suite that ran earlier — would run on
+        // this emission too, and whatever it did would be attributed to the
+        // assertions below. Those handlers step aside for the duration of the
+        // emission and go back in the finally, where a failed assertion cannot
+        // strand them. The previous iteration's own handler is not among them:
+        // it was removed at the end of that iteration by the call at the foot of
+        // this loop, which is what keeps each signal's assertions about exactly
+        // one server and one handler.
+        const restoreSignalListeners = detachSignalListeners(signal, before.get(signal));
 
-      expect(logSpy.mock.calls).toEqual([
-        ['SIGTERM received: closing server...'],
-        ['Server closed. Goodbye!']
-      ]);
-      expect(exitSpy).toHaveBeenCalledWith(0);
-      expect(exitSpy).toHaveBeenCalledTimes(1);
+        try {
+          // A real signal through the real event emitter, which runs the listener
+          // startServer() registered rather than a handler this test reached into
+          // the module for. The return value is the registration assertion: true
+          // means the process had a listener for this exact signal name.
+          expect(process.emit(signal)).toBe(true);
+        } finally {
+          restoreSignalListeners();
+        }
 
-      // The socket is genuinely gone, not merely reported as closing.
-      expect(server.listening).toBe(false);
+        await onceClosed(server);
+
+        // The signal's own name in the first line, so a handler wired to the
+        // wrong signal name would fail rather than pass on a generic message.
+        expect(logSpy.mock.calls).toEqual([
+          [`${signal} received: closing server...`],
+          ['Server closed. Goodbye!']
+        ]);
+        expect(exitSpy).toHaveBeenCalledWith(0);
+        expect(exitSpy).toHaveBeenCalledTimes(1);
+
+        // The socket is genuinely gone, not merely reported as closing.
+        expect(server.listening).toBe(false);
+
+        // Leave the process's listener list exactly as this iteration found it,
+        // so the next one starts from the same state rather than from a growing
+        // pile of handlers pointing at closed servers.
+        removeSignalListenersAddedSince(before);
+      }
     });
   });
 });

@@ -158,16 +158,31 @@ function readConfig(env = process.env) {
  * returned http.Server. Keeping it matters: the server object is the only handle
  * through which the socket can later be closed, and it is also the only place
  * that knows which port was really bound. The banner is therefore logged from
- * inside the listen callback (which runs once the socket is actually listening)
+ * inside the listen callback, on the invocation that reports a successful bind,
  * and reads its port from server.address().
  *
  * Key Learning Concepts:
  * - app.listen() is a thin wrapper over http.createServer(app).listen(); the
  *   value it returns is a Node http.Server, not an Express application.
- * - The listen callback fires on the 'listening' event, so anything it prints is
- *   true of a socket that already exists.
+ * - The callback has two invocations, and only one of them describes a socket
+ *   that exists. Express calls it with no argument on the 'listening' event, and
+ *   with the error instead when the bind failed (the bullet below has the
+ *   mechanism). That is why the banner is printed from the no-argument
+ *   invocation and why nothing on the failure path reads an address.
  * - server.address().port is the bound port. With port 0 the operating system
  *   chooses a free one, and only the bound value is callable.
+ * - Express 5 calls this callback on EITHER outcome, which is why it takes an
+ *   error parameter. `app.listen` wraps the final function argument with once()
+ *   and registers it as `server.once('error', done)` as well as passing it to
+ *   server.listen() as the 'listening' callback (express/lib/application.js:
+ *   598-606). This is Express-specific: a plain Node http/net listen callback
+ *   receives no error at all. Measured on the version this project pins, Express
+ *   5.1.0: a callback written without the parameter reaches
+ *   `server.address().port` on a failed bind, where address() is null, and dies
+ *   with `TypeError: Cannot read properties of null (reading 'port')` — and the
+ *   TypeError thrown inside the error handler aborts the emit, so the original
+ *   EADDRINUSE is never reported at all. Branching on the argument is what keeps
+ *   the real cause visible.
  * - The HOST value is passed through to listen() with no validation. An operator
  *   who sets HOST=0.0.0.0 does bind every interface, which the repository's own
  *   template documents as legitimate for container deployment; rejecting a value
@@ -178,21 +193,49 @@ function readConfig(env = process.env) {
  *
  * @param {{host: string, port: number}} config Host and port to bind, normally
  *   produced by readConfig(). A port of 0 asks the OS for any free port.
- * @returns {import('http').Server} The listening HTTP server.
+ * @returns {import('http').Server} The HTTP server, returned before the socket
+ *   has finished binding. By the time the callback above has run it is either
+ *   listening, with the banner printed, or the bind has failed — and in that
+ *   case the original error has already been reported to stderr, the process has
+ *   been asked to exit 1, and this server's address() is null.
  * @example
  * const server = startServer({ host: 'localhost', port: 3002 });
  * // Server listening on http://localhost:3002
  * // Try: curl http://localhost:3002/hello
  */
 function startServer(config) {
-  const server = createApp().listen(config.port, config.host, () => {
-    // Read the port back from the socket instead of trusting config.port: these
-    // agree for an ordinary port and differ for port 0, where the requested
-    // value would print as "http://localhost:0" and be useless to a client.
-    const boundPort = server.address().port;
+  const server = createApp().listen(config.port, config.host, (error) => {
+    // Two mutually exclusive outcomes, because Express 5 routes both of them
+    // through this one callback (see the note above). if/else rather than an
+    // early return, so the success path reads as literally "the no-error case"
+    // and neither arm can be mistaken for unconditional code.
+    if (error) {
+      // stderr, not stdout: a startup failure must not land in the same stream a
+      // reader — or a script — scans for the success banner. The original Error
+      // is passed through by identity as the second argument, which is what
+      // preserves its `code` (EADDRINUSE, EACCES, ENOTFOUND) and its stack;
+      // re-wrapping or stringifying it here would throw both away. Nothing reads
+      // server.address() on this path, because there is no address to read.
+      console.error(`Failed to start server on http://${config.host}:${config.port}`, error);
 
-    console.log(`Server listening on http://${config.host}:${boundPort}`);
-    console.log(`Try: curl http://${config.host}:${boundPort}/hello`);
+      // Non-zero, because the exit status is the only thing `npm start`, a CI
+      // step or a process manager can read about an outcome they did not watch
+      // happen: exiting 0 here would report success for a server that never
+      // bound, leaving any failure-sensitive policy — a CI job that fails the
+      // build, a supervisor configured to restart only on error — with nothing
+      // to act on. Status 1 communicates "startup failed"; what a particular
+      // supervisor then does about it is its own configuration, not something
+      // this line can decide.
+      process.exit(1);
+    } else {
+      // Read the port back from the socket instead of trusting config.port: these
+      // agree for an ordinary port and differ for port 0, where the requested
+      // value would print as "http://localhost:0" and be useless to a client.
+      const boundPort = server.address().port;
+
+      console.log(`Server listening on http://${config.host}:${boundPort}`);
+      console.log(`Try: curl http://${config.host}:${boundPort}/hello`);
+    }
   });
 
   // One loop, one handler shape, for every signal that means "stop". Each

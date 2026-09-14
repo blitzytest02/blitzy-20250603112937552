@@ -24,11 +24,37 @@ Every command below is runnable **as written from the `hello-node/` directory**,
 |-----------|------------------|---------|
 | **Node.js** | 22.16.0 | JavaScript runtime; pinned in `.nvmrc` and in `engines.node` |
 | **npm** | 11.4.1 | Package manager; pinned in `engines.npm` |
+| **nvm** | 0.40.x (verified with 0.40.3) | Reads `.nvmrc` and selects the pinned Node.js for you. Needed only for the `nvm use` step below — Option B installs Node.js without it |
 | **curl** | any recent version | Used by the verification commands to call the endpoint |
 
 Node.js 22.16.0 is pinned twice — in `.nvmrc`, so `nvm use` selects it, and in the `engines` field of `package.json`, so npm warns if you install under a different runtime.
 
 **npm 11.4.1 is not bundled with Node.js 22.16.0, so you have to install it explicitly.** Node.js 22.16.0 ships npm **10.9.2**; installing `npm@11.4.1` yourself is what produces the pinned version. This is worth stating plainly because the repository's contributor guide claims the opposite (`CONTRIBUTING.md:91` describes npm v11.4.1 as "bundled with Node.js") — that claim is incorrect, and the install step below is not optional.
+
+### Getting Node.js 22.16.0
+
+Pick one of these two routes before running anything in the next section. The repository's contributor guide documents the same pair (`CONTRIBUTING.md:100-128`).
+
+**Option A — nvm, which is what the commands below assume.** `nvm` is a shell function rather than a program on your `PATH`, so it has to be installed *and loaded into the shell you are typing in*; in a shell that has not loaded it, `nvm use` fails with `nvm: command not found`. Install it, load it, and let it read `.nvmrc`:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install                      # reads .nvmrc -> installs 22.16.0
+nvm use                          # reads .nvmrc -> selects 22.16.0
+```
+
+```text
+Found '<path>/hello-node/.nvmrc' with version <22.16.0>
+Now using node v22.16.0 (npm v10.9.2)
+```
+
+The npm version nvm reports in parentheses is whichever one is installed for that runtime: `10.9.2` on a fresh install, and `11.4.1` after you run the upgrade in the next section. `v0.40.3` is the nvm release this project was verified with; nvm's own README at <https://github.com/nvm-sh/nvm> carries the current tag, and any 0.40.x behaves the same way here. The installer appends those two `NVM_DIR` lines to your shell profile, so you only need to run them by hand in the shell you installed from — a terminal opened afterwards loads nvm on its own. Run `nvm install`/`nvm use` from the `hello-node/` directory, because that is where the `.nvmrc` they read lives.
+
+**Option B — install Node.js 22.16.0 directly.** Download the 22.16.0 release from <https://nodejs.org/> and install it with the installer for your operating system. Then skip the `nvm use` line in the next section; every other command is unchanged.
+
+Either way, npm 11.4.1 still has to be installed explicitly, as the next section does.
 
 Verify the toolchain before installing anything:
 
@@ -48,13 +74,15 @@ npm ci                           # restores from the committed lockfile
 npm start
 ```
 
+The first line needs nvm installed and loaded (Option A above). If you installed Node.js 22.16.0 directly (Option B), skip it and run the other three.
+
 `npm ci` is the authoritative install command. It installs exactly the tree recorded in the committed `package-lock.json`, which is what makes every learner's install identical to the one this document was verified against. Expected output:
 
 ```text
 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. ...
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, ...
 
-added 348 packages, and audited 349 packages in 751ms
+added 348 packages, and audited 349 packages in <duration>
 
 62 packages are looking for funding
   run `npm fund` for details
@@ -62,11 +90,13 @@ added 348 packages, and audited 349 packages in 751ms
 found 0 vulnerabilities
 ```
 
+The package counts are fixed by the committed lockfile, so those numbers are worth checking. The elapsed time is not: npm prints whatever the run took, which is why this document shows `<duration>` in its place rather than a figure to compare against. For scale, two warm-cache runs of this exact command on the machine it was verified against reported `714ms` and `804ms`, and a read-only `npm ci --dry-run` over the same lockfile reported `235ms`; a cold npm cache or a slow network makes it considerably longer.
+
 Three things in that output are expected and none is a problem:
 
 - **348 packages** for one declared runtime dependency. Express 5.1.0 brings a substantial transitive tree — body parsing, content negotiation, ETag generation, MIME lookup, routing and error handling — and the production-only tree is 68 of those packages. The rest are the test runner and its dependencies.
-- **Exactly two deprecation warnings**, `inflight@1.0.6` and `glob@7.2.3`. Both are reached transitively through Jest, neither is a package this project selects, and neither carries a security advisory against this tree. They are accepted, not fixed: resolving them would mean replacing the test runner. `npm audit` reports `found 0 vulnerabilities`.
-- **`found 0 vulnerabilities`** — the expected result, and the reason `npm ci` is safe to run as the first step.
+- **Exactly two deprecation warnings**, `inflight@1.0.6` and `glob@7.2.3`. Both are reached transitively through Jest, neither is a package this project selects, and neither carries a security advisory against this tree. They are accepted, not fixed: resolving them would mean replacing the test runner.
+- **`found 0 vulnerabilities`** — what the audit built into `npm ci` reports for this lock graph: no advisory *currently known to the registry* matches any of the 349 packages in it. That is a point-in-time statement about known advisories, not a guarantee that installing is risk-free. Two things it does not say: an advisory published tomorrow against a package already in the lockfile would change the answer with no change to the tree, which is why `npm audit` is worth re-running rather than trusting once; and `npm ci` runs the install lifecycle scripts of the packages it installs unless you pass `--ignore-scripts` (`npm config get ignore-scripts` is `false` by default), so a clean audit is not a statement about what those scripts do.
 
 Use `npm install` only when you have deliberately changed a dependency version in `package.json` and want to regenerate the lockfile. For simply installing the project, `npm ci` is the command.
 
@@ -79,7 +109,10 @@ Server listening on http://localhost:3002
 Try: curl http://localhost:3002/hello
 ```
 
-That is the whole banner — no emoji, no separator rule, no timestamp. The port in those lines is read back from the socket's actual bound address via `server.address()`, not echoed from the requested configuration, so the address printed is always one a client can really call.
+That is the whole banner — no emoji, no separator rule, no timestamp. The two halves of that URL reach it by different routes, and the difference is worth knowing:
+
+- **The port is read back from the socket.** `server.js` takes it from `server.address()` once the socket is listening, not from the value that was requested, so the number printed is the port actually bound. That is what makes the ephemeral-port case honest: `startServer({ port: 0 })` asks the operating system for any free port and the banner reports the one it got, where echoing the request would have printed `:0`.
+- **The host is printed as configured.** It is the `HOST` value passed straight through, not a value read back from the socket. With the default `localhost` the printed URL is directly callable, which is the case you will see. With a wildcard bind — `HOST=0.0.0.0` — the banner prints `http://0.0.0.0:3002`, and that names every interface rather than a destination: reach such a server on a concrete address of one of the interfaces it is listening on, for example `http://127.0.0.1:3002` from the same machine.
 
 The server now runs in the foreground until you stop it (see [Graceful Shutdown](#graceful-shutdown)). Run the verification commands in a second terminal.
 
@@ -103,7 +136,7 @@ Server listening on http://127.0.0.1:4010
 Try: curl http://127.0.0.1:4010/hello
 ```
 
-There is no `dotenv` dependency and none is being added, so a `.env` file is **not** read by the process. `.env.example` documents these two variables for a human; a real override has to be present in the environment, as on the command line above.
+There is no `dotenv` dependency and none is being added, so a `.env` file is **not** read by the process. That is the whole mechanism: a value has to be in the environment of the command you run, as on the command line above. `.env.example` is a reference for a human — copying it to `.env` configures nothing, because nothing in this project parses one, and `.env.example` says so in the same words.
 
 **Why the default port is 3002 and not the more familiar 3000.** Port 3000 is not free in this repository: the development compose service publishes it on the host as `"3000:3000"` (`infrastructure/docker/docker-compose.yml:86`), so binding it here would fail for anyone who has `docker compose up` running. 3002 is claimed by nothing else in this repository and stays close enough to 3000 to remain recognizable.
 
@@ -129,7 +162,10 @@ This is the acceptance surface of the project. Every value below is fixed.
 ```http
 GET /hello HTTP/1.1
 Host: localhost:3002
+
 ```
+
+The empty line after the `Host` field is part of the request, not page formatting. In the HTTP-message grammar the field section is followed by a bare `CRLF` — `start-line CRLF *( field-line CRLF ) CRLF [ message-body ]` (RFC 9112 §2.1) — so a server keeps reading header fields until it meets that empty line. `curl` supplies it for you; a request typed into a raw socket without it is never considered complete.
 
 **Response:**
 
@@ -162,7 +198,7 @@ Two details of that contract are worth dwelling on, because both are decisions r
 | `HEAD /hello` | `200`, with the same `Content-Type` and `Content-Length: 11` as the `GET`, and an empty body |
 | `POST`, `PUT`, `PATCH`, `DELETE` or `OPTIONS` on `/hello` | `405`, header `Allow: GET, HEAD`, body `{"status":405,"message":"Method Not Allowed","path":"/hello","method":"<method>","timestamp":"<ISO-8601>"}` |
 
-There is **no** health probe, **no** root route, **no** versioned prefix and **no** metrics endpoint. `GET /hello` is the only request that succeeds.
+There is **no** health probe, **no** root route, **no** versioned prefix and **no** metrics endpoint. `/hello` is the only path that answers successfully — and it answers exactly two ways: a `GET`, with or without the tolerated trailing slash, and the `HEAD` that HTTP requires to accompany it, which returns that `GET`'s headers with no body. Every other path, and every other method on `/hello`, receives one of the two error responses in the table above. "One endpoint" is a statement about the resource, not a count of requests.
 
 **Path matching is case-sensitive, and that required asking for it.** Express matches route paths case-insensitively by default, so an unmodified application answers `/HELLO` and `/Hello` with the greeting — which would make one documented endpoint reachable at an unbounded number of paths. `app.js` therefore sets `case sensitive routing` to `true`, after which those requests fall through to the `404`. The asymmetry with the forgiven trailing slash is intentional: a trailing slash is a typing convention for the same resource, whereas a different casing is a different path.
 
@@ -282,7 +318,11 @@ exit status=0
 
 The listening port is released, so a request made afterwards is refused rather than answered.
 
-**Signal the Node process, not an `npm` wrapper.** `npm start` runs `node server.js` as a child process, and sending `SIGTERM` to the `npm` process does not reach that child: the `npm` wrapper exits, the Node process keeps running and keeps holding the port. `Ctrl-C` in the foreground is unaffected, because it signals the whole foreground process group. For a backgrounded server, use `node server.js &` as shown above so the PID you capture is the one that needs the signal.
+**Where the signal lands when you start the server through `npm`.** `npm start` does not run `node server.js` directly: it spawns a shell, and the shell runs Node, so there are three processes rather than two. npm 11.4.1 does try to pass termination signals down — its bundled `@npmcli/run-script` installs `SIGINT` and `SIGTERM` handlers and re-sends the signal to the process it spawned — but the process it spawned is that shell, and a shell which has already started `node` need not forward anything to it. Measured here on Linux, where `/bin/sh` is `dash`: `kill -TERM` on the `npm` process ended npm and the shell, while `node server.js` stayed up, kept holding the port, and printed neither shutdown line.
+
+`Ctrl-C` is unaffected by any of this, because the terminal delivers `SIGINT` to every process in the foreground group — Node included — rather than to npm alone. Measured: both shutdown lines, then exit.
+
+So for a backgrounded server, `node server.js &` as shown above is the reliable form. It is not that graceful shutdown requires bypassing npm; it is that the PID you capture is then Node's own, which takes the intermediate shell out of the question and makes the outcome the same on every machine.
 
 ## Tests
 
@@ -359,7 +399,7 @@ hello-node/
 
 **Why `app.js` and `server.js` are separate files.** `app.js` assembles the Express application — it registers every route and returns the configured app from a `createApp()` factory. It never calls `listen()`, never reads `process.env` and never chooses a port. `server.js` owns all three of those, plus everything else that follows from holding an operating-system resource: resolving configuration against the documented defaults, binding the socket, printing the banner, and closing the socket cleanly when a signal arrives.
 
-That split is not a stylistic preference. It is what lets the tests drive the application **in-process**: a test can `require('../../app')`, call `createApp()`, and exercise every route through supertest without anything ever binding port 3002. A single module that both registered routes and bound a socket could not be imported by a test without binding one — which would make the suite depend on a free port and on tearing the server down afterwards. The same division appears in the Python application in this repository, where `app.py` owns the routes and `wsgi.py` owns the process lifecycle.
+That split is not a stylistic preference. It is what lets the tests drive the application **in-process**: a test can `require('../../app')`, call `createApp()`, and exercise every route through supertest without anything ever binding port 3002. A single module that both registered routes and bound a socket could still keep its `listen()` call behind a `require.main === module` guard, exactly as `server.js` does at its foot, so the gain is not that importing such a module would be impossible — it is that requiring `app.js` has no listener side effect at all, and that the choice of host and port stays out of the module that defines the routes. The same division appears in the Python application in this repository, where `app.py` owns the routes and `wsgi.py` owns the process lifecycle.
 
 ## Learning Objectives
 

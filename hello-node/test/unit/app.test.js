@@ -33,10 +33,13 @@
 // The one and only import this suite needs. From `hello-node/test/unit/`, two levels
 // up is the project root, so '../../app' resolves to `hello-node/app.js`.
 // Educational Note: `require`, not `import` — package.json declares
-// "type": "commonjs", which is the module system this whole project uses. Destructuring
-// the exports here is also why the greeting literal is never duplicated in a test:
-// GREETING comes from the module under test, and the assertions pin it to the
-// contract's literal value.
+// "type": "commonjs", which is the module system this whole project uses.
+// Destructuring the exports here is what lets this suite read the module's own
+// canonical value directly instead of keeping a private copy of the production
+// constant. It then compares that value with the independently written contract
+// literal below, `toBe('Hello world')`. That second literal is necessary rather than
+// duplication to be removed: comparing the export with itself would be tautological
+// and could not detect a changed greeting.
 const { createApp, GREETING } = require('../../app');
 
 describe('Express Application Module (app.js)', () => {

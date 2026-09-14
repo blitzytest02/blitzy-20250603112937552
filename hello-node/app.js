@@ -7,10 +7,17 @@
  * application and hand it back; it never calls listen(), never reads process.env and
  * never chooses a port — `server.js` owns all three. That separation is what lets the
  * test suites exercise these routes in-process: a test calls createApp() and drives
- * the returned application through supertest, so no server has to be running, no port
- * has to be free, and nothing has to be torn down afterwards. A module that both
- * registered routes and bound a port could not be imported by a test without binding
- * one.
+ * the returned application through supertest, which binds it to an ephemeral loopback
+ * port (port 0, assigned by the operating system) for the duration of a request and
+ * closes that listener again once the response completes. So a test needs no
+ * pre-running server, no fixed or configured port to reserve, and no teardown the
+ * test author has to write — because supertest manages that throwaway listener,
+ * rather than because no socket is involved. A module that both registered routes and
+ * bound a port could still keep its binding behind a `require.main === module` guard,
+ * exactly as `server.js` does at its foot, so the gain here is not that importing such
+ * a module would be impossible: it is that requiring this one has no listener side
+ * effect at all, and that host and port configuration stays out of the module that
+ * defines the routes.
  *
  * Key Learning Concepts:
  * - The Express application factory pattern: a named function returning a brand-new,
@@ -48,8 +55,12 @@ const express = require('express');
  * sibling Flask service in this repository does exactly that at the same path; this
  * module deliberately does not imitate it.)
  *
- * Keeping the literal in a single exported constant is also what lets the unit test
- * assert it without duplicating the string.
+ * Holding the literal in a single module-level constant and exporting it is also what
+ * lets the unit suite read this module's own canonical value directly instead of
+ * keeping a private copy of the production constant. The suite then compares that
+ * value with an independently written contract literal, `toBe('Hello world')`. That
+ * second literal is necessary rather than duplication to be removed: comparing the
+ * export with itself would be tautological and could not detect a changed greeting.
  *
  * @constant {string}
  */
@@ -97,9 +108,11 @@ const ALLOWED_METHODS = 'GET, HEAD';
  *   routes registered and no socket bound.
  * @example
  * const app = createApp();
- * // Exercised in-process by the tests, with no listening port:
+ * // Exercised in-process by the tests: supertest binds an ephemeral loopback
+ * // listener for each request and closes it afterwards, so no pre-running server and
+ * // no reserved port are needed:
  * //   await request(app).get('/hello').expect(200);
- * // Bound to a real socket only by server.js:
+ * // Bound to the configured, long-lived socket only by server.js:
  * //   app.listen(3002, 'localhost', () => console.log('listening'));
  */
 function createApp() {
