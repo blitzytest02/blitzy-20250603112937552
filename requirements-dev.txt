@@ -55,8 +55,11 @@ black>=24.0.0
 flake8>=7.0.0
 
 # Security-focused flake8 plugin for identifying common security vulnerabilities
-# and anti-patterns in Python code with Flask-specific security rule validation
-flake8-security>=1.7.1
+# and anti-patterns in Python code with Flask-specific security rule validation.
+# flake8-bandit wraps the bandit analyser so its findings surface as the S-prefixed
+# codes that .flake8 selects; it requires flake8 >= 5.0.0 and bandit >= 1.7.3, both
+# satisfied by the flake8 pin above and the bandit pin in the security section below.
+flake8-bandit>=4.1.1
 
 # Import sorting and organization tool ensuring consistent import structure
 # and improved code maintainability with PEP 8 import guidelines
@@ -220,9 +223,10 @@ freezegun>=1.4.0
 # with comprehensive configuration testing and isolation capabilities
 pytest-env>=1.1.0
 
-# Temporary directory and file management for Flask testing scenarios
-# with comprehensive cleanup and isolation for file-based testing
-pytest-tmp-path>=1.0.0
+# Temporary directory and file management for Flask testing scenarios needs no
+# extra package: pytest ships the tmp_path and tmp_path_factory fixtures itself,
+# which hand each test its own directory and clean it up automatically. They come
+# with the pytest pin at the top of this file, so nothing is declared here.
 
 # ========================================
 # Version Constraint Notes

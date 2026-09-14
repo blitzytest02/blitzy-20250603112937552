@@ -98,8 +98,11 @@ safety>=3.0.0
 mypy>=1.8.0
 
 # Security-focused Code Linting
-# flake8 plugin for security-related code patterns
-flake8-security>=1.7.1
+# flake8 plugin for security-related code patterns. flake8-bandit runs the bandit
+# checks inline with flake8 and publishes them as the S-prefixed codes that .flake8
+# selects (see .flake8 "select"/"enable-extensions" entries for S). It requires
+# flake8 >= 5.0.0 and bandit >= 1.7.3, both satisfied by the pins above.
+flake8-bandit>=4.1.1
 
 # ==============================================================================
 # DEVELOPMENT UTILITIES

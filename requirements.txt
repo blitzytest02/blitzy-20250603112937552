@@ -22,6 +22,13 @@ Flask-CORS>=4.0.0
 # replacing Node.js built-in HTTP server for scalable deployment
 gunicorn>=21.2.0
 
+# Process and System Monitoring
+# psutil is a runtime dependency, not a development one: src/backend/wsgi.py imports it
+# at module load for its memory and resource reporting, and exits with status 1 if the
+# import fails. It is pinned here so the production install documented in README.md
+# satisfies the WSGI entry point on its own.
+psutil>=5.9.0
+
 # Package Distribution Optimization
 # Wheel format enables faster installation and distribution of Python packages
 # optimizing dependency management and deployment artifact creation

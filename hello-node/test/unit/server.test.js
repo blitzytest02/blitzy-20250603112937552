@@ -12,6 +12,13 @@
  * here too. Nothing is faked — the application, the sockets and the EADDRINUSE are
  * all real.
  *
+ * A fourth side effect is observed differently, because it is not a call at all:
+ * the exit status a failed bind reports is the property assignment
+ * `process.exitCode = 1`, and there is no function to spy on. So this suite saves
+ * `process.exitCode` before each test, asserts the value the failing start left on
+ * it, and puts the original back afterwards — which is also what keeps a status
+ * this suite set from becoming the exit status of the whole Jest run.
+ *
  * Key Learning Concepts:
  * - `readConfig(env = process.env)` takes its environment as a parameter, so a test
  *   can supply any environment; that is what keeps both sides of its two `||`
@@ -176,6 +183,8 @@ describe('HTTP Server Module (server.js)', () => {
   let errorSpy;
   /** @type {jest.SpyInstance} Intercepts process.exit so the worker survives. */
   let exitSpy;
+  /** @type {number|undefined} process.exitCode as the running test found it. */
+  let originalExitCode;
   /** @type {import('http').Server[]} Every server the running test opened. */
   let servers;
   /** @type {Map<string, Function[]>} Signal listeners present before the test. */
@@ -210,8 +219,24 @@ describe('HTTP Server Module (server.js)', () => {
     // The replacement implementation is not optional. closeServer() really does
     // call process.exit(0), so without this the first test to reach the
     // shutdown path would end the Jest worker instead of completing. The
-    // failed-bind path calls neither exit nor exitCode, which this suite asserts.
+    // failed-bind path does not call process.exit at all, which this suite also
+    // asserts: it reports the failure by setting a status, captured just below.
     exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+
+    // The status itself cannot be spied, because the module assigns
+    // `process.exitCode` rather than calling anything, so the property is saved
+    // here and restored in teardown. jest.restoreAllMocks() does not and cannot
+    // undo a property assignment on the real process object.
+    //
+    // That restore is load-bearing rather than tidiness, and the reason is
+    // measured: jest-cli sets the run's exit status only when the run FAILED
+    // (node_modules/jest-cli/build/run.js:200-207 installs an 'exit' listener
+    // that assigns process.exitCode only for a nonzero code), so a value a
+    // PASSING test left behind is never cleared. Measured on this suite with
+    // the restore deleted: `npm run test:ci` reported `Tests: 15 passed` and
+    // its process still exited 1, as did `--maxWorkers=2` on this file alone.
+    // The property's value in a clean run is `undefined`.
+    originalExitCode = process.exitCode;
 
     servers = [];
 
@@ -239,6 +264,13 @@ describe('HTTP Server Module (server.js)', () => {
     // else registers one while the test runs — rather than every listener on the
     // signal, so whatever was already attached stays attached.
     removeSignalListenersAddedSince(signalListenersBefore);
+
+    // Put the process's exit status back exactly as this test found it. The
+    // failed-bind test really does leave a 1 on it — that is the behaviour being
+    // asserted — and a 1 still there when the run ends is the status Jest's own
+    // process reports, turning a fully passing suite into a failed command (see
+    // the measurement in beforeEach). Restored last, alongside the mocks.
+    process.exitCode = originalExitCode;
 
     jest.restoreAllMocks();
   });
@@ -404,6 +436,10 @@ describe('HTTP Server Module (server.js)', () => {
       // server.address().port off a null address and report a TypeError instead.
       logSpy.mockClear();
 
+      // Read before the failing call, so the exit-status assertion below cannot
+      // pass on a 1 that was already there: nothing up to this point sets one.
+      expect(process.exitCode).not.toBe(1);
+
       const failing = track(startServer({ host: '127.0.0.1', port: address.port }));
 
       let caught = null;
@@ -439,11 +475,20 @@ describe('HTTP Server Module (server.js)', () => {
         `Failed to start server on http://127.0.0.1:${address.port} (EADDRINUSE)`
       );
 
-      // The diagnostic is the whole of what this arm does: it prints nothing on
-      // stdout, so the stream a reader or a script scans for the banner stays
-      // clean, and it terminates nothing — a tutorial server reports the failure
-      // and leaves the process's exit status to the caller.
+      // Nothing on stdout, so the stream a reader or a script scans for the
+      // banner stays clean: a start that bound no socket prints no banner.
       expect(logSpy).toHaveBeenCalledTimes(0);
+
+      // The failure is also reported to the one reader that cannot read stderr —
+      // the caller's `$?`. A bind that failed bound nothing, so the start failed,
+      // and the status is what lets a supervisor, a wrapper script, a `set -e`
+      // step or a container entrypoint tell that from a successful start. It
+      // matters that this is the assertion and not `toHaveBeenCalledWith(1)` on
+      // the exit spy: the status is set with `process.exitCode`, so the process
+      // unwinds on its own and any remaining callback still runs, where
+      // process.exit(1) would terminate the process from inside a listen
+      // callback — and would end the Jest worker here were it not spied.
+      expect(process.exitCode).toBe(1);
       expect(exitSpy).not.toHaveBeenCalled();
     });
   });

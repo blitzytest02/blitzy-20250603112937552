@@ -199,7 +199,7 @@ function readConfig(env = process.env) {
  *   listening, with the banner printed, or the bind has failed — and in that
  *   case one line naming the requested address and the failure's code has been
  *   written to stderr, this server's address() is null, and the process's exit
- *   status is left untouched.
+ *   status is set to 1, so a caller that checks it sees the start fail.
  * @example
  * const server = startServer({ host: 'localhost', port: 3002 });
  * // Server listening on http://localhost:3002
@@ -218,6 +218,27 @@ function startServer(config) {
       console.error(
         `Failed to start server on http://${config.host}:${config.port} (${error.code})`
       );
+
+      // A failed bind bound nothing, so this start FAILED and the process has to
+      // say so in the one place a machine reads: its exit status. Without this
+      // line the process exits 0 — measured — and a process supervisor, a
+      // wrapper script, a `set -e` step or a container entrypoint records a
+      // start that never happened as a success.
+      //
+      // It has to be said explicitly here precisely because of how the error
+      // arrives. Express's listen() attaches its own one-shot 'error' listener
+      // that forwards the failure into this callback, so the bind error is an
+      // ordinary function argument rather than the unhandled 'error' event it
+      // would otherwise be — and an unhandled 'error' event is what would have
+      // crashed Node with a nonzero status on its own.
+      //
+      // process.exitCode, not process.exit(1): assigning the status lets the
+      // process unwind on its own, and after a failed bind there is nothing left
+      // to unwind around — no socket was bound, and the signal handlers
+      // registered below hold no work — so it exits promptly with this status
+      // anyway. Setting the property also leaves any remaining callback free to
+      // finish, where process.exit() would cut it off mid-write.
+      process.exitCode = 1;
     } else {
       // Read the port back from the socket instead of trusting config.port: these
       // agree for an ordinary port and differ for port 0, where the requested

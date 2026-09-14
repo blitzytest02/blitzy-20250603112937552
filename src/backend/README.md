@@ -137,9 +137,14 @@ This command downloads Flask v3.1.1, pytest, coverage tools, and creates the vir
 The application supports environment-based configuration for deployment flexibility using python-dotenv:
 
 **Environment Variables:**
-- `PORT`: Server port (default: 3000)
-- `HOST`: Host address (default: localhost)
-- `FLASK_ENV`: Environment mode (development/production/testing)
+- `PORT`: Server port (`3000` in `.env.example`; `8000` if no value is supplied at all).
+  Choose a port below your host's ephemeral range — see
+  [Port Binding Issues](#port-binding-issues) — because ports inside it are also used
+  for outbound connections and can be occupied for the instant a bind happens
+- `HOST`: Host address (default: localhost; use `0.0.0.0` to accept traffic on every
+  interface, which is what a container needs)
+- `FLASK_ENV`: Environment mode (development/production/testing). Selects the
+  application configuration; it does not decide whether `python wsgi.py` serves
 - `FLASK_DEBUG`: Debug mode (true/false)
 - `SECRET_KEY`: Flask secret key for session security
 
@@ -190,28 +195,93 @@ flask run --host=localhost --port=3000
 gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4
 ```
 
+Running `python wsgi.py` always binds a listening socket, whatever `FLASK_ENV` is set
+to: executing the entry point *is* the request to serve. `FLASK_ENV` selects which
+application configuration is loaded (`development`, `production`, `testing`) and
+whether debug mode is on — it is not a switch between serving and not serving. If the
+bind fails, the process reports the reason and exits with a **non-zero** status rather
+than exiting quietly.
+
+**Address and port:** `HOST` and `PORT` are read from the environment, including a
+`.env` file created from `.env.example` as described in
+[Environment Configuration](#environment-configuration). With no `.env` and no
+variables set, the built-in defaults are `localhost` and port `8000`; the examples
+below use port `3000`, which is the value `.env.example` ships. Pass them inline to
+override for a single run:
+```bash
+HOST=127.0.0.1 PORT=3000 python wsgi.py
+```
+
 **Expected Output:**
 ```
 🚀 WSGI Application Successfully Initialized!
-============================================================
+======================================================================
 ⏰ Startup time: 2024-01-01T12:00:00.000000
 🌐 Application available at: http://localhost:3000
 📡 Host: localhost
 🔌 Port: 3000
-
-📋 Runtime Information:
-   Python version: 3.12.0
-   Flask environment: development
-   Flask debug mode: True
-   Process ID: 12345
+📋 Process ID: 12345
 
 🎯 Available Endpoints:
-   GET  http://localhost:3000/hello  →  Returns 'Hello world'
-   GET  http://localhost:3000/health →  Health check endpoint
-============================================================
+   GET  http://localhost:3000/hello  →  Returns JSON 'Hello world'
+   GET  http://localhost:3000/health →  Application health check
+
+🛑 Stopping the server:
+   Ctrl+C (SIGINT), or: kill -TERM 12345
+   The listening socket is released and the process exits with status 0
+======================================================================
+✨ Server is listening. Requests are being served.
 ```
 
+Every line above is emitted through the module's logging configuration, so on screen
+each one is prefixed with a timestamp, the logger name and the level — for example
+`2024-01-01 12:00:00,000 - __main__ - INFO - 🔌 Port: 3000`. The port reported is the
+port the socket is actually bound to, read back from the server rather than from the
+requested configuration, so the banner cannot advertise an address nothing is
+listening on.
+
 The server typically starts within 2 seconds and consumes less than 75MB of memory during operation.
+
+### Stopping the Server
+
+The server shuts down on `SIGINT` (Ctrl+C) or `SIGTERM` (`kill -TERM <pid>`, and what
+`docker stop` sends):
+```bash
+# Foreground: press Ctrl+C
+# Background or another shell:
+kill -TERM <pid>
+```
+
+**Expected Output:**
+```
+🛑 SIGTERM signal received: Initiating graceful shutdown...
+📋 Graceful shutdown initiated by SIGTERM
+🧹 Cleaning up Flask application context...
+✅ Flask application cleanup completed
+🔌 Asking the HTTP server to stop accepting new connections...
+🏁 Graceful shutdown procedures completed successfully
+⏳ Awaiting listening socket release before process exit...
+✅ Listening socket released; port is free for the next process
+👋 WSGI application shutdown complete. Thank you for learning Python and Flask!
+```
+
+What is guaranteed by that sequence:
+
+- The accept loop stops, in-flight responses finish, and the listening socket is
+  closed — so the port is immediately free for the next process. Verify with
+  `curl http://localhost:3000/hello`, which is refused once the process has exited.
+- The process exits with status **0**. Check it with `kill -TERM <pid>; wait <pid>;
+  echo $?` in the shell that started the server.
+- One signal is enough. If the graceful path cannot finish within 10 seconds — a
+  stalled connection, a wedged worker thread — a watchdog logs the deadline and
+  terminates the process anyway, so a stop request is never merely logged and ignored.
+- `SIGUSR1` and `SIGUSR2` are *not* stop signals. They log a memory and process-state
+  snapshot and the server keeps serving, matching the convention that a supervisor uses
+  them to poke a service rather than to end it.
+
+Under Gunicorn the server owns the process instead: `gunicorn` handles the signal, and
+this module logs the shutdown, cleans up and hands the signal back to Gunicorn's own
+handler, which stops the workers and exits with status 0.
 
 ### Testing the /hello Endpoint
 
@@ -672,8 +742,18 @@ The application demonstrates contemporary Python development practices:
 
 **Problem:** Port 3000 already in use
 ```
-OSError: [Errno 98] Address already in use
+⚠️  Port 3000 busy on attempt 1/3 (Address already in use); retrying in 0.5s
+⚠️  Port 3000 busy on attempt 2/3 (Address already in use); retrying in 0.5s
+❌ Cannot bind localhost:3000: Address already in use
+🔧 Port 3000 is in use: stop that process or set PORT
+❌ Development server error: [Errno 98] Address already in use
 ```
+The process exits with status **1** after those lines. The three attempts are
+deliberate: a bind is retried twice, half a second apart, before the conflict is
+declared, because a port can be held for an instant by traffic that has nothing to do
+with this application (see solution 4). A port that is genuinely taken still fails
+within about a second, and any bind error other than "address already in use" — a
+permission problem, an unusable address — fails on the first attempt with no retry.
 
 **Solutions:**
 1. **Kill existing process:**
@@ -700,6 +780,26 @@ OSError: [Errno 98] Address already in use
 
 3. **Check for other applications:**
    Common applications that use port 3000 include development servers, React applications, and Node.js applications.
+
+4. **Avoid the kernel's ephemeral port range:**
+   Ports in the ephemeral (dynamic) range are also handed out to *outbound*
+   connections, so an unrelated connection can occupy one for the instant a bind
+   happens — the port is then free again moments later. Startup warns when `PORT`
+   lands in that range:
+   ```
+   ⚠️  Port 43104 is inside the ephemeral range (32768-60999) used for outbound connections
+   🔧 Prefer a port below the ephemeral range for a listening service
+   ```
+   Read your host's range and pick a port below it:
+   ```bash
+   # Linux: the two numbers are the low and high end of the range
+   cat /proc/sys/net/ipv4/ip_local_port_range   # e.g. 32768   60999
+
+   # macOS
+   sysctl net.inet.ip.portrange.first net.inet.ip.portrange.last
+   ```
+   Any port from 1024 up to the low end of that range is a safe choice for a listening
+   service; the default 3000 and 8000 both qualify on a stock Linux host.
 
 ### Virtual Environment Issues
 

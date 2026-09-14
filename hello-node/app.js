@@ -101,6 +101,15 @@ const ALLOWED_METHODS = 'GET, HEAD';
  *   together define a closed contract: every request receives a definite answer.
  * - Response helpers chain: res.status().type().send() and res.status().set().json().
  *
+ * Educational Note: This module holds no conditional at all, by design — the factory
+ * body is a straight run of settings then registrations, and each handler below runs
+ * top to bottom for the request it answers, so no line here is ever taken instead of
+ * another. Coverage consequently measures 0 of 0 branches for app.js and prints that
+ * as 100% in the branch column: a vacuous figure rather than a demonstrated one, which
+ * is the expected reading and not a gap to close. A conditional must never be
+ * introduced here to make that number look earned; jest.config.js records where this
+ * project's branch floor is enforced against real branches.
+ *
  * @returns {express.Application} Configured Express application instance, with all
  *   routes registered and no socket bound.
  * @example
