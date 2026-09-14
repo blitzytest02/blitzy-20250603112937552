@@ -1,0 +1,25 @@
+{
+  "name": "nodejs-hello-world-tutorial",
+  "version": "1.0.0",
+  "description": "Node.js tutorial project exposing a single GET /hello endpoint that returns \"Hello world\".",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.2"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --runInBand --coverage"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  },
+  "devDependencies": {
+    "jest": "29.7.0",
+    "supertest": "7.2.2"
+  },
+  "license": "MIT",
+  "private": true
+}
