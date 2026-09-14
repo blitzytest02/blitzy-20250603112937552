@@ -4,8 +4,8 @@
   "description": "Node.js tutorial project exposing a single GET /hello endpoint that returns \"Hello world\".",
   "main": "src/server.js",
   "engines": {
-    "node": ">=22.16.0",
-    "npm": ">=10.9.2"
+    "node": ">=22.23.2",
+    "npm": ">=11.19.1"
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",

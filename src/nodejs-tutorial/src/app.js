@@ -1,19 +1,5 @@
 'use strict';
 
-/**
- * Express application factory for the Node.js Hello World tutorial.
- *
- * This module owns the routing table and nothing else: it wires the single
- * GET /hello route to its handler, suppresses the header that identifies the
- * framework, and terminates every unmatched request with a JSON 404 envelope.
- * It deliberately never opens a socket and never reads the environment -
- * src/server.js resolves the configuration and binds the listener.
- */
-
-// Express 5.1.0 supplies the routing table and the response helpers, and the
-// route handler lives in its own module. Those are the only two requires this
-// file needs: the project ships no middleware, utility or configuration
-// module, so there is nothing else to pull in.
 const express = require('express');
 const { helloRoute } = require('./routes/hello');
 
@@ -31,8 +17,8 @@ const { helloRoute } = require('./routes/hello');
 function createApp() {
   const app = express();
 
-  // Express advertises itself in an X-Powered-By response header by default.
-  // Express.js v5 security enhancement - prevents framework fingerprinting.
+  // Express advertises itself in an X-Powered-By response header by default;
+  // disabling that header prevents framework fingerprinting.
   app.disable('x-powered-by');
 
   // The project's only route. Express registers HEAD /hello alongside GET, so
@@ -60,6 +46,4 @@ function createApp() {
   return app;
 }
 
-// CommonJS module boundary: createApp is the single published symbol, required
-// by name from src/server.js and from both test suites.
 module.exports = { createApp };

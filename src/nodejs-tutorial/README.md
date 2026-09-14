@@ -1,12 +1,12 @@
 # Node.js Hello World Tutorial
 
-A beginner-facing Node.js tutorial project that exposes exactly one HTTP endpoint — `GET /hello` — which answers any calling HTTP client with the eleven-byte plain-text body `Hello world` (`src/nodejs-tutorial/src/routes/hello.js:22,40`). It is built on Node.js 22.16.0 — the version pinned at `src/nodejs-tutorial/.nvmrc:1` — with Express 5.1.0 (`src/nodejs-tutorial/package.json:17`).
+A beginner-facing Node.js tutorial project that exposes exactly one HTTP endpoint — `GET /hello` — which answers any calling HTTP client with the eleven-byte plain-text body `Hello world` (`src/nodejs-tutorial/src/routes/hello.js:13,27`). It is built on Node.js 22.23.2 — the version pinned at `src/nodejs-tutorial/.nvmrc:1` — with Express 5.1.0 (`src/nodejs-tutorial/package.json:17`).
 
-Eight test cases across two Jest suites verify it: five in `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:50,68,90,115,167` and three in `src/nodejs-tutorial/test/unit/server.test.js:42,91,156`, measured against the coverage gate at `src/nodejs-tutorial/jest.config.js:14-21`. It is deliberately small: three source modules and two test suites — the five files `git ls-files src/nodejs-tutorial/src src/nodejs-tutorial/test` lists — with one route and no second endpoint, which `grep -rnE "^\s*app\.(get|post|put|patch|delete|all)\(" src/` establishes by returning the single line `src/nodejs-tutorial/src/app.js:43`.
+Eight test cases across two Jest suites verify it: five in `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:37,54,74,97,139` and three in `src/nodejs-tutorial/test/unit/server.test.js:29,68,213`, measured against the coverage gate at `src/nodejs-tutorial/jest.config.js:14-21`. It is deliberately small: three source modules and two test suites — the five files `git ls-files src/nodejs-tutorial/src src/nodejs-tutorial/test` lists — with one route and no second endpoint, which `grep -rnE "^\s*app\.(get|post|put|patch|delete|all)\(" src/` establishes by returning the single line `src/nodejs-tutorial/src/app.js:29`.
 
 **A parallel tutorial, not a replacement.** This project sits *beside* the Python/Flask application this repository delivers under `src/backend/`, as an additive teaching artifact. It is not a reversal of the migration recorded in the repository's root `README.md:1002` — "v2.0.0 - Migration to Python 3.12+ and Flask 3.1.1 from Node.js/Express.js", the first entry under that file's `### Version History` heading at `README.md:1000` — and it changes nothing under `src/backend/`, which continues to serve its own `/hello` endpoint in its own shape. The two tutorials teach the same idea in two runtimes, and the section [API Documentation](#api-documentation) states exactly where their responses differ and why.
 
-Everything below has been run and observed on the pinned runtime, Node.js 22.16.0 with npm 10.9.2. **Every command is followed by what tells you it worked** — the output it prints, or, for the three commands that print nothing at all on success (`cd` in [Installation step 1](#1-enter-the-project-directory), `cp` in [step 4](#4-environment-setup-optional) and `export` in [Configuration](#configuration)), the observable effect and the pass condition instead. The [Verification Checklist](#verification-checklist) states that pass condition for all eighteen commands in one table, and reproduced output that varies from machine to machine is labelled representative where it appears. The two outputs most often mistaken for errors — npm's deprecation warnings and the missing-`.env` notice — are called out where they appear.
+Everything below has been run and observed on the pinned runtime, Node.js 22.23.2 with npm 11.19.1. **Every command is followed by what tells you it worked** — the output it prints, or, for the three commands that print nothing at all on success (`cd` in [Installation step 1](#1-enter-the-project-directory), `cp` in [step 4](#4-environment-setup-optional) and `export` in [Configuration](#configuration)), the observable effect and the pass condition instead. The [Verification Checklist](#verification-checklist) states that pass condition for all eighteen commands in one table, and reproduced output that varies from machine to machine is labelled representative where it appears. The two outputs most often mistaken for errors — npm's deprecation warnings and the missing-`.env` notice — are called out where they appear.
 
 ## Table of Contents
 
@@ -35,9 +35,9 @@ The whole route through this tutorial, with the two failures a reader actually h
 ```mermaid
 flowchart TD
     Start([Existing clone of the repository]) --> Prereq["Verify the runtime<br/>node --version and npm --version"]
-    Prereq --> PrereqOK{"v22.16.0 or higher?"}
+    Prereq --> PrereqOK{"node v22.23.2 or higher<br/>and npm 11.19.1 or higher?"}
     PrereqOK -- no --> Enter1["cd src/nodejs-tutorial"]
-    Enter1 --> Upgrade["nvm use reads .nvmrc<br/>and selects 22.16.0"]
+    Enter1 --> Upgrade["nvm use reads .nvmrc and selects 22.23.2<br/>npm install -g npm@11.19.1"]
     Upgrade --> Prereq
     PrereqOK -- yes --> Enter2["cd src/nodejs-tutorial"]
     Enter2 --> Install["Install dependencies<br/>npm ci, then npm ls --depth=0"]
@@ -74,10 +74,10 @@ By working through this tutorial you will be able to:
 
 **Runtime Environment:**
 
-- **Node.js 22.16.0** — the version this project pins, on the single line of `src/nodejs-tutorial/.nvmrc:1`. Node.js 22 is the "Jod" release line, now in **Maintenance LTS**, which reaches end of life on **30 April 2027**; the codename, the phase and that date are published in the project's own release schedule, [Node.js Previous Releases](https://nodejs.org/en/about/previous-releases), which is the authority to re-check rather than this paragraph. Maintenance means security and critical fixes only: the line is supported, but it is no longer the newest one.
-- **npm 10.9.2** — the package manager bundled with Node.js 22.16.0, used to install dependencies, run the scripts and audit the tree. npm ships inside the Node.js distribution, and the same [release listing](https://nodejs.org/en/about/previous-releases) names the npm version bundled with each Node.js release; the copy you actually have is whatever step 2 below prints. Note that `CONTRIBUTING.md:91` and `.github/PULL_REQUEST_TEMPLATE.md:134` both state that npm v11.4.1 accompanies this runtime; the version actually bundled — and the one this project's `engines` floor at `src/nodejs-tutorial/package.json:8` is set from — is 10.9.2.
+- **Node.js 22.23.2** — the version this project pins, on the single line of `src/nodejs-tutorial/.nvmrc:1`. Node.js 22 is the "Jod" release line, now in **Maintenance LTS**, which reaches end of life on **30 April 2027**; the codename, the phase and that date are published in the project's own release schedule, [Node.js Previous Releases](https://nodejs.org/en/about/previous-releases), which is the authority to re-check rather than this paragraph. Maintenance means security and critical fixes only: the line is supported, but it is no longer the newest one. The pin is a **patch release rather than the line's first release for exactly that reason** — a Node.js version is a program with published vulnerabilities like any other, and 22.23.2 is the 22.x level that carries every security fix the line has shipped, so pinning an older 22.x would run all of this project's code, and yours, on an executable with known holes in it. When a later 22.x appears, move the pin and the floor together: they are one line in `.nvmrc` and one field in `src/nodejs-tutorial/package.json:7`.
+- **npm 11.19.1** — the package manager that installs the dependencies, runs the four scripts and audits the tree, and the floor this project declares at `src/nodejs-tutorial/package.json:8`. **That floor is deliberately above the npm the runtime ships with, so this is the one prerequisite the Node.js installer does not satisfy for you.** Node.js 22.23.2 bundles npm 10.9.8 — the same [release listing](https://nodejs.org/en/about/previous-releases) names the npm bundled with each Node.js release — and npm vendors its own dependency tree inside itself, in which the 10.9.x copies of `tar` (the archive extractor every install runs), `sigstore` and `@sigstore/core` (signature verification), `pacote`, `minimatch`, `glob`, `brace-expansion`, `ip-address`, `postcss-selector-parser` and `diff` all carry published advisories, the most serious of them a critical path-traversal issue in `tar` that a malicious package archive reaches during extraction. **This project's own `npm audit` cannot see any of that**: it audits the three dependencies the manifest declares, not the program performing the install. npm 11.19.1 vendors patched copies of every one of those packages — `tar@7.5.22`, `sigstore@4.1.1`, `@sigstore/core@3.2.1`, `pacote@21.5.1` among them, each verifiable with `npm ls --all` inside npm's own installation directory — so it is installed explicitly, once, with `npm install -g npm@11.19.1`; step 2 below is where you check, and [Troubleshooting](#troubleshooting) case 2 shows the command with its output. Note that `CONTRIBUTING.md:91` and `.github/PULL_REQUEST_TEMPLATE.md:134` both state that npm v11.4.1 accompanies this runtime: no 22.x release bundles that version, and this floor is set from the advisory state of npm's own vendored tree rather than from what any release happens to bundle.
 
-The manifest declares `"node": ">=22.16.0"` rather than an exact pin (`src/nodejs-tutorial/package.json:6-9`), following the wording at `.github/ISSUE_TEMPLATE/feature_request.md:106` — "Compatible with Node.js v22.16.0 LTS or higher". A reader on Node.js 24 (the Active LTS line) or 26 (Current) therefore installs and runs this project without editing anything.
+The manifest declares `"node": ">=22.23.2"` rather than an exact pin (`src/nodejs-tutorial/package.json:6-9`), which keeps the wording at `.github/ISSUE_TEMPLATE/feature_request.md:106` — "Compatible with Node.js v22.16.0 LTS or higher" — with the floor raised from that document's figure to the patched release of the same line. A reader on Node.js 24 (the Active LTS line) or 26 (Current) therefore installs and runs this project without editing anything; a reader still on 22.16.0 is *below* the floor, and [Troubleshooting](#troubleshooting) case 2 shows exactly what that looks like and how to move.
 
 **Web Framework:**
 
@@ -86,18 +86,18 @@ The manifest declares `"node": ">=22.16.0"` rather than an exact pin (`src/nodej
 **Testing Framework:**
 
 - **Jest 29.7.0** — test runner, assertion library and coverage instrumentation (`src/nodejs-tutorial/package.json:19-22`), configured by `src/nodejs-tutorial/jest.config.js` and documented in [Testing](#testing).
-- **Supertest 7.2.2** — issues real HTTP requests against the exported application without a listening server. It accepts either a listening `http.Server` or an unbound request handler and binds the latter to an ephemeral port of its own for each request, which is the mechanism [How Supertest reaches the application](#how-supertest-reaches-the-application-without-a-running-server) explains; the suite that relies on it says the same thing in its own header comment (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:13-18`), and the library's reference is the [Supertest repository](https://github.com/ladjs/supertest).
+- **Supertest 7.2.2** — issues real HTTP requests against the exported application without a listening server. It accepts either a listening `http.Server` or an unbound request handler and binds the latter to an ephemeral port of its own for each request, which is the mechanism [How Supertest reaches the application](#how-supertest-reaches-the-application-without-a-running-server) explains; the suite that relies on it says the same thing in its own header comment (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:6-10`), and the library's reference is the [Supertest repository](https://github.com/ladjs/supertest).
 
 **If you are following an older Express guide**, be aware that Express 5 renamed members that tutorials written for Express 4 still use: `app.del` became `app.delete`, `res.sendfile` became `res.sendFile`, and wildcard routes must now be named — `/*splat` rather than a bare `*`. Each of those is listed in the framework's own [Migrating to Express 5](https://expressjs.com/en/guide/migrating-5.html) guide. None of that affects a single literal route like `/hello`, so nothing in this tutorial depends on the distinction; it is named here only so that an older example does not mislead you.
 
 ### Project Features
 
-- **One endpoint, `GET /hello`** — the only route registered anywhere in the project (`src/nodejs-tutorial/src/app.js:43`). There is no `/health` route and no root `/` route, because the project's brief names one endpoint: `grep -rnE "^\s*app\.(get|post|put|patch|delete|all)\(" src/` returns that one line and nothing else, and the only other registration in the file is the pathless terminal handler at `src/nodejs-tutorial/src/app.js:51`.
-- **A plain-text response** — `Hello world` as eleven bytes of `text/plain; charset=utf-8`, with no trailing newline and no JSON envelope around it. The payload is declared once, as a constant at `src/nodejs-tutorial/src/routes/hello.js:22`, and sent by the single chained call at `src/nodejs-tutorial/src/routes/hello.js:40`.
-- **A JSON 404 envelope** — every unmatched request receives a machine-readable `{"status":404,"message":"Not Found","path":…,"timestamp":…}` instead of Express's default HTML error page (`src/nodejs-tutorial/src/app.js:51-58`), with one exception on the wire: an unmatched `HEAD` request receives that status and those headers but no body, because HTTP forbids a body on a `HEAD` response.
-- **`X-Powered-By` suppressed** — the response header that names the framework is disabled (`src/nodejs-tutorial/src/app.js:36`), and a test asserts its absence.
-- **Eight test cases across two suites at 100% coverage** — five integration cases assert the endpoint contract (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:50,68,90,115,167`), three unit cases cover the factory, the configuration and the listener (`src/nodejs-tutorial/test/unit/server.test.js:42,91,156`), and the coverage gate at `src/nodejs-tutorial/jest.config.js:14-21` is enforced on every run because `collectCoverage` is set at `src/nodejs-tutorial/jest.config.js:31`.
-- **Two environment variables, both documented** — `PORT` and `HOST`, with their defaults declared as constants in the source (`src/nodejs-tutorial/src/server.js:5-6`) and mirrored in `src/nodejs-tutorial/.env.example:39,47`. No other module under `src/` reads the environment at runtime: `grep -rn "process\.env" src/` returns five lines, of which exactly one is code — `src/nodejs-tutorial/src/server.js:8` — and the other four are comments about it.
+- **One endpoint, `GET /hello`** — the only route registered anywhere in the project (`src/nodejs-tutorial/src/app.js:29`). There is no `/health` route and no root `/` route, because the project's brief names one endpoint: `grep -rnE "^\s*app\.(get|post|put|patch|delete|all)\(" src/` returns that one line and nothing else, and the only other registration in the file is the pathless terminal handler at `src/nodejs-tutorial/src/app.js:37`.
+- **A plain-text response** — `Hello world` as eleven bytes of `text/plain; charset=utf-8`, with no trailing newline and no JSON envelope around it. The payload is declared once, as a constant at `src/nodejs-tutorial/src/routes/hello.js:13`, and sent by the single chained call at `src/nodejs-tutorial/src/routes/hello.js:27`.
+- **A JSON 404 envelope** — every unmatched request receives a machine-readable `{"status":404,"message":"Not Found","path":…,"timestamp":…}` instead of Express's default HTML error page (`src/nodejs-tutorial/src/app.js:37-44`), with one exception on the wire: an unmatched `HEAD` request receives that status and those headers but no body, because HTTP forbids a body on a `HEAD` response.
+- **`X-Powered-By` suppressed** — the response header that names the framework is disabled (`src/nodejs-tutorial/src/app.js:22`), and a test asserts its absence.
+- **Eight test cases across two suites at 100% coverage** — five integration cases assert the endpoint contract (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:37,54,74,97,139`), three unit cases cover the factory, the configuration and the listener (`src/nodejs-tutorial/test/unit/server.test.js:29,68,213`), and the coverage gate at `src/nodejs-tutorial/jest.config.js:14-21` is enforced on every run because `collectCoverage` is set at `src/nodejs-tutorial/jest.config.js:30`.
+- **Two environment variables, both documented** — `PORT` and `HOST`, with their defaults declared as constants in the source (`src/nodejs-tutorial/src/server.js:5-6`) and mirrored in `src/nodejs-tutorial/.env.example:17,33`. No other module under `src/` reads the environment at runtime: `grep -rn "process\.env" src/` returns three lines, of which exactly one is code — `src/nodejs-tutorial/src/server.js:8` — and the other two are comments about it.
 
 ## Prerequisites
 
@@ -105,8 +105,8 @@ The manifest declares `"node": ">=22.16.0"` rather than an exact pin (`src/nodej
 
 | Component | Minimum Version | Pinned / Recommended | Purpose |
 |-----------|-----------------|----------------------|---------|
-| **Node.js** | v22.16.0 | `22.16.0`, pinned in `.nvmrc` | JavaScript runtime that executes the server |
-| **npm** | v10.9.2 | Bundled with Node.js 22.16.0 | Installs dependencies and runs the four project scripts |
+| **Node.js** | v22.23.2 | `22.23.2`, pinned in `.nvmrc` | JavaScript runtime that executes the server |
+| **npm** | v11.19.1 | `11.19.1`, installed explicitly — Node.js 22.23.2 bundles the older v10.9.8 | Installs dependencies and runs the four project scripts |
 | **cURL** | any | any recent build | Calls the endpoint from a terminal |
 | **POSIX shell** | any | bash 5.x or zsh | Runs every command fence in this tutorial, including the prefix form `PORT=3100 npm start`, `export PORT=3100`, the `${PORT:-3000}` expansion in the `curl` steps, and the `curl … \| wc -c` pipeline |
 | **`cp`** | any | GNU coreutils, BSD or Git Bash | Copies the environment template in [Installation step 4](#4-environment-setup-optional) |
@@ -140,10 +140,10 @@ node --version
 ```
 
 ```text
-v22.16.0
+v22.23.2
 ```
 
-A pass is `v22.16.0` or any higher version: 22.16.0 is the floor, not an exact requirement, because the manifest declares the range `">=22.16.0"` rather than a fixed version (`src/nodejs-tutorial/package.json:7`). If the number is lower — or if the command reports `command not found` — install Node.js from the link above, or use `nvm use` as described below.
+A pass is `v22.23.2` or any higher version: 22.23.2 is the floor, not an exact requirement, because the manifest declares the range `">=22.23.2"` rather than a fixed version (`src/nodejs-tutorial/package.json:7`). If the number is lower — including the `v22.16.0` that earlier revisions of this tutorial pinned — or if the command reports `command not found`, install Node.js from the link above, or use `nvm use` as described below.
 
 **Step 2 (required) — check the package manager:**
 
@@ -152,10 +152,10 @@ npm --version
 ```
 
 ```text
-10.9.2
+11.19.1
 ```
 
-A pass is `10.9.2` or higher — the floor declared at `src/nodejs-tutorial/package.json:8`. npm ships inside the Node.js distribution, as the release listing cited in [Technology Stack](#technology-stack) records per release, so installing the runtime installs the package manager too; you do not install it separately.
+A pass is `11.19.1` or higher — the floor declared at `src/nodejs-tutorial/package.json:8` — and **this is the one check installing Node.js does not pass for you**. npm ships inside the Node.js distribution, as the release listing cited in [Technology Stack](#technology-stack) records per release, but the copy inside Node.js 22.23.2 is npm 10.9.8, which is *below* this floor, deliberately and for the supply-chain reason [Technology Stack](#technology-stack) gives. So if this command prints `10.9.8` — or anything below `11.19.1` — upgrade npm once, in place, with `npm install -g npm@11.19.1`, then run `npm --version` again and expect the line above; [Troubleshooting](#troubleshooting) case 2 shows that command with its output. A separate `npm notice New major version of npm available!` line is informational and not a failure: any npm at or above the floor satisfies the project.
 
 **Step 4 (optional) — select the pinned runtime with nvm.** If step 1 reported a version below the floor, `nvm use` is the remedy, and it is the one check that cannot run here: it reads `.nvmrc` from the current directory, so it works only once you are inside the project. It is therefore shown where it can actually be run, in [Installation step 1](#1-enter-the-project-directory), immediately after step 3's `cd` — do step 3, then step 4 there, and return to step 1 above to confirm the version.
 
@@ -163,7 +163,7 @@ A pass is `10.9.2` or higher — the floor declared at `src/nodejs-tutorial/pack
 
 ### What `engines` does, and what it does not
 
-`src/nodejs-tutorial/package.json:6-9` declares the floors this project expects — `"node": ">=22.16.0"` and `"npm": ">=10.9.2"` — in an `engines` object that [Project Structure](#project-structure) reproduces in full alongside the scripts that follow it.
+`src/nodejs-tutorial/package.json:6-9` declares the floors this project expects — `"node": ">=22.23.2"` and `"npm": ">=11.19.1"` — in an `engines` object that [Project Structure](#project-structure) reproduces in full alongside the scripts that follow it.
 
 That declaration is worth reading carefully, because it promises less than it appears to. **`engines` produces a warning, not a rejection.** On a runtime below the declared range, and with no `.npmrc` present, `npm ci` prints a warning whose first line reads
 
@@ -171,9 +171,9 @@ That declaration is worth reading carefully, because it promises less than it ap
 npm warn EBADENGINE Unsupported engine
 ```
 
-and then **exits 0**: the install proceeds and the dependencies land on disk. That is npm's documented behaviour rather than a quirk of this project — npm's reference for the `engines` field records that it only warns unless `engine-strict` is set ([package.json reference](https://docs.npmjs.com/cli/v10/configuring-npm/package-json)). The remediation is the `nvm use` of step 4, shown in [Installation step 1](#1-enter-the-project-directory), which changes the runtime rather than arguing with the manifest, and the version pin plus this documented warning is the whole mechanism. [Troubleshooting](#troubleshooting) case 2 shows the warning in full and walks through the fix.
+and then **exits 0**: the install proceeds and the dependencies land on disk. That is npm's documented behaviour rather than a quirk of this project — npm's reference for the `engines` field records that it only warns unless `engine-strict` is set ([package.json reference](https://docs.npmjs.com/cli/v11/configuring-npm/package-json)). The remediation is to change the tools rather than argue with the manifest: the `nvm use` of step 4, shown in [Installation step 1](#1-enter-the-project-directory), for the runtime, and `npm install -g npm@11.19.1` for the package manager — the version pin, the declared floors and this documented warning are the whole mechanism, and **the warning is the only thing that will tell you an install ran on a vulnerable toolchain**. [Troubleshooting](#troubleshooting) case 2 shows the warning in full, for both floors, and walks through the fix.
 
-npm does have a setting that makes the check fatal — `engine-strict=true` in an `.npmrc`, which turns the warning into `npm error code EBADENGINE` with exit 1, and which npm documents in its [config reference](https://docs.npmjs.com/cli/v10/using-npm/config) — and **this project deliberately ships no `.npmrc`**: neither `ls -a` in this directory nor `git ls-files | grep npmrc` finds one, anywhere in the repository. That filename is ignored repository-wide at `.gitignore:77`, a security-motivated default given that an npmrc can carry a registry auth token, and overriding a sensible ignore rule to police a version check is the wrong trade for a tutorial. Do not create one: check the runtime with the command above instead.
+npm does have a setting that makes the check fatal — `engine-strict=true` in an `.npmrc`, which turns the warning into `npm error code EBADENGINE` with exit 1, and which npm documents in its [config reference](https://docs.npmjs.com/cli/v11/using-npm/config) — and **this project deliberately ships no `.npmrc`**: neither `ls -a` in this directory nor `git ls-files | grep npmrc` finds one, anywhere in the repository. That filename is ignored repository-wide at `.gitignore:77`, a security-motivated default given that an npmrc can carry a registry auth token, and overriding a sensible ignore rule to police a version check is the wrong trade for a tutorial. Do not create one: check the runtime with the command above instead.
 
 The same region of the manifest declares the four scripts this tutorial uses — `start`, `test`, `test:coverage` and `test:ci` (`src/nodejs-tutorial/package.json:10-15`). [Usage](#usage) documents each one and when to reach for it.
 
@@ -198,11 +198,11 @@ nvm use
 ```
 
 ```text
-Found '/path/to/src/nodejs-tutorial/.nvmrc' with version <22.16.0>
-Now using node v22.16.0 (npm v10.9.2)
+Found '/path/to/src/nodejs-tutorial/.nvmrc' with version <22.23.2>
+Now using node v22.23.2 (npm v10.9.8)
 ```
 
-`nvm use` with no argument reads `.nvmrc`, which holds the single line `22.16.0`, and switches the current shell to that version. If nvm reports that the version is not installed, `nvm install` — again with no argument — installs exactly the pinned version first. Re-run `node --version` to confirm the floor is met, then continue below.
+`nvm use` with no argument reads `.nvmrc`, which holds the single line `22.23.2`, and switches the current shell to that version. If nvm reports that the version is not installed, `nvm install` — again with no argument — installs exactly the pinned version first. The npm version nvm names in parentheses is whichever copy lives in that runtime's own directory, `10.9.8` on a freshly installed 22.23.2, and that is **below** this project's npm floor — so follow it with `npm install -g npm@11.19.1`, for the reason [Technology Stack](#technology-stack) gives. Re-run `node --version` and `npm --version` to confirm both floors are met, then continue below.
 
 ### 2. Install dependencies
 
@@ -212,7 +212,7 @@ Now using node v22.16.0 (npm v10.9.2)
 npm ci
 ```
 
-**Why `npm ci` and not `npm install`?** Because the lockfile is committed — `src/nodejs-tutorial/package-lock.json:4` declares `"lockfileVersion": 3` and the file records the whole resolved tree. `npm ci` installs precisely that tree and **fails rather than quietly resolving a different one**; npm's own reference for the command states both halves of that contract — it requires an existing lockfile and errors if the lockfile and `package.json` disagree ([npm-ci documentation](https://docs.npmjs.com/cli/v10/commands/npm-ci)). That is what makes the versions this tutorial names true on your machine as well as on the machine it was written on. `npm install` is free to update the lockfile to satisfy the ranges in the manifest, which is the right behaviour when you are deliberately adding a dependency — see [Next Steps](#next-steps) — and the wrong behaviour when you want to reproduce a known-good tree. `npm ci` is also the command `CONTRIBUTING.md:153-154` already verifies for this project.
+**Why `npm ci` and not `npm install`?** Because the lockfile is committed — `src/nodejs-tutorial/package-lock.json:4` declares `"lockfileVersion": 3` and the file records the whole resolved tree. `npm ci` installs precisely that tree and **fails rather than quietly resolving a different one**; npm's own reference for the command states both halves of that contract — it requires an existing lockfile and errors if the lockfile and `package.json` disagree ([npm-ci documentation](https://docs.npmjs.com/cli/v11/commands/npm-ci)). That is what makes the versions this tutorial names true on your machine as well as on the machine it was written on. `npm install` is free to update the lockfile to satisfy the ranges in the manifest, which is the right behaviour when you are deliberately adding a dependency — see [Next Steps](#next-steps) — and the wrong behaviour when you want to reproduce a known-good tree. `npm ci` is also the command `CONTRIBUTING.md:153-154` already verifies for this project.
 
 Representative output:
 
@@ -261,7 +261,7 @@ cp .env.example .env
 
 In PowerShell the same copy is `Copy-Item .env.example .env`; [System Requirements](#system-requirements) lists every command in this tutorial whose form differs outside a POSIX shell.
 
-`.env.example` is that template, and it is deliberately short: it declares the only two variables this project reads, `PORT` and `HOST` (`src/nodejs-tutorial/.env.example:39,47`), each with a comment naming its default and the line of source that reads it. It is committed on purpose — the repository ignores every other `.env`-shaped filename, and `.gitignore:24` carries a single negation so that this one template can be tracked while a real `.env` of yours stays out of version control through `.gitignore:16` and `.gitignore:22`.
+`.env.example` is that template, and it is deliberately short: it declares the only two variables this project reads, `PORT` and `HOST` (`src/nodejs-tutorial/.env.example:17,33`), each with a comment naming its default and the line of source that reads it. It is committed on purpose — the repository ignores every other `.env`-shaped filename, and `.gitignore:24` carries a single negation so that this one template can be tracked while a real `.env` of yours stays out of version control through `.gitignore:16` and `.gitignore:22`.
 
 The copy is loaded by the runtime itself, not by a library: the `start` script runs `node --env-file-if-exists=.env src/server.js` (`src/nodejs-tutorial/package.json:11`), and that flag reads `.env` when it exists and shrugs when it does not — the behaviour Node.js documents for `--env-file-if-exists` in its [CLI reference for the 22.x line](https://nodejs.org/docs/latest-v22.x/api/cli.html#--env-file-if-existsfile). There is no `dotenv` dependency in this project (`src/nodejs-tutorial/package.json:16-22` declares three packages, none of them a configuration loader), and no module parses configuration files — `src/nodejs-tutorial/src/server.js:8-13` reads the already-populated `process.env` and nothing else.
 
@@ -288,7 +288,7 @@ Eleven committed files — the eleven `git ls-files src/nodejs-tutorial` lists, 
 src/nodejs-tutorial/
 ├── package.json                      manifest: name, engines, the four scripts, three dependencies
 ├── package-lock.json                 the exact resolved tree, committed so npm ci is reproducible
-├── .nvmrc                            one line: 22.16.0 — the runtime pin nvm use reads
+├── .nvmrc                            one line: 22.23.2 — the runtime pin nvm use reads
 ├── jest.config.js                    Jest configuration: environment, coverage gate, test patterns
 ├── .env.example                      environment template: PORT and HOST with their defaults
 ├── README.md                         this tutorial
@@ -308,7 +308,7 @@ Two details of that tree are easy to misread. The test root is the **singular `t
 
 Two more directories appear once you have installed and tested — `node_modules/` and `coverage/` — and neither is committed: `.gitignore:55` and `.gitignore:149` ignore them, at this nesting depth as well as at the repository root.
 
-Two files in the tree are described here rather than reproduced. `package-lock.json` is npm's machine-written record of the resolved dependency tree: `"lockfileVersion": 3` at `src/nodejs-tutorial/package-lock.json:4`, 349 package entries, and 168,689 bytes as committed — figures your own clone re-derives with `wc -c package-lock.json` and `node -e "console.log(Object.keys(require('./package-lock.json').packages).length)"`. Reading it teaches nothing that `npm ls --depth=0` does not teach in three lines; what matters is that it is committed, because that is what makes `npm ci` reproducible. `.nvmrc` holds the single line `22.16.0` (`src/nodejs-tutorial/.nvmrc:1`) and nothing else.
+Two files in the tree are described here rather than reproduced. `package-lock.json` is npm's machine-written record of the resolved dependency tree: `"lockfileVersion": 3` at `src/nodejs-tutorial/package-lock.json:4`, 349 package entries, and 168,690 bytes as committed — figures your own clone re-derives with `wc -c package-lock.json` and `node -e "console.log(Object.keys(require('./package-lock.json').packages).length)"`. Reading it teaches nothing that `npm ls --depth=0` does not teach in three lines; what matters is that it is committed, because that is what makes `npm ci` reproducible. `.nvmrc` holds the single line `22.23.2` (`src/nodejs-tutorial/.nvmrc:1`) and nothing else.
 
 ### The three modules, and why there are three
 
@@ -323,19 +323,10 @@ The smallest piece first. This module is one constant and one function.
 <!-- listing: src/routes/hello.js -->
 ```javascript
 /**
- * Route handler for the tutorial's single endpoint, GET /hello.
+ * Route handler for GET /hello, the tutorial's single endpoint.
  *
- * The smallest useful Express route: a synchronous function that receives
- * the request and response objects and sends a plain-text body. Exporting it
- * rather than registering it here keeps routing separate from response logic:
- * src/app.js owns the routing table, this module only the reply. The endpoint
- * is tested with no server of its own - createApp returns an application that
- * never calls listen, and Supertest binds it to an ephemeral port per request.
- *
- * The module deliberately requires nothing. A route handler only ever touches
- * the objects Express hands it, so it needs neither the framework itself nor
- * any configuration; src/server.js is the one module that reads the
- * environment.
+ * Registration lives in src/app.js, so this module owns only the reply and
+ * needs no imports: a handler touches just the objects Express hands it.
  */
 
 // The response payload, declared once so that the handler and the tutorial
@@ -348,15 +339,11 @@ const HELLO_BODY = 'Hello world';
 /**
  * Sends the plain-text body 'Hello world' with status 200.
  *
- * Three chained calls do all the work. .status(200) sets the status code;
- * .type('text/plain') sets Content-Type, which Express normalises so a text
- * type carries charset=utf-8; .send() writes the body as UTF-8 and takes
- * Content-Length from its byte length. Neither header is written by hand here.
- * Express answers HEAD /hello from this same handler with identical headers
- * and an empty body, which is why no second route is registered for it.
+ * Express supplies both headers: .type('text/plain') resolves to
+ * 'text/plain; charset=utf-8' and .send() derives Content-Length from the
+ * body. HEAD /hello runs this same handler, so it needs no route of its own.
  *
- * @param {express.Request} req Incoming request. Unused: this response never
- *   varies, but Express passes the request to every handler.
+ * @param {express.Request} req Incoming request; unused, the reply is fixed.
  * @param {express.Response} res Response used to send the payload.
  * @returns {void}
  */
@@ -364,20 +351,16 @@ function helloRoute(req, res) {
   res.status(200).type('text/plain').send(HELLO_BODY);
 }
 
-// CommonJS export boundary: these two names are what another module receives
-// when it requires this file, so src/app.js can destructure the handler and
-// the payload keeps a single published home rather than a copy wherever it is
-// mentioned.
 module.exports = { helloRoute, HELLO_BODY };
 ```
 
 Three things in it are worth naming for a reader new to Node.js.
 
-**`module.exports` is the module's boundary.** Node.js modules in this project use CommonJS: a file is private until it assigns to `module.exports`, and whatever it assigns there is exactly what another file receives. Line 47 of this module publishes two names (`src/nodejs-tutorial/src/routes/hello.js:47`), so `src/app.js` can pull out the handler by name. The counterpart is `require`, which appears in the next two modules: `require('./routes/hello')` (`src/nodejs-tutorial/src/app.js:18`) returns that same object. Notice what is *not* here — this module requires nothing at all, which you can check rather than believe: `grep -c "require(" src/routes/hello.js` reports `0`. A route handler only ever touches the request and response objects Express hands it.
+**`module.exports` is the module's boundary.** Node.js modules in this project use CommonJS: a file is private until it assigns to `module.exports`, and whatever it assigns there is exactly what another file receives. Line 30 of this module publishes two names (`src/nodejs-tutorial/src/routes/hello.js:30`), so `src/app.js` can pull out the handler by name. The counterpart is `require`, which appears in the next two modules: `require('./routes/hello')` (`src/nodejs-tutorial/src/app.js:4`) returns that same object. Notice what is *not* here — this module requires nothing at all, which you can check rather than believe: `grep -c "require(" src/routes/hello.js` reports `0`. A route handler only ever touches the request and response objects Express hands it.
 
-**The body is a constant, declared once** (`src/nodejs-tutorial/src/routes/hello.js:22`). `HELLO_BODY` holds `Hello world`: capital `H`, lower-case `w`, one space, no punctuation, no trailing newline. Express's own canonical example sends `Hello World!` instead, with a capital `W` and an exclamation mark, and the two are not interchangeable — this project's contract is the eleven-byte form.
+**The body is a constant, declared once** (`src/nodejs-tutorial/src/routes/hello.js:13`). `HELLO_BODY` holds `Hello world`: capital `H`, lower-case `w`, one space, no punctuation, no trailing newline. Express's own canonical example sends `Hello World!` instead, with a capital `W` and an exclamation mark, and the two are not interchangeable — this project's contract is the eleven-byte form.
 
-**Three chained calls do all the work** (`src/nodejs-tutorial/src/routes/hello.js:40`). `res.status(200)` sets the status code; `.type('text/plain')` sets `Content-Type`, which Express normalises so that a text type carries `charset=utf-8`; `.send(HELLO_BODY)` writes the body and derives `Content-Length` from its length. Neither header is written by hand, and both are asserted by the test suite.
+**Three chained calls do all the work** (`src/nodejs-tutorial/src/routes/hello.js:27`). `res.status(200)` sets the status code; `.type('text/plain')` sets `Content-Type`, which Express normalises so that a text type carries `charset=utf-8`; `.send(HELLO_BODY)` writes the body and derives `Content-Length` from its length. Neither header is written by hand, and both are asserted by the test suite.
 
 #### The factory: `src/app.js`
 
@@ -387,20 +370,6 @@ This module owns the routing table — and owns nothing else.
 ```javascript
 'use strict';
 
-/**
- * Express application factory for the Node.js Hello World tutorial.
- *
- * This module owns the routing table and nothing else: it wires the single
- * GET /hello route to its handler, suppresses the header that identifies the
- * framework, and terminates every unmatched request with a JSON 404 envelope.
- * It deliberately never opens a socket and never reads the environment -
- * src/server.js resolves the configuration and binds the listener.
- */
-
-// Express 5.1.0 supplies the routing table and the response helpers, and the
-// route handler lives in its own module. Those are the only two requires this
-// file needs: the project ships no middleware, utility or configuration
-// module, so there is nothing else to pull in.
 const express = require('express');
 const { helloRoute } = require('./routes/hello');
 
@@ -418,8 +387,8 @@ const { helloRoute } = require('./routes/hello');
 function createApp() {
   const app = express();
 
-  // Express advertises itself in an X-Powered-By response header by default.
-  // Express.js v5 security enhancement - prevents framework fingerprinting.
+  // Express advertises itself in an X-Powered-By response header by default;
+  // disabling that header prevents framework fingerprinting.
   app.disable('x-powered-by');
 
   // The project's only route. Express registers HEAD /hello alongside GET, so
@@ -447,18 +416,16 @@ function createApp() {
   return app;
 }
 
-// CommonJS module boundary: createApp is the single published symbol, required
-// by name from src/server.js and from both test suites.
 module.exports = { createApp };
 ```
 
-**Why a factory rather than a ready-made application?** `createApp()` is a function that returns a new application each time it is called (`src/nodejs-tutorial/src/app.js:31-61`). A module could instead build one application at load time and export that object, and every caller in the process would then share it — including every test file, which would share whatever state a previous test had left on it. A factory gives each caller a fresh, independent instance, which is why the test suites can build their own without coordinating.
+**Why a factory rather than a ready-made application?** `createApp()` is a function that returns a new application each time it is called (`src/nodejs-tutorial/src/app.js:17-47`). A module could instead build one application at load time and export that object, and every caller in the process would then share it — including every test file, which would share whatever state a previous test had left on it. A factory gives each caller a fresh, independent instance, which is why the test suites can build their own without coordinating.
 
-**Middleware ordering is the one rule to internalise.** Express runs whatever you register in the order you register it, and the first thing that responds ends the request. Line 43 registers the route; lines 51-58 register a handler with `app.use` and no path, which therefore matches *everything*. Because it is registered **last**, it only ever runs when no route above it matched — which is precisely the definition of a 404. Move it above line 43 and it would swallow `GET /hello` too. It always responds and never calls `next()`, which is what replaces Express's default HTML error page with the JSON envelope [API Documentation](#api-documentation) specifies.
+**Middleware ordering is the one rule to internalise.** Express runs whatever you register in the order you register it, and the first thing that responds ends the request. Line 29 registers the route; lines 37-44 register a handler with `app.use` and no path, which therefore matches *everything*. Because it is registered **last**, it only ever runs when no route above it matched — which is precisely the definition of a 404. Move it above line 29 and it would swallow `GET /hello` too. It always responds and never calls `next()`, which is what replaces Express's default HTML error page with the JSON envelope [API Documentation](#api-documentation) specifies.
 
-**`app.get`, not `app.use`, for the route.** `CONTRIBUTING.md:363` sketches this registration as `app.use('/hello', helloRoute)`, which would answer *every* method on that path. The delivered code uses `app.get` (`src/nodejs-tutorial/src/app.js:43`), which registers `GET` — and, for free, `HEAD` — and lets `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS` fall through to the 404 handler. That difference is exactly what makes the error behaviour in [Error Responses](#error-responses) correct rather than accidental.
+**`app.get`, not `app.use`, for the route.** `CONTRIBUTING.md:363` sketches this registration as `app.use('/hello', helloRoute)`, which would answer *every* method on that path. The delivered code uses `app.get` (`src/nodejs-tutorial/src/app.js:29`), which registers `GET` — and, for free, `HEAD` — and lets `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS` fall through to the 404 handler. That difference is exactly what makes the error behaviour in [Error Responses](#error-responses) correct rather than accidental.
 
-**No socket, ever.** Nothing in this file calls `listen`: `grep -c "\.listen(" src/app.js` reports `0`, and the only mentions of the word are in the comments at `src/nodejs-tutorial/src/app.js:10,23`. The application it returns is, in Node.js terms, just a function of `(req, res)` — the same shape `http.createServer` wants — which is the property the unit suite asserts at `src/nodejs-tutorial/test/unit/server.test.js:87-88`. Holding a port is somebody else's job.
+**No socket, ever.** Nothing in this file calls `listen`: `grep -c "\.listen(" src/app.js` reports `0`, and the only mention of the word is in the comment at `src/nodejs-tutorial/src/app.js:9`. The application it returns is, in Node.js terms, just a function of `(req, res)` — the same shape `http.createServer` wants — which is the property the unit suite asserts at `src/nodejs-tutorial/test/unit/server.test.js:64-65`. Holding a port is somebody else's job.
 
 #### The listener: `src/server.js`
 
@@ -469,59 +436,150 @@ The entry module: the file `npm start` actually runs.
 'use strict';
 
 const { createApp } = require('./app');
-
+const { isIP } = require('node:net');
 const DEFAULT_PORT = 3000;
 const DEFAULT_HOST = 'localhost';
 /** Resolves the listening configuration; the only reader of process.env here. */
 function resolveConfig(env = process.env) {
   return {
-    port: Number.parseInt(env.PORT, 10) || DEFAULT_PORT,
-    host: env.HOST || DEFAULT_HOST
+    port: resolvePort(env.PORT),
+    host: resolveHost(env.HOST)
   };
 }
 
-// Entry module for the Node.js Hello World tutorial. It does three things and
-// nothing else: resolve the listening configuration, bind the HTTP listener,
-// and bootstrap itself when this file is the one Node was started with. The
-// application itself - the routing table and the responses - lives in
-// src/app.js, which never opens a socket; that split is what lets the
-// integration suite drive the application in process on a port Supertest
-// chooses, and it is the layout the project's module naming prescribes.
+// Entry module for the tutorial: resolve the listening configuration, bind the
+// HTTP listener, and bootstrap when Node was started with this file. The
+// application - the routing table and the responses - lives in src/app.js and
+// never opens a socket, which is what lets the integration suite drive it in
+// process on a port Supertest chooses.
 //
-// The declarations above are kept inside thirteen lines deliberately. The
-// environment template and the tutorial cite the default constants at lines
-// 5-6 and the two process.env reads at lines 10-11, so a conventional
-// multi-line header comment here would silently break those citations; the
-// longer explanation belongs from this point down instead.
-//
-// resolveConfig holds both defaults in one place and is the only place in the
-// runtime code that touches process.env. Number.parseInt yields NaN for
-// an absent or non-numeric PORT and NaN is falsy, so one || fallback covers
-// both cases; HOST is already a string and needs only an empty-value
-// fallback. Taking the environment as a parameter - defaulting to the real
-// process.env - is what lets the unit suite assert the documented defaults
-// and the PORT/HOST overrides without mutating the process it runs in, while
-// `PORT=3100 npm start` still works unchanged. A .env file, when a reader
-// creates one, is read by the runtime through the --env-file-if-exists flag in
-// package.json's start script, so no module here parses it and no dotenv
-// dependency is declared.
+// resolveConfig takes the environment as a parameter, defaulting to the real
+// process.env, so a test can supply one without mutating the process. Both of
+// its values cross from the environment into a listening socket, so
+// resolvePort and resolveHost decide what each one may be before app.listen
+// sees it; they are declared further down, which function hoisting allows. A
+// .env file, when a reader creates one, is loaded by the runtime through the
+// --env-file-if-exists flag in the start script, so nothing here parses it and
+// no dotenv dependency is declared.
+
+// PORT must be a whole decimal number inside 1-65535, the range a TCP socket
+// can be assigned. Number.parseInt is prefix-tolerant and range-blind - it
+// reads `3000junk` as 3000 and `1e3` as 1, and hands -1 or 70000 on to fail at
+// bind time - so the value is matched in full before it is converted. Port 0
+// is excluded because it asks the operating system for any free port, which a
+// configured value should never do silently.
+const PORT_PATTERN = /^[0-9]{1,5}$/;
+const MIN_PORT = 1;
+const MAX_PORT = 65535;
+
+// HOST must be an IP literal node:net recognises - 0.0.0.0 and :: included,
+// since binding every interface is a legitimate choice as long as it is an
+// explicit one - or a DNS name whose last label starts with a letter, as every
+// real top-level label does. That last rule is what rejects the legacy numeric
+// aliases the resolver would otherwise widen: HOST=0, HOST=0x0 and HOST=0000
+// all reach 0.0.0.0 through getaddrinfo, so accepting them would replace the
+// documented loopback default with an all-interface bind that nobody asked
+// for. Labels are bounded at 63 characters and the whole name at 253, as DNS
+// requires.
+const HOST_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+const MAX_HOST_LENGTH = 253;
+
+/**
+ * Trims an environment value, treating anything that is not a string - an
+ * unset variable included - as absent.
+ *
+ * @param {unknown} value - raw value as the environment supplied it
+ * @returns {string} the trimmed value, or '' when there is none
+ */
+function normalize(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * The invalid-value policy, one policy for both variables: a value that is not
+ * supported is never bound. It is reported on standard error, naming the
+ * variable, the value that was ignored and the default used instead, so a
+ * malformed template cannot move the listener without saying so.
+ *
+ * @param {string} name - environment variable being resolved
+ * @param {string} candidate - value that failed validation
+ * @param {string|number} fallback - documented default to use in its place
+ * @returns {string|number} the fallback
+ */
+function useFallback(name, candidate, fallback) {
+  console.warn(
+    `Ignoring ${name}=${JSON.stringify(candidate)}: unsupported value. ` +
+      `Using ${name}=${fallback} instead.`
+  );
+
+  return fallback;
+}
+
+/**
+ * Resolves the listening port: DEFAULT_PORT when PORT is unset or blank, the
+ * number PORT names when it is a whole decimal inside MIN_PORT-MAX_PORT, and
+ * DEFAULT_PORT with a warning for anything else - a trailing typo, an
+ * exponent, a negative value or a port that cannot be assigned.
+ *
+ * @param {unknown} value - raw PORT from the environment
+ * @returns {number} the port to bind
+ */
+function resolvePort(value) {
+  const candidate = normalize(value);
+
+  if (candidate === '') {
+    return DEFAULT_PORT;
+  }
+
+  const port = Number(candidate);
+
+  if (!PORT_PATTERN.test(candidate) || port < MIN_PORT || port > MAX_PORT) {
+    return useFallback('PORT', candidate, DEFAULT_PORT);
+  }
+
+  return port;
+}
+
+/**
+ * Resolves the listening host: DEFAULT_HOST when HOST is unset or blank, the
+ * value itself when it is an IP literal or a DNS name, and DEFAULT_HOST with a
+ * warning for anything else. Falling back to loopback is the safe direction:
+ * an unsupported value narrows the listener rather than widening it, so the
+ * wildcard is reachable only by naming it in full.
+ *
+ * @param {unknown} value - raw HOST from the environment
+ * @returns {string} the host to bind
+ */
+function resolveHost(value) {
+  const candidate = normalize(value);
+
+  if (candidate === '') {
+    return DEFAULT_HOST;
+  }
+
+  if (isIP(candidate) !== 0) {
+    return candidate;
+  }
+
+  if (candidate.length > MAX_HOST_LENGTH || !HOST_PATTERN.test(candidate)) {
+    return useFallback('HOST', candidate, DEFAULT_HOST);
+  }
+
+  return candidate;
+}
 
 /**
  * Starts the HTTP listener for the given application.
  *
- * Both arguments are required on purpose: as default parameters - start(app =
- * createApp(), config = resolveConfig()) - they would add branches that no
- * test executes, and jest.config.js gates branch coverage at 95%.
+ * Both arguments are required rather than defaulted, because default
+ * parameters would add branches no test executes and jest.config.js gates
+ * branch coverage at 95%.
  *
- * Express 5 gives the callback both outcomes: app.listen registers it with
- * server.once('error', done) as well as handing it to the socket, so an Error
- * arrives as its first argument when the bind fails. Rethrowing it leaves the
- * diagnostic Troubleshooting documents - the stack, `code: 'EADDRINUSE'`, a
- * non-zero exit - rather than a success URL for a server that never bound.
- * A successful bind writes `Server listening on: http://localhost:3000` with
- * the defaults and nothing else: no banner, no timestamp, no request logging.
- * The line names the config handed in rather than server.address(), and the
- * http.Server is returned so that a caller can close it again.
+ * Express 5 registers this callback with server.once('error', done) as well as
+ * passing it to the socket, so a failed bind arrives as an Error argument;
+ * rethrowing it leaves the diagnostic rather than a success URL for a server
+ * that never bound. The server is returned so a caller can close it again.
  *
  * @param {import('express').Application} app - application from createApp()
  * @param {{port: number, host: string}} config - resolved listening config
@@ -533,43 +591,40 @@ function start(app, config) {
   });
 }
 
-// CommonJS module boundary. The two functions are what the unit suite drives;
-// the two constants are published so that a test, or a reader, can assert the
-// documented defaults against the source of truth rather than against a copy
-// of the numbers.
 module.exports = { resolveConfig, start, DEFAULT_PORT, DEFAULT_HOST };
 
 // Bootstrap. require.main is the module Node was started with, so this guard
-// is true for `node src/server.js` - what `npm start` runs - and false when
-// Jest or any other module requires this file, which is why requiring it
-// never opens a socket. The two factory calls sit here at the call site, not
-// in start's parameter list, for the coverage reason noted above. Stop the
+// holds when this file is the one run - `npm start` runs
+// `node --env-file-if-exists=.env src/server.js` - and not when Jest or any
+// other module requires it, which is why a require opens no socket. Stop the
 // process with Ctrl+C: no SIGTERM or SIGINT handler is installed, because
 // draining keep-alive connections needs a policy and a timeout that a
-// single-endpoint tutorial deliberately leaves to its Next Steps.
+// single-endpoint tutorial leaves to its Next Steps.
 /* istanbul ignore next */
 if (require.main === module) {
   start(createApp(), resolveConfig());
 }
 ```
 
-**One module reads the environment.** `resolveConfig` (`src/nodejs-tutorial/src/server.js:8-13`) is the only place in the project's runtime code — the only module under `src/` — that touches `process.env`, which a bounded search over the source tree shows, since `grep -rn "process\.env" src/` returns five lines of which only `src/nodejs-tutorial/src/server.js:8` is code and the remaining four are comments about it — and it holds both defaults in one place: `DEFAULT_PORT` and `DEFAULT_HOST` at lines 5-6, read as `env.PORT` and `env.HOST` at lines 10-11. It takes the environment as a parameter that defaults to the real `process.env`, which lets a test pass in a made-up environment without mutating the process it runs in.
+**One module reads the environment.** `resolveConfig` (`src/nodejs-tutorial/src/server.js:8-13`) is the only place in the project's runtime code — the only module under `src/` — that touches `process.env`, which a bounded search over the source tree shows, since `grep -rn "process\.env" src/` returns three lines of which only `src/nodejs-tutorial/src/server.js:8` is code and the other two are comments about it — and it holds both defaults in one place: `DEFAULT_PORT` and `DEFAULT_HOST` at lines 5-6, read as `env.PORT` and `env.HOST` at lines 10-11. It takes the environment as a parameter that defaults to the real `process.env`, which lets a test pass in a made-up environment without mutating the process it runs in.
 
-**One test writes to the real environment, and says why.** That is the single exception to the paragraph above, and it is deliberate: `src/nodejs-tutorial/test/unit/server.test.js:134-153` saves `process.env.PORT` and `process.env.HOST`, sets them to `'4200'` and `'127.0.0.1'`, calls `resolveConfig()` **with no argument**, and restores both in a `finally` block — deleting a key that was absent rather than assigning `undefined`, since `undefined` would be stored as the string `'undefined'`. That call is the only no-argument call **Jest** executes, which is why it is needed. Ordinary startup makes one too — the bootstrap calls `resolveConfig()` without an argument (`src/nodejs-tutorial/src/server.js:84`), which is how `npm start` picks up the real environment — but that line sits behind the `require.main === module` guard and never runs under Jest, so the suite would otherwise leave the `env = process.env` default parameter as an unexecuted branch and `jest.config.js`'s 95% branch gate would fail the whole run while every test still reported green. So the claim to hold onto is about runtime code: nothing the server does in production reads the environment anywhere else, and the only code that sets it is a test that puts it back.
+**Neither value reaches the socket unchecked.** `resolveConfig` hands `PORT` to `resolvePort` and `HOST` to `resolveHost` (`src/nodejs-tutorial/src/server.js:10-11`), and those two decide what an environment value may be *before* `app.listen` sees it. `PORT` must be a whole decimal number from 1 to 65535 (`src/nodejs-tutorial/src/server.js:93-107`); `HOST` must be an IP literal that `node:net` recognises, or a DNS name whose last label starts with a letter (`:119-135`). A value that is neither is reported on standard error and replaced by the documented default — one policy for both variables, at `:75-82`. The reason to validate at all, rather than pass the string through, is that these two values decide *which network* can reach the process, and a host such as `0` does not look like an address but resolves to one; [Configuration](#configuration) gives the accepted forms, the notice a rejected value prints, and why a host that fails validation falls back to loopback rather than to the wildcard.
 
-**`start` takes both arguments explicitly, and that is deliberate** (`src/nodejs-tutorial/src/server.js:62-66`). Written the other way round — `function start(app = createApp(), config = resolveConfig())` — those default parameters would be branches that no test ever executes, because every caller supplies both. Jest's coverage gate requires 95% branch coverage, so `npm test` would fail on a clean clone with nothing actually wrong. Moving the two calls to the call site on line 84 removes the branches, and it is the clearer form for a reader anyway: you can see what the listener is given.
+**One test writes to the real environment, and says why.** That is the single exception to the paragraph above, and it is deliberate: `src/nodejs-tutorial/test/unit/server.test.js:191-210` saves `process.env.PORT` and `process.env.HOST`, sets them to `'4200'` and `'127.0.0.1'`, calls `resolveConfig()` **with no argument**, and restores both in a `finally` block — deleting a key that was absent rather than assigning `undefined`, since `undefined` would be stored as the string `'undefined'`. That call is the only no-argument call **Jest** executes, which is why it is needed. Ordinary startup makes one too — the bootstrap calls `resolveConfig()` without an argument (`src/nodejs-tutorial/src/server.js:170`), which is how `npm start` picks up the real environment — but that line sits behind the `require.main === module` guard and never runs under Jest, so the suite would otherwise leave the `env = process.env` default parameter as an unexecuted branch and `jest.config.js`'s 95% branch gate would fail the whole run while every test still reported green. So the claim to hold onto is about runtime code: nothing the server does in production reads the environment anywhere else, and the only code that sets it is a test that puts it back.
 
-**`require.main === module` is the bootstrap guard** (`src/nodejs-tutorial/src/server.js:83-85`). `require.main` is the module Node.js was started with. When you run `node src/server.js`, this file *is* that module, the comparison is true, and the listener starts. When Jest — or any other file — `require`s this module, `require.main` is something else, the comparison is false, and nothing binds a port. That is what "executed directly" means, and it is why importing this file in a test is harmless. The `/* istanbul ignore next */` comment on line 82 tells the coverage instrumentation to skip a block that can never run under Jest, by construction.
+**`start` takes both arguments explicitly, and that is deliberate** (`src/nodejs-tutorial/src/server.js:153-157`). Written the other way round — `function start(app = createApp(), config = resolveConfig())` — those default parameters would be branches that no test ever executes, because every caller supplies both. Jest's coverage gate requires 95% branch coverage, so `npm test` would fail on a clean clone with nothing actually wrong. Moving the two calls to the call site on line 170 removes the branches, and it is the clearer form for a reader anyway: you can see what the listener is given.
 
-**One line of output, and nothing else** (`src/nodejs-tutorial/src/server.js:64`). The listener's callback prints `Server listening on: http://localhost:3000` with the defaults, and the process prints nothing further: no banner, no timestamp, no request log. That is checkable rather than asserted — `grep -rn "console\.\|process\.stdout\|process\.stderr" src/` returns exactly one line, the `console.log` at `src/nodejs-tutorial/src/server.js:64`. [Usage](#usage) shows the line and explains why it is one line rather than the six `CONTRIBUTING.md:172-177` describes.
+**`require.main === module` is the bootstrap guard** (`src/nodejs-tutorial/src/server.js:169-171`). `require.main` is the module Node.js was started with. When you run this file — `npm start` runs `node --env-file-if-exists=.env src/server.js` (`src/nodejs-tutorial/package.json:11`) — this file *is* that module, the comparison is true, and the listener starts. When Jest — or any other file — `require`s this module, `require.main` is something else, the comparison is false, and nothing binds a port. That is what "executed directly" means, and it is why importing this file in a test is harmless. The `/* istanbul ignore next */` comment on line 168 tells the coverage instrumentation to skip a block that can never run under Jest, by construction.
+
+**One line of output on an ordinary start, and nothing else** (`src/nodejs-tutorial/src/server.js:155`). The listener's callback prints `Server listening on: http://localhost:3000` with the defaults, and the process prints nothing further: no banner, no timestamp, no request log. That is checkable rather than asserted — `grep -rn "console\.\|process\.stdout\|process\.stderr" src/` returns two lines, and between them they are the whole of this project's output: the `console.log` at `src/nodejs-tutorial/src/server.js:155`, and the `console.warn` at `:76`, which writes one line to standard error when `PORT` or `HOST` holds a value the project will not bind. With configuration it accepts — the ordinary case, and every case in this tutorial that does not set out to be refused — only the first of those runs. [Usage](#usage) shows the line and explains why it is one line rather than the six `CONTRIBUTING.md:172-177` describes.
 
 ### What the split buys: testing without a port
 
 Here is the payoff, and it is the least obvious thing in the project.
 
-Because `src/app.js` returns an application that has never opened a socket, the integration suite can drive that application **in process** (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:33,42`). Supertest accepts either a listening `http.Server` **or** an unbound request handler, as the [Supertest repository](https://github.com/ladjs/supertest) documents; handed the latter, it binds it to an **ephemeral port of its own** — a port the operating system picks, for the duration of that one request — and closes it afterwards. So `request(app).get('/hello')` issues a real HTTP request, over a real socket, against the real application, without this project ever naming a port in a test: `grep -c "3000" test/integration/hello-endpoint.test.js` reports `0`.
+Because `src/app.js` returns an application that has never opened a socket, the integration suite can drive that application **in process** (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:20,29`). Supertest accepts either a listening `http.Server` **or** an unbound request handler, as the [Supertest repository](https://github.com/ladjs/supertest) documents; handed the latter, it binds it to an **ephemeral port of its own** — a port the operating system picks, for the duration of that one request — and closes it afterwards. So `request(app).get('/hello')` issues a real HTTP request, over a real socket, against the real application, without this project ever naming a port in a test: `grep -c "3000" test/integration/hello-endpoint.test.js` reports `0`.
 
-Note the direction of that argument: exporting the application without calling `listen` is *an arrangement that keeps the tests free of a fixed port*, not a condition Supertest imposes. Supertest would work perfectly well against a server you had already started — its accepted argument types are the evidence, and the same suite header records the choice at `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:13-18`. The arrangement is what means no test can collide with a server you left running in another terminal, nor with anything else on your machine that happens to hold port 3000.
+Note the direction of that argument: exporting the application without calling `listen` is *an arrangement that keeps the tests free of a fixed port*, not a condition Supertest imposes. Supertest would work perfectly well against a server you had already started — its accepted argument types are the evidence, and the same suite header records the choice at `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:6-10`. The arrangement is what means no test can collide with a server you left running in another terminal, nor with anything else on your machine that happens to hold port 3000.
 
 The split is also the layout this repository's contributor guide prescribes: `CONTRIBUTING.md:493-496` names exactly these three modules — "app.js — Main Express application factory", "server.js — HTTP server initialization" and "routes/hello.js — Hello endpoint route handler". The one deviation is the directory they live in: that document roots them at `src/backend/`, which in this repository is occupied by the Python/Flask application, so this project takes the same module names under its own root.
 
@@ -580,8 +635,8 @@ Two of the manifest's blocks are worth reading in full — the floors the projec
 <!-- listing: package.json#engines-and-scripts -->
 ```json
   "engines": {
-    "node": ">=22.16.0",
-    "npm": ">=10.9.2"
+    "node": ">=22.23.2",
+    "npm": ">=11.19.1"
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
@@ -617,13 +672,13 @@ Unless you created a `.env` in [Installation step 4](#4-environment-setup-option
 .env not found. Continuing without it.
 ```
 
-That line is informational and comes from the runtime, not from this project's code: it is what `node --env-file-if-exists=.env` says when the file is absent — the flag the `start` script passes at `src/nodejs-tutorial/package.json:11`, documented in the [Node.js 22.x CLI reference](https://nodejs.org/docs/latest-v22.x/api/cli.html#--env-file-if-existsfile). No line of this project writes to standard error; `grep -rn "console.error\|process.stderr" src/` reports nothing. The server has started normally, on the defaults. [Troubleshooting](#troubleshooting) case 4 covers it in one place; it is mentioned here only because you will see it the very first time you run the command.
+That line is informational and comes from the runtime, not from this project's code: it is what `node --env-file-if-exists=.env` says when the file is absent — the flag the `start` script passes at `src/nodejs-tutorial/package.json:11`, documented in the [Node.js 22.x CLI reference](https://nodejs.org/docs/latest-v22.x/api/cli.html#--env-file-if-existsfile). This project writes to standard error in exactly one situation of its own, which is not this one: the `console.warn` at `src/nodejs-tutorial/src/server.js:76` reports a `PORT` or `HOST` value it will not bind, as [Configuration](#configuration) describes. The notice above is the runtime's, the server has started normally, and it is on the defaults. [Troubleshooting](#troubleshooting) case 4 covers it in one place; it is mentioned here only because you will see it the very first time you run the command.
 
 **Why one line and not six.** `CONTRIBUTING.md:172-177` documents a six-line startup banner for this project: a `🚀 Server Successfully Started!` headline, a `====` rule, an ISO timestamp, then `🌐 Server listening on: http://localhost:3000` at `:175`, `📡 Host: localhost` at `:176` and `🔌 Port: 3000` at `:177`. This project deliberately emits only the substantive line, without the emoji prefix and without the banner. The host and the port are already in the URL, so the last two lines would repeat it; a timestamp on a tutorial process you started five seconds ago is noise; and one plain line is something you can compare against this document character for character. If you have read that banner elsewhere in the repository, this is the difference, stated rather than glossed.
 
 ### Stopping the server
 
-**Required, when you are finished.** `npm start` runs in the **foreground**: the terminal stays occupied until the process exits, and whatever the process writes stays attached to that terminal — the one startup line you have already seen, plus the informational `.env` notice on standard error, and nothing per request (`src/nodejs-tutorial/src/server.js:64`). A quiet terminal is the normal state of a running server here, not a sign that it stopped. Stop it with
+**Required, when you are finished.** `npm start` runs in the **foreground**: the terminal stays occupied until the process exits, and whatever the process writes stays attached to that terminal — the one startup line you have already seen, plus the informational `.env` notice on standard error, and nothing per request (`src/nodejs-tutorial/src/server.js:155`). A quiet terminal is the normal state of a running server here, not a sign that it stopped. Stop it with
 
 ```text
 Ctrl+C
@@ -644,7 +699,27 @@ Two environment variables, and only two:
 
 **No other environment variable is read anywhere in this project.** `resolveConfig` is the only function in the project's runtime code that touches `process.env`, and those two lines are the only places it reads from it — so the table above is the complete configuration surface, not a summary of it. The one place outside `src/` that touches the same two keys is the unit suite, which sets and then restores them to exercise the function's default parameter; [Project Structure](#project-structure) records that case and the coverage reason for it.
 
-`PORT` is parsed with `Number.parseInt(env.PORT, 10)` and falls back to `3000` whenever the result is not a number (`src/nodejs-tutorial/src/server.js:10`): an unset variable and a value like `not-a-number` both yield `NaN`, which is falsy, so a single fallback covers both — and both cases are asserted at `src/nodejs-tutorial/test/unit/server.test.js:101,122`. `HOST` is already a string and needs only an empty-value fallback (`src/nodejs-tutorial/src/server.js:11`). The default host is loopback on purpose — `localhost` means the service is reachable from your own machine and nowhere else, so a tutorial server is never exposed on a network without an explicit decision.
+**Neither value is bound as it arrives.** Both are trimmed and then checked, and only a value the project can actually bind reaches `app.listen`.
+
+`PORT` must be a whole decimal number from `1` to `65535`, matched as a complete string before it is converted (`src/nodejs-tutorial/src/server.js:93-107`). That is stricter than it may look, and deliberately so: a parse that reads as far as it understands would take `3000junk` for port 3000 and `1e3` for port 1, and a value never compared against the range would carry `-1` or `70000` all the way to a bind that cannot succeed. `0` is excluded too — to the operating system it means "any free port", which is not something a configured value should ask for, and the tutorial's own [test suite](#testing) uses it explicitly where that *is* what is wanted. The ports this accepts are asserted at `src/nodejs-tutorial/test/unit/server.test.js:90,97,132`, the ones it refuses at `:124`.
+
+`HOST` must be either an IP literal that `node:net` recognises — `127.0.0.1`, `::1`, and the wildcards `0.0.0.0` and `::` — or a DNS name whose last label starts with a letter, such as `localhost` or `db.internal` (`src/nodejs-tutorial/src/server.js:119-135`). The hosts this accepts are asserted at `src/nodejs-tutorial/test/unit/server.test.js:90,97,160,164`, the ones it refuses — the numeric aliases among them — at `:151`.
+
+**An unsupported value is reported and replaced, never bound.** One line goes to standard error naming the variable, the value that was ignored and the default used in its place (`src/nodejs-tutorial/src/server.js:75-82`, asserted at `src/nodejs-tutorial/test/unit/server.test.js:173-179`), and the server then starts on that default:
+
+```bash
+# A value the project will not bind: 0 is not an address
+HOST=0 npm start
+```
+
+```text
+Ignoring HOST="0": unsupported value. Using HOST=localhost instead.
+Server listening on: http://localhost:3000
+```
+
+The first line is on standard error, the second on standard output, and on a clean clone the runtime's own `.env not found` notice precedes both. `HOST=0` is the case that makes the check worth having rather than a formality: `0`, `0x0` and `0000` do not look like addresses, but the name resolver turns every one of them into `0.0.0.0` — so binding them as written would put this service on **every interface** on the strength of what reads like a typo, with none of the deliberateness the warning below asks for. Falling back to `localhost` is the narrow direction on purpose: a value the project does not understand makes the service *less* reachable, never more, and the wildcard stays available to anyone who names it in full.
+
+The default host is loopback for the same reason — `localhost` means the service is reachable from your own machine and nowhere else, so a tutorial server is never exposed on a network without an explicit decision.
 
 Override either variable for a single run by prefixing the command, the form `CONTRIBUTING.md:259` uses:
 
@@ -660,13 +735,15 @@ Server listening on: http://localhost:3100
 PowerShell has no prefix-assignment form, so there the same run is two statements on one line — `$env:PORT=3100; npm start` — as [System Requirements](#system-requirements) records.
 
 ```bash
-# Listen on every interface rather than loopback only
+# Listen on every interface rather than loopback only - read the warning below
 HOST=0.0.0.0 npm start
 ```
 
 ```text
 Server listening on: http://0.0.0.0:3000
 ```
+
+**Warning: `HOST=0.0.0.0` publishes this service beyond your machine.** The wildcard — `0.0.0.0`, or `::` for IPv6 — binds **every** interface, so the endpoint becomes reachable by every host your machine firewall and your network admit: other machines on the same LAN or Wi-Fi, other containers on the same Docker network, and, on a cloud instance whose security group allows the port, the public Internet. What any of them would reach has **no authentication, no authorisation and no rate limiting**, because a single-endpoint teaching project has none of those — [Security Features](#security-features) sets out exactly what this project does and does not do. So four things before you use it: run it only on a network you trust; check what your firewall or security-group rules actually admit on this port rather than assuming they block it; never expose this tutorial directly to the public Internet; and put `HOST` back to `localhost` — dropping the prefix is enough — as soon as you no longer need the wider bind. Reach for the wildcard when something genuinely has to call the service from elsewhere, such as another container or a phone on the same network. For learning on your own machine the default loopback bind is both sufficient and safer, which is why it is the default.
 
 Both variables can be set at once (`PORT=3100 HOST=0.0.0.0 npm start`), and a prefixed value wins over a value in your `.env`, because the runtime's env-file flag does not overwrite a variable already present in the process environment ([Node.js 22.x CLI reference](https://nodejs.org/docs/latest-v22.x/api/cli.html#--env-filefile)); [Installation step 4](#4-environment-setup-optional) gives the two commands that show it on your own machine. If you prefer a file to a prefix, put the same two keys in `.env` as described there.
 
@@ -693,13 +770,13 @@ All four scripts the manifest declares (`src/nodejs-tutorial/package.json:10-15`
 | `npm run test:coverage` | `jest --coverage` | an explicit alias for the same reports as `npm test` |
 | `npm run test:ci` | `jest --ci --runInBand --coverage` | pipelines: no snapshot writing, suites run serially |
 
-One honest note about `test:coverage`, because the name implies a difference that is not there. `jest.config.js` sets `collectCoverage: true` and `coverageReporters: ['text', 'lcov', 'html']` (`src/nodejs-tutorial/jest.config.js:31-32`), so **plain `npm test` already prints the coverage table and already writes the `lcov` and `html` reports** into `coverage/`. `npm run test:coverage` passes `--coverage` explicitly and produces exactly the same reports, not additional ones. It exists because `CONTRIBUTING.md:209` verifies this project by that script name, and it is kept so that the name a contributor reads about is a name that works.
+One honest note about `test:coverage`, because the name implies a difference that is not there. `jest.config.js` sets `collectCoverage: true` and `coverageReporters: ['text', 'lcov', 'html']` (`src/nodejs-tutorial/jest.config.js:30-31`), so **plain `npm test` already prints the coverage table and already writes the `lcov` and `html` reports** into `coverage/`. `npm run test:coverage` passes `--coverage` explicitly and produces exactly the same reports, not additional ones. It exists because `CONTRIBUTING.md:209` verifies this project by that script name, and it is kept so that the name a contributor reads about is a name that works.
 
 `test:ci` is the one script that behaves differently (`src/nodejs-tutorial/package.json:14`): `--ci` stops Jest writing new snapshots (this project has none, so that is a guarantee rather than a change) and `--runInBand` runs the suites serially in a single process instead of in parallel workers — both flags as the runner's own [CLI reference](https://jestjs.io/docs/cli) defines them. It is the form `CONTRIBUTING.md:1103` names for pre-merge validation and the friendlier one on a loaded machine.
 
 ## API Documentation
 
-The service has one endpoint. Every value below was measured against the running server on Node.js 22.16.0 — that is where the numbers and header lines come from. Measured and asserted are not the same thing, and this section keeps them apart: where a test case pins an attribute, the text says so at that attribute and says what the assertion actually checks, and [What the eight cases prove](#what-the-eight-cases-prove) is the complete list of what the suite enforces. Everything not marked as asserted is observed behaviour that no test would catch changing. The [request lifecycle diagram](#the-request-lifecycle) shows the path each of these responses takes through the three modules.
+The service has one endpoint. Every value below was measured against the running server on Node.js 22.23.2 — that is where the numbers and header lines come from. Measured and asserted are not the same thing, and this section keeps them apart: where a test case pins an attribute, the text says so at that attribute and says what the assertion actually checks, and [What the eight cases prove](#what-the-eight-cases-prove) is the complete list of what the suite enforces. Everything not marked as asserted is observed behaviour that no test would catch changing. The [request lifecycle diagram](#the-request-lifecycle) shows the path each of these responses takes through the three modules.
 
 ### Endpoints
 
@@ -716,7 +793,7 @@ Returns the plain-text greeting `Hello world`.
 | Deliberate headers | `Content-Length: 11`; `X-Powered-By` **suppressed** |
 | Framework defaults | `ETag` (weak), `Date`, `Connection`, `Keep-Alive` — Express and Node.js defaults, **not** choices this project made |
 | `HEAD /hello` | `200`, the same `Content-Type` and `Content-Length: 11`, and an empty body. Express registers `HEAD` implicitly for every `GET` route, so this is correct HTTP semantics arriving for free rather than a second route |
-| Handler | `src/nodejs-tutorial/src/routes/hello.js:39-41`, registered at `src/nodejs-tutorial/src/app.js:43` |
+| Handler | `src/nodejs-tutorial/src/routes/hello.js:26-28`, registered at `src/nodejs-tutorial/src/app.js:29` |
 
 **Request** — shown on the default port; the `Host` header carries whichever port the server was started on:
 
@@ -737,9 +814,9 @@ Hello world
 
 **Response Headers:**
 
-- `Content-Type`: `text/plain; charset=utf-8` — set by the handler at `src/nodejs-tutorial/src/routes/hello.js:40`, where `.type('text/plain')` sets the header and Express normalises it so that a text type carries `charset=utf-8`. The suite asserts the media type as a `text/plain` match rather than the header in full (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:68`), so the `charset=utf-8` parameter is measured here rather than asserted
-- `Content-Length`: `11` — derived by Express from the body, and asserted by the suite as the string `'11'` in the same case (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:68`)
-- `X-Powered-By`: **absent** — suppressed deliberately at `src/nodejs-tutorial/src/app.js:36`, and its absence is asserted in the same case (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:68`)
+- `Content-Type`: `text/plain; charset=utf-8` — set by the handler at `src/nodejs-tutorial/src/routes/hello.js:27`, where `.type('text/plain')` sets the header and Express normalises it so that a text type carries `charset=utf-8`. The suite asserts the media type as a `text/plain` match rather than the header in full (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:54`), so the `charset=utf-8` parameter is measured here rather than asserted
+- `Content-Length`: `11` — derived by Express from the body, and asserted by the suite as the string `'11'` in the same case (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:54`)
+- `X-Powered-By`: **absent** — suppressed deliberately at `src/nodejs-tutorial/src/app.js:22`, and its absence is asserted in the same case (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:54`)
 - `ETag`, `Date`, `Connection`, `Keep-Alive` — Express and Node.js defaults, named nowhere in either suite: `grep -rn "ETag\|Date:\|Keep-Alive" test/` returns nothing
 
 **cURL Example** — step 9 of the [command inventory](#verification-checklist), required. Run it in a second terminal while the server is running:
@@ -804,7 +881,19 @@ Every part of that block is load-bearing, because a bare `curl … | wc -c` cann
 - `status=$?` captures the pipeline's status on the line after it, before any other command can overwrite `$?`, and `echo` prints it.
 - The enclosing `( … )` runs the whole check in a **subshell**, so `set -o pipefail` applies to this check alone: whatever your own shell had that option set to, it still has afterwards. The closing `exit "$status"` ends only that subshell, never your terminal, and it makes the block's own exit status the pipeline's — so the check fails detectably when saved to a script and run, instead of merely printing a number that something else has to read.
 
-`set -o pipefail` is a Bash option, and zsh and ksh have it too. In a shell that does not, split the pipeline so that the status you read is `curl`'s own: `curl -sS --fail-with-body "http://localhost:${PORT:-3000}/hello" > hello-body.txt` — whose exit status is now unmediated — followed by `wc -c < hello-body.txt`, which must print `11`.
+`set -o pipefail` is a Bash option, and zsh and ksh have it too. In a shell that does not have it, **drop the pipeline rather than working around it** — `curl` will report the byte count itself, so the status you read is `curl`'s own with nothing in front of it:
+
+```bash
+curl -sS --fail-with-body -o /dev/null -w "%{size_download}\n" "http://localhost:${PORT:-3000}/hello"
+```
+
+```text
+11
+```
+
+The count is the same eleven, and the exit status needs no unmasking: against a dead port this form prints `0`, writes `curl: (7) Failed to connect to localhost port 3999` to standard error and exits `7`; against `/nonexistent` on a running server it prints `97` — the size of the 404 envelope — and exits `22`. That is exactly the failure detection the `pipefail` block buys, with no pipeline to mediate it. And `-o /dev/null` discards the body instead of writing it anywhere, so **nothing is created on disk**: no file to truncate, no fixed name to collide with, nothing to clean up afterwards.
+
+**If you do want the body on disk**, let `mktemp` name the file instead of writing a fixed name into the working directory — `( tmp=$(mktemp) && trap 'rm -f "$tmp"' EXIT && curl -sS --fail-with-body --output "$tmp" "http://localhost:${PORT:-3000}/hello" && wc -c < "$tmp" )`, which prints `11` and removes the file as the subshell exits, on the failing paths as well as the passing one. A fixed name is the thing to avoid: in a shared or group-writable directory it truncates whatever already answers to that name, and if what answers to it is a symlink somebody else planted, the write follows the link to its target.
 
 #### Why the response is plain text and not JSON
 
@@ -816,7 +905,7 @@ The brief for this project asked for an endpoint "that returns \"Hello world\" t
 
 ### Error Responses
 
-Everything this service does not recognise is answered by the same terminal handler at `src/nodejs-tutorial/src/app.js:51-58`, which builds the same JSON envelope every time. One case differs on the wire rather than in the handler: an unmatched `HEAD` request gets the `404` status and the envelope's headers, and the body is suppressed before it is sent — [One exception to the body](#404-not-found) below is that case in full.
+Everything this service does not recognise is answered by the same terminal handler at `src/nodejs-tutorial/src/app.js:37-44`, which builds the same JSON envelope every time. One case differs on the wire rather than in the handler: an unmatched `HEAD` request gets the `404` status and the envelope's headers, and the body is suppressed before it is sent — [One exception to the body](#404-not-found) below is that case in full.
 
 #### 404 Not Found
 
@@ -841,14 +930,14 @@ Keep-Alive: timeout=5
 
 Four fields, in that order: `status` repeats the HTTP status as a number, `message` is the fixed string `Not Found`, `path` echoes the path that was requested, and `timestamp` is generated per request as an ISO 8601 string. The `Date`, `ETag` and `timestamp` values in that block are placeholders for one reason — each changes between runs — so your own values will differ, and `Content-Length` varies with the path you asked for: the envelope is 85 bytes plus the path, which is `97` for `/nonexistent` and `91` for `/hello`.
 
-**What the suite guards here.** The integration case for this response pins the `404` status, an `application/json` media-type match, and the three fixed fields `status`, `message` and `path`. Because `timestamp` is generated per request, the case does not pin its value; it asserts the shape instead, requiring the field to be a string that matches the canonical UTC ISO 8601 pattern, parses as a date, and round-trips through `toISOString()` unchanged (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:144,151,157,164`). The field order and the exact `Content-Length` are measured, not asserted.
+**What the suite guards here.** The integration case for this response pins the `404` status, an `application/json` media-type match, and the three fixed fields `status`, `message` and `path`. Because `timestamp` is generated per request, the case does not pin its value; it asserts the shape instead, requiring the field to be a string that matches the canonical UTC ISO 8601 pattern, parses as a date, and round-trips through `toISOString()` unchanged (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:116,123,129,136`). The field order and the exact `Content-Length` are measured, not asserted.
 
 **What reaches this handler.** All of the following:
 
 - every method on an unknown path — `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS` alike;
 - `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS` on `/hello`, because only `GET` (and therefore `HEAD`) is registered there.
 
-That list is structural rather than enumerated by trial: the handler is registered with `app.use` and no path at `src/nodejs-tutorial/src/app.js:51`, so it filters neither path nor method, and the only registration above it is the single `GET` at `:43`. One of the eight cases pins the `POST` instance of it (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:167`), and you can confirm any other method for yourself against a running server — `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" -X PUT http://localhost:${PORT:-3000}/hello` prints `404 application/json; charset=utf-8`, as do `PATCH`, `DELETE` and `OPTIONS`.
+That list is structural rather than enumerated by trial: the handler is registered with `app.use` and no path at `src/nodejs-tutorial/src/app.js:37`, so it filters neither path nor method, and the only registration above it is the single `GET` at `:29`. One of the eight cases pins the `POST` instance of it (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:139`), and you can confirm any other method for yourself against a running server — `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" -X PUT http://localhost:${PORT:-3000}/hello` prints `404 application/json; charset=utf-8`, as do `PATCH`, `DELETE` and `OPTIONS`.
 
 **`POST /hello` returns `404`, not `405`** — step 12, required:
 
@@ -864,7 +953,7 @@ Content-Length: 91
 {"status":404,"message":"Not Found","path":"/hello","timestamp":"2026-01-01T00:00:00.000Z"}
 ```
 
-A reader who expects `405 Method Not Allowed` is applying a rule Express does not follow: **Express 5 does not synthesise a Method Not Allowed response** when only `GET` is registered on a path. The request simply matches no route and falls through. This project does not add a method gate to manufacture a `405`, because that would be behaviour invented for the tutorial rather than behaviour the framework gives you, and one of the eight test cases pins the `404` so the distinction cannot drift (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:167`).
+A reader who expects `405 Method Not Allowed` is applying a rule Express does not follow: **Express 5 does not synthesise a Method Not Allowed response** when only `GET` is registered on a path. The request simply matches no route and falls through. This project does not add a method gate to manufacture a `405`, because that would be behaviour invented for the tutorial rather than behaviour the framework gives you, and one of the eight test cases pins the `404` so the distinction cannot drift (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:139`).
 
 **One exception to the body.** A `HEAD` request to an unknown path reaches the same handler and receives the `404` status and the `application/json; charset=utf-8` media type, but **HTTP forbids a body on a `HEAD` response** — so the envelope is computed, its length is reported in `Content-Length`, and the bytes are then suppressed. That is the runtime enforcing the protocol, not a special case in this code.
 
@@ -888,9 +977,9 @@ Same status, same headers, no body. `curl -I` sends `HEAD` rather than `GET`, wh
 
 ### Security Features
 
-This project makes exactly one deliberate security-relevant choice **about its response headers**, and it is worth understanding both what it does and what it does not do. It is not the project's only security-relevant decision — binding to `localhost` by default keeps the listener off the network until you ask for `HOST=0.0.0.0` ([Configuration](#configuration)), a real `.env` stays out of the repository while only the template is committed ([Environment setup](#4-environment-setup-optional)), and the project ships no `.npmrc` because that filename is ignored as a credential-bearing file ([What `engines` does](#what-engines-does-and-what-it-does-not)) — but it is the only one that shows up in a response.
+This project makes exactly one deliberate security-relevant choice **about its response headers**, and it is worth understanding both what it does and what it does not do. It is not the project's only security-relevant decision — binding to `localhost` by default keeps the listener off the network until you ask for `HOST=0.0.0.0` explicitly, and because `HOST` and `PORT` come from the environment they are validated before they are bound, so a value the project does not recognise falls back to loopback and the documented port instead of widening the listener (`src/nodejs-tutorial/src/server.js:119-135`; [Configuration](#configuration) gives the accepted forms, the notice a rejected value prints, and the warning that belongs with the wildcard), a real `.env` stays out of the repository while only the template is committed ([Environment setup](#4-environment-setup-optional)), and the project ships no `.npmrc` because that filename is ignored as a credential-bearing file ([What `engines` does](#what-engines-does-and-what-it-does-not)) — but it is the only one that shows up in a response.
 
-**`X-Powered-By` is suppressed.** Express advertises itself in an `X-Powered-By: Express` response header by default. Line 36 of `src/nodejs-tutorial/src/app.js` turns that off with `app.disable('x-powered-by')` — the same call `CONTRIBUTING.md:329` makes, under the annotation one line above it at `CONTRIBUTING.md:328`: "Express.js v5 security enhancement - prevents framework fingerprinting". That is, it stops the response telling a scanner which framework and therefore which published vulnerabilities to try. It is a small measure, not a defence, and its value here is mostly that you can see it: `CONTRIBUTING.md:602` asserts the header's absence, so suppression is part of this project's published contract rather than an extra, and the integration suite asserts it on every run.
+**`X-Powered-By` is suppressed.** Express advertises itself in an `X-Powered-By: Express` response header by default. Line 22 of `src/nodejs-tutorial/src/app.js` turns that off with `app.disable('x-powered-by')` — the same call `CONTRIBUTING.md:329` makes, under the annotation one line above it at `CONTRIBUTING.md:328`: "Express.js v5 security enhancement - prevents framework fingerprinting". That is, it stops the response telling a scanner which framework and therefore which published vulnerabilities to try. It is a small measure, not a defence, and its value here is mostly that you can see it: `CONTRIBUTING.md:602` asserts the header's absence, so suppression is part of this project's published contract rather than an extra, and the integration suite asserts it on every run.
 
 **What is deliberately absent.** The Flask application under `src/backend/` emits `X-Content-Type-Options`, `X-Frame-Options` and related headers, and documents a CORS configuration as well. None of that is carried over here, on purpose. Those headers instruct a *browser* about content sniffing, framing and cross-origin access, and **this project delivers no browser user interface** — no page, no script, no stylesheet, no form — so there is nothing rendered here for them to protect. Be clear about what that does and does not say: a browser is a perfectly good client for `GET /hello`, and typing the URL into one returns the same eleven bytes as `curl`; binding to `localhost` limits which hosts can reach the port, not what kind of client calls it or what origin a request claims to come from. The headers are absent because there is no delivered UI to defend, not because a browser or a cross-origin request could not arrive. Adding four headers that a reader of a beginner tutorial could not explain would work against the point of the tutorial, and pretending they hardened anything here would be worse. `X-Powered-By` is the single exception because the repository's own contract for *this* project asserts it.
 
@@ -929,7 +1018,7 @@ sequenceDiagram
 
 Read the success path first, steps 1 to 7. The listener — the `http.Server` that `npm start` created — accepts the connection and hands the parsed request to the application; the application walks its routing table in registration order, finds that `GET /hello` matches, and calls the handler; the handler sets the status, the media type and the body; Express fills in `Content-Length` and omits `X-Powered-By`; and the listener writes the bytes back.
 
-**What is synchronous here, and what is not.** The part of that path this project wrote is synchronous: the route handler is a plain function that returns after one chained call (`src/nodejs-tutorial/src/routes/hello.js:39-41`), the terminal 404 handler is the same shape (`src/nodejs-tutorial/src/app.js:51-58`), and neither declares `async`, awaits anything, registers a callback or reads from disk or a network — `grep -rn "async\|await\|Promise" src/` returns nothing at all. Everything *around* it is asynchronous, because that is how Node.js serves HTTP at all: accepting the connection, parsing the request, and writing the response are event-loop I/O, and binding the listener is asynchronous too — which is why the unit suite waits for the bind to complete before it asserts (`src/nodejs-tutorial/test/unit/server.test.js:220-226`). So the useful statement is narrower than "nothing waits": no *application* code in this project waits, so a request is never held up by work of ours, and there is no ordering subtlety in the handler for a reader to reason about.
+**What is synchronous here, and what is not.** The part of that path this project wrote is synchronous: the route handler is a plain function that returns after one chained call (`src/nodejs-tutorial/src/routes/hello.js:26-28`), the terminal 404 handler is the same shape (`src/nodejs-tutorial/src/app.js:37-44`), and neither declares `async`, awaits anything, registers a callback or reads from disk or a network — `grep -rn "async\|await\|Promise" src/` returns nothing at all. Everything *around* it is asynchronous, because that is how Node.js serves HTTP at all: accepting the connection, parsing the request, and writing the response are event-loop I/O, and binding the listener is asynchronous too — which is why the unit suite waits for the bind to complete before it asserts (`src/nodejs-tutorial/test/unit/server.test.js:275-281`). So the useful statement is narrower than "nothing waits": no *application* code in this project waits, so a request is never held up by work of ours, and there is no ordering subtlety in the handler for a reader to reason about.
 
 The second path, steps 8 to 12, is the same journey with one difference: no route matches, so the walk reaches the terminal handler registered last, which responds with the 404 envelope rather than calling `next()`. That is why an unknown path and an unregistered method produce identical output — they are the same code path, arrived at from two directions. [Error Responses](#error-responses) lists exactly which requests take it.
 
@@ -955,7 +1044,7 @@ flowchart LR
     subgraph Manifests["Manifests and configuration"]
         Pkg["package.json<br/>scripts, engines, dependencies"]
         Lock["package-lock.json"]
-        Nvm[".nvmrc holds 22.16.0"]
+        Nvm[".nvmrc holds 22.23.2"]
         JestCfg["jest.config.js<br/>coverage gate"]
         EnvEx[".env.example<br/>PORT, HOST"]
     end
@@ -976,11 +1065,11 @@ flowchart LR
 
 Three things are worth noticing in that picture.
 
-**The dependency chain runs one way only.** `src/server.js` requires `src/app.js` (`src/nodejs-tutorial/src/server.js:3`), which requires `express` and `src/routes/hello.js` (`src/nodejs-tutorial/src/app.js:17-18`), and nothing points back — the route module requires nothing at all, as `grep -c "require(" src/routes/hello.js` reporting `0` shows. The route handler knows nothing about the application; the application knows nothing about ports. That is what lets you read the three files in the order [Project Structure](#project-structure) presents them, from the leaf inwards, without holding anything in your head.
+**The dependency chain runs one way only.** `src/server.js` requires `src/app.js` (`src/nodejs-tutorial/src/server.js:3`), which requires `express` and `src/routes/hello.js` (`src/nodejs-tutorial/src/app.js:3-4`), and nothing points back — the route module requires nothing at all, as `grep -c "require(" src/routes/hello.js` reporting `0` shows. The route handler knows nothing about the application; the application knows nothing about ports. That is what lets you read the three files in the order [Project Structure](#project-structure) presents them, from the leaf inwards, without holding anything in your head.
 
-**The two suites enter the project at different depths, and they share one module.** Both of them require `src/app.js`: the unit suite pulls in `createApp` alongside the listener functions (`src/nodejs-tutorial/test/unit/server.test.js:28-34`), and the integration suite requires `createApp` and nothing else of ours (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:33`) — which is why the diagram draws an arrow from each suite to `src/app.js`. What differs is the layer each one asserts at, not the module it loads. The unit suite calls the exported functions directly and asserts what they *return*: that the factory hands back a request handler with no socket of its own (`src/nodejs-tutorial/test/unit/server.test.js:42`), that `resolveConfig` resolves the documented defaults and the overrides (`:91`), and that `start` binds, logs once and closes (`:156`). The integration suite never looks at a return value; it drives the application through Supertest on an ephemeral port and asserts what the *HTTP response* looks like. Only `src/server.js` is reached by one suite alone — the unit suite is its only caller, so anything in it those three cases miss is covered nowhere, which is the point its header comment makes at `src/nodejs-tutorial/test/unit/server.test.js:16-21`. And neither suite starts the server that `npm start` starts: the bootstrap guard at `src/nodejs-tutorial/src/server.js:82-85` keeps a `require` from binding a port.
+**The two suites enter the project at different depths, and they share one module.** Both of them require `src/app.js`: the unit suite pulls in `createApp` alongside the listener functions (`src/nodejs-tutorial/test/unit/server.test.js:15-21`), and the integration suite requires `createApp` and nothing else of ours (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:20`) — which is why the diagram draws an arrow from each suite to `src/app.js`. What differs is the layer each one asserts at, not the module it loads. The unit suite calls the exported functions directly and asserts what they *return*: that the factory hands back a request handler with no socket of its own (`src/nodejs-tutorial/test/unit/server.test.js:29`), that `resolveConfig` resolves the documented defaults, the overrides and the values it refuses to bind (`:68`), and that `start` binds, logs once and closes (`:213`). The integration suite never looks at a return value; it drives the application through Supertest on an ephemeral port and asserts what the *HTTP response* looks like. Only `src/server.js` is reached by one suite alone — the unit suite is its only caller, so anything in it those three cases miss is covered nowhere, which is the point its header comment makes at `src/nodejs-tutorial/test/unit/server.test.js:8-12`. And neither suite starts the server that `npm start` starts: the bootstrap guard at `src/nodejs-tutorial/src/server.js:168-171` keeps a `require` from binding a port.
 
-**The manifests govern rather than execute.** `package.json` names the entry point (`src/nodejs-tutorial/package.json:5`) and the four scripts that run the runner (`:10-15`); `package-lock.json` fixes what `npm ci` resolves (`src/nodejs-tutorial/package-lock.json:4`); `.nvmrc` pins the runtime (`src/nodejs-tutorial/.nvmrc:1`) and must agree with `engines.node` (`src/nodejs-tutorial/package.json:7`) — the pin is the floor of the range, which is what makes them consistent by construction; `jest.config.js` decides which files are tests (`src/nodejs-tutorial/jest.config.js:24-27`) and how much coverage is enough (`:14-21`); and `.env.example` documents the two variables `src/server.js` reads (`src/nodejs-tutorial/.env.example:39,47`, read at `src/nodejs-tutorial/src/server.js:10-11`). None of them contains behaviour, which is why a mistake in one shows up as a tooling error rather than a wrong response.
+**The manifests govern rather than execute.** `package.json` names the entry point (`src/nodejs-tutorial/package.json:5`) and the four scripts that run the runner (`:10-15`); `package-lock.json` fixes what `npm ci` resolves (`src/nodejs-tutorial/package-lock.json:4`); `.nvmrc` pins the runtime (`src/nodejs-tutorial/.nvmrc:1`) and must agree with `engines.node` (`src/nodejs-tutorial/package.json:7`) — the pin is the floor of the range, which is what makes them consistent by construction; `jest.config.js` decides which files are tests (`src/nodejs-tutorial/jest.config.js:24-27`) and how much coverage is enough (`:14-21`); and `.env.example` documents the two variables `src/server.js` reads (`src/nodejs-tutorial/.env.example:17,33`, read at `src/nodejs-tutorial/src/server.js:10-11`). None of them contains behaviour, which is why a mistake in one shows up as a tooling error rather than a wrong response.
 
 ## Testing
 
@@ -1034,33 +1123,33 @@ The two test modules are not reproduced here — you do not need to retype a tes
 
 | # | Case | What it proves | Opens at |
 |---|------|----------------|----------|
-| 1 | `GET /hello` returns `200`, the response text is exactly `Hello world`, and its length is `11` | the payload itself, byte for byte, including the absence of a trailing newline | `:50` |
-| 2 | `GET /hello` returns a `Content-Type` matching `text/plain`, sets `content-length` to `'11'`, and does **not** set `x-powered-by` | the header contract, including that suppression took effect | `:68` |
-| 3 | `HEAD /hello` returns `200` with the same `Content-Type` and `Content-Length` and an empty body | that `HEAD` is served correctly from the implicit registration Express adds alongside `GET` | `:90` |
-| 4 | `GET /nonexistent` returns `404` with `application/json` and a body carrying `status: 404`, `message: 'Not Found'`, the request `path` and a `timestamp` | the terminal 404 handler, and the shape of the envelope | `:115` |
-| 5 | `POST /hello` returns `404` | that Express 5 does not synthesise a `405`, and that this project has not added one | `:167` |
+| 1 | `GET /hello` returns `200`, the response text is exactly `Hello world`, and its length is `11` | the payload itself, byte for byte, including the absence of a trailing newline | `:37` |
+| 2 | `GET /hello` returns a `Content-Type` matching `text/plain`, sets `content-length` to `'11'`, and does **not** set `x-powered-by` | the header contract, including that suppression took effect | `:54` |
+| 3 | `HEAD /hello` returns `200` with the same `Content-Type` and `Content-Length` and an empty body | that `HEAD` is served correctly from the implicit registration Express adds alongside `GET` | `:74` |
+| 4 | `GET /nonexistent` returns `404` with `application/json` and a body carrying `status: 404`, `message: 'Not Found'`, the request `path` and a `timestamp` | the terminal 404 handler, and the shape of the envelope | `:97` |
+| 5 | `POST /hello` returns `404` | that Express 5 does not synthesise a `405`, and that this project has not added one | `:139` |
 
 **`src/nodejs-tutorial/test/unit/server.test.js`** — three cases, covering what an HTTP request cannot reach:
 
 | # | Case | What it proves | Opens at |
 |---|------|----------------|----------|
-| 6 | `createApp()` returns a request handler and binds no port | the property the integration suite depends on: the application is a `(req, res)` function with no socket of its own | `:42` |
-| 7 | `resolveConfig` yields the documented defaults `3000` and `localhost`, and honours `PORT` and `HOST` overrides | that the configuration surface behaves as [Configuration](#configuration) documents it, including the fallback for a non-numeric `PORT` | `:91` |
-| 8 | `start` binds a listening server on an ephemeral port, emits the startup line, and closes cleanly | the listener, and that the startup line is printed exactly once with no banner around it | `:156` |
+| 6 | `createApp()` returns a request handler and binds no port | the property the integration suite depends on: the application is a `(req, res)` function with no socket of its own | `:29` |
+| 7 | `resolveConfig` yields the documented defaults `3000` and `localhost`, honours the `PORT` and `HOST` overrides, and refuses every value it cannot bind | that the configuration surface behaves as [Configuration](#configuration) documents it: the two defaults, trimming, the accepted port range and host forms, the numeric host aliases falling back to loopback rather than widening to `0.0.0.0`, and the notice each rejection prints | `:68` |
+| 8 | `start` binds a listening server on an ephemeral port, emits the startup line, and closes cleanly | the listener, and that the startup line is printed exactly once with no banner around it | `:213` |
 
-Case 1 asserts the body against a *literal* rather than against the `HELLO_BODY` constant (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:60,65`, with the reason recorded in the comment at `:56-59`). That is deliberate: editing the constant then fails the suite visibly, instead of silently moving the code away from this document.
+Case 1 asserts the body against a *literal* rather than against the `HELLO_BODY` constant (`src/nodejs-tutorial/test/integration/hello-endpoint.test.js:46,51`, with the reason recorded in the comment at `:15-19`). That is deliberate: editing the constant then fails the suite visibly, instead of silently moving the code away from this document.
 
 ### How Supertest reaches the application without a running server
 
 This is the least obvious mechanism in the project, and it is worth a paragraph of its own.
 
-`createApp()` returns an application that has never opened a socket (`src/nodejs-tutorial/src/app.js:31-61`). Supertest takes that unbound request handler — passed to it as `request(app)` throughout the suite, from the instance built at `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:42` — and **binds it to an ephemeral port of its own**: one the operating system assigns, for the duration of a single request. It then issues a real HTTP request against it, exposes the response for assertion, and closes the port again, as the [Supertest repository](https://github.com/ladjs/supertest) describes. So the five integration cases exercise real HTTP, over a real socket, against the real application, and yet no port number appears anywhere in the suite — `grep -c "3000" test/integration/hello-endpoint.test.js` reports `0`.
+`createApp()` returns an application that has never opened a socket (`src/nodejs-tutorial/src/app.js:17-47`). Supertest takes that unbound request handler — passed to it as `request(app)` throughout the suite, from the instance built at `src/nodejs-tutorial/test/integration/hello-endpoint.test.js:29` — and **binds it to an ephemeral port of its own**: one the operating system assigns, for the duration of a single request. It then issues a real HTTP request against it, exposes the response for assertion, and closes the port again, as the [Supertest repository](https://github.com/ladjs/supertest) describes. So the five integration cases exercise real HTTP, over a real socket, against the real application, and yet no port number appears anywhere in the suite — `grep -c "3000" test/integration/hello-endpoint.test.js` reports `0`.
 
-Two consequences follow. The suite cannot collide with a server you left running on port 3000, or with anything else on your machine. And the suite cannot be affected by your `PORT` or `HOST` settings, because it never asks for a port at all — case 8, the one case that does start a listener, asks for port `0` (`src/nodejs-tutorial/test/unit/server.test.js:163`), which is the conventional way to say "any free port" to the operating system.
+Two consequences follow. The suite cannot collide with a server you left running on port 3000, or with anything else on your machine. And the suite cannot be affected by your `PORT` or `HOST` settings, because it never asks for a port at all — case 8, the one case that does start a listener, asks for port `0` (`src/nodejs-tutorial/test/unit/server.test.js:220`), which is the conventional way to say "any free port" to the operating system.
 
 ### Coverage
 
-Coverage is collected on every run, not only when you ask for it (`collectCoverage: true` at `src/nodejs-tutorial/jest.config.js:31`, over the files `collectCoverageFrom` names at `:7-11`), and it is **gated**. The thresholds live in `src/nodejs-tutorial/jest.config.js:14-21`:
+Coverage is collected on every run, not only when you ask for it (`collectCoverage: true` at `src/nodejs-tutorial/jest.config.js:30`, over the files `collectCoverageFrom` names at `:7-11`), and it is **gated**. The thresholds live in `src/nodejs-tutorial/jest.config.js:14-21`:
 
 <!-- listing: jest.config.js#coverage-threshold -->
 ```javascript
@@ -1076,9 +1165,9 @@ Coverage is collected on every run, not only when you ask for it (`collectCovera
 
 That block is adopted verbatim from `CONTRIBUTING.md:529-535`: branches 95, functions 100, lines 95, statements 95. The result across the three source modules is **100% statements, 100% branches, 100% functions and 100% lines**, with the process exiting `0` — so the project clears its own gate with room to spare. That is not a figure to take on trust: `npm test` re-measures it on your machine and prints the table reproduced above, which is step 15 of the [Verification Checklist](#verification-checklist). Reaching 100 while gating at 95 honours both figures the repository states: the 100% target at `CONTRIBUTING.md:211-212` and `CONTRIBUTING.md:644-649`, and the machine-enforced minimum at `:529-535`.
 
-**A green test list is not the same as a passing run.** Because the thresholds are enforced, `npm test` **exits non-zero when coverage falls short even though every test passed** — Jest prints something like `Jest: "global" coverage threshold for branches (95%) not met: 80%` after a list of ticks. If you add code to `src/` without a test that reaches it, that is the failure you will see, and the fix is a test rather than a lower threshold. It is also why `src/nodejs-tutorial/src/server.js:62` takes its arguments explicitly rather than as defaults, as [Project Structure](#project-structure) explains.
+**A green test list is not the same as a passing run.** Because the thresholds are enforced, `npm test` **exits non-zero when coverage falls short even though every test passed** — Jest prints something like `Jest: "global" coverage threshold for branches (95%) not met: 80%` after a list of ticks. If you add code to `src/` without a test that reaches it, that is the failure you will see, and the fix is a test rather than a lower threshold. It is also why `src/nodejs-tutorial/src/server.js:153` takes its arguments explicitly rather than as defaults, as [Project Structure](#project-structure) explains.
 
-Two reports are written alongside the table, because `coverageReporters` asks for them (`src/nodejs-tutorial/jest.config.js:32`): `coverage/lcov.info` for tooling, and `coverage/lcov-report/index.html` to open in a browser. The `coverage/` directory is ignored by version control at `.gitignore:149`, so there is nothing to clean up before committing.
+Two reports are written alongside the table, because `coverageReporters` asks for them (`src/nodejs-tutorial/jest.config.js:31`): `coverage/lcov.info` for tooling, and `coverage/lcov-report/index.html` to open in a browser. The `coverage/` directory is ignored by version control at `.gitignore:149`, so there is nothing to clean up before committing.
 
 ### Verifying this document against the source
 
@@ -1090,9 +1179,12 @@ Each of the five code listings in this file is preceded by an HTML comment namin
 node --eval '
 const fs = require("node:fs");
 const TICK = "\x60";
-// A Markdown opening fence: three or more backticks whose info string holds no
-// backtick. Only a bare run at least as long closes it — anything else between
-// the two is content, exactly as a Markdown renderer reads it.
+// The one fence convention this README uses, and all that the two patterns
+// below match: an unindented run of three or more backticks whose info
+// string holds no backtick opens a block, and only a bare run at least as
+// long closes it. Anything else between the two is content. Indented fences
+// and tilde fences, which a Markdown renderer also accepts, are not
+// recognised here, and no line of this file uses either form.
 const OPENER = new RegExp("^(" + TICK + "{3,})([^" + TICK + "]*)$");
 const CLOSER = new RegExp("^(" + TICK + "{3,})[ \t]*$");
 // The five listings this document reproduces: id, and whether the fence is the
@@ -1105,9 +1197,12 @@ const LISTINGS = [
   ["jest.config.js#coverage-threshold", "excerpt"]
 ];
 const read = (path) => { try { return fs.readFileSync(path, "utf8"); } catch { return null; } };
-// Split a file into lines, dropping the single trailing newline a closing fence
-// contributes. That is the only normalisation applied anywhere in this check:
-// no whitespace trimming and no line-ending translation.
+// Split a source file into lines. A file that ends in a newline splits to a
+// final empty element, and dropping that element is what makes the array
+// comparable with a fenced block, which carries no trailing newline of its own
+// because the slice further down stops before the closing fence line. That pop
+// is the only normalisation anywhere in this check: no whitespace trimming and
+// no line-ending translation.
 const linesOf = (text) => {
   const out = text.split("\n");
   if (out.length > 1 && out[out.length - 1] === "") out.pop();
@@ -1187,9 +1282,9 @@ OK jest.config.js
 
 Five `OK` lines and **exit code 0** is the pass condition, and the exit code is the half of it a machine can check: the program exits `0` only when all five listings matched. Any drift exits **1**, after printing a `DRIFT <path>: <reason>` line that names what went wrong — a marker missing or duplicated, no fenced block opening on the line after the marker, a block that is never closed, a stray fence line left after the closing one, an empty fence, a source file that cannot be read, or content that does not match. A run that could not check anything at all exits **2**, which is what you get when there is no `README.md` in the working directory to read; from the repository root, where a different `README.md` does exist, the check instead reports five `DRIFT` lines and exits `1`, because that file carries none of the listing markers. Either way a wrong working directory fails loudly rather than passing quietly.
 
-The three full listings are compared for equality; the two excerpts are checked for verbatim contiguous containment, which is the same guarantee over a bounded region of the file. The only normalisation is the single trailing newline the closing fence contributes — no whitespace trimming and no line-ending translation — which is also why **a listing fence may not end with a blank line**: such a line is indistinguishable from the newline the fence itself contributes, so the check rejects it by name rather than guessing which of the two it is.
+The three full listings are compared for equality; the two excerpts are checked for verbatim contiguous containment, which is the same guarantee over a bounded region of the file. The only normalisation is on the source side, and it is one line of the program: a file that ends in a newline splits into a final empty element, and dropping that element is what makes the result comparable with a fenced block, which carries no trailing newline of its own because the extraction stops at the line before the closing fence. Nothing else is normalised — no whitespace trimming and no line-ending translation. It is also why **an excerpt fence may not end with a blank line**: a blank line before a closing fence is padding an author added for looks, and once extracted it is indistinguishable from a blank line belonging to the file, so the check names it — `DRIFT jest.config.js: fence ends with a blank line, which no listing fence may carry` — instead of comparing it as content. The same stray line in one of the three full listings is caught by the equality comparison instead, as `fence does not reproduce the file exactly`.
 
-Before comparing anything, the program pairs the document's fences the way Markdown does, rather than treating the next line that happens to begin with backticks as a boundary. An opening fence is a run of three or more backticks whose info string — `bash`, `javascript`, `text` — carries no backtick of its own, and only a bare run **at least as long** closes it: a four-backtick fence is not closed by three, and a line like ` ```javascript ` opens a block rather than closing one. Each listing is then read from the block that opens on the line immediately after its marker, and a fence line left sitting directly after that block's closing fence is reported rather than ignored, because it silently opens another block and swallows the prose that follows. Those three cases are the ones a prefix match gets wrong, and each of them is a fence that renders differently from what it looks like in the source. A `DRIFT` line is a documentation defect even when every test passes.
+Before comparing anything, the program pairs the fences of this document by the one fence convention this document uses, rather than treating the next line that happens to begin with backticks as a boundary. An opening fence is an **unindented** run of three or more backticks whose info string — `bash`, `javascript`, `text` — carries no backtick of its own, and only a bare run **at least as long** closes it: a four-backtick fence is not closed by three, and a line like ` ```javascript ` opens a block rather than closing one. Each listing is then read from the block that opens on the line immediately after its marker, and a fence line left sitting directly after that block's closing fence is reported rather than ignored, because it silently opens another block and swallows the prose that follows. Those three cases are the ones a prefix match gets wrong, and each of them is a fence that renders differently from what it looks like in the source. What the program deliberately does **not** recognise is the rest of Markdown's fence grammar: an indented fence, or one opened with tildes instead of backticks, is read as ordinary content. No line of this file opens a fence either way — every fence here starts in the first column with backticks — so the blocks this program pairs are the same blocks a renderer shows, and the narrower rule is sufficient rather than merely convenient. Keeping every fence in that one form is what holds those two readings in agreement: a fence written with indentation or tildes would be a block to a renderer and content to this check, which is a disagreement no `DRIFT` line would announce. A `DRIFT` line is a documentation defect even when every test passes.
 
 ### Performance, stated honestly
 
@@ -1236,10 +1331,10 @@ Every command this tutorial uses, in order, with its status and what counts as a
 
 | # | Command | Status | Pass condition |
 |---|---------|--------|----------------|
-| 1 | `node --version` | required | prints a version satisfying `>=22.16.0`; if not, do step 3, then step 4, and return here |
-| 2 | `npm --version` | required | prints a version satisfying `>=10.9.2` |
+| 1 | `node --version` | required | prints a version satisfying `>=22.23.2`; if not, do step 3, then step 4, and return here |
+| 2 | `npm --version` | required | prints a version satisfying `>=11.19.1`. Node.js 22.23.2 bundles the older npm 10.9.8, so expect to run `npm install -g npm@11.19.1` once and return here — [Troubleshooting](#troubleshooting) case 2 has the command and says why the floor sits above the bundled version |
 | 3 | `cd src/nodejs-tutorial` | required | run from the repository root; prints nothing, and the observable effect is the working directory for every step below — `pwd` ends in `src/nodejs-tutorial`, and `ls package.json` lists the manifest |
-| 4 | `nvm use` | optional | only if step 1 failed; selects the `.nvmrc` pin `22.16.0` |
+| 4 | `nvm use` | optional | only if step 1 failed; selects the `.nvmrc` pin `22.23.2` |
 | 5 | `npm ci` | required | **exit code 0** |
 | 6 | `npm ls --depth=0` | required | lists exactly `express@5.1.0`, `jest@29.7.0`, `supertest@7.2.2` |
 | 7 | `export PORT=3100` | optional | only if step 8 reports `EADDRINUSE`; prints nothing, and the observable effect is that later commands in the same terminal resolve `${PORT:-3000}` to `3100`. Any free port will do; nothing in this repository binds or publishes `3100` — `git grep -c 3100 -- ':/'` searches every tracked file in the repository from wherever you run it (and so skips `node_modules/`), and it reports matches in four files, all of them this project's own text: `.env.example`, `README.md`, `src/server.js` and `test/unit/server.test.js`. The ports the repository actually publishes are `3000` (`infrastructure/docker/Dockerfile:120`, `infrastructure/docker/docker-compose.yml:86`) and `5678` (`infrastructure/docker/Dockerfile:171`) |
@@ -1269,7 +1364,7 @@ Every command in that table is either one of the four scripts `src/nodejs-tutori
 
 ## Troubleshooting
 
-Five things come up in practice, and they fall into two kinds. **Cases 1, 2 and 5 are real failures**: the server does not start, or it installs against a runtime it cannot run on, and each one needs the fix stated with it. **Cases 3 and 4 are expected informational output** — text that reads like a failure and is not, with nothing to repair.
+Five things come up in practice, and they fall into two kinds. **Cases 1, 2 and 5 are real failures**: the server does not start, or it installs on a runtime and a package manager below the floors the manifest declares, and each one needs the fix stated with it. **Cases 3 and 4 are expected informational output** — text that reads like a failure and is not, with nothing to repair.
 
 ### 1. `EADDRINUSE` — port 3000 is already in use
 
@@ -1302,49 +1397,97 @@ lsof -iTCP:3000 -sTCP:LISTEN -P -n    # macOS/Linux: COMMAND, PID and USER of th
 netstat -ano | findstr :3000          # Windows: the PID is the last column of the LISTENING row
 ```
 
-Neither command changes anything; both name the process holding the port. Read the `COMMAND` and `USER` columns — on Windows, confirm the number with `tasklist /FI "PID eq 4242"` — and you will know whether the listener is the container stack, the Flask application, an `npm start` you left running in another terminal, or something unrelated that you should leave alone.
+Neither command changes anything; both name the process holding the port. Read the `COMMAND` and `USER` columns — on Windows, confirm the number with `tasklist /FI "PID eq CONFIRMED_PID"`, substituting the digits from the `LISTENING` row for `CONFIRMED_PID`, which is a placeholder throughout this case and never a variable a shell or `cmd` expands — and you will know whether the listener is the container stack, the Flask application, an `npm start` you left running in another terminal, or something unrelated that you should leave alone. **No PID appears anywhere in this case as a literal**, deliberately: a PID printed in a document is a PID from somebody else's machine, and on yours that number belongs to an unrelated process.
 
 **Then stop it the way it was started.** If it is a server you started, `Ctrl+C` in its own terminal, as [Stopping the server](#stopping-the-server) describes. Stop the Docker stack the same way you started it if that is what holds the port. Going through the owning application releases the port without signalling anything you have not identified, and it is the option to exhaust first.
 
-**Only as a last resort, stop that one confirmed process:**
+**Only as a last resort, stop that one confirmed process.** The block below is **inert as printed**: `CONFIRMED_PID` is empty, so pasting it signals nothing at all. Fill in the digits the query above printed, and it then refuses three ways before it signals anything. It needs `lsof` and `grep`, so it is the macOS/Linux form; the Windows path is the prose below it.
 
 ```bash
-PID=4242              # replace 4242 with the PID you read above - never a guess, never a pipeline
-kill "$PID"           # macOS/Linux: SIGTERM to exactly that one process
-taskkill /PID 4242    # Windows: same PID, and only after tasklist has confirmed it
+(
+CONFIRMED_PID=          # paste the digits the query above printed - never a guess, never a pipeline
+case "$CONFIRMED_PID" in
+  ""|0|*[!0-9]*) echo "refusing: CONFIRMED_PID must be the digits the query above printed, nothing else"; exit 1;;
+esac
+command -v lsof >/dev/null 2>&1 ||
+  { echo "refusing: no lsof here, so ownership cannot be re-confirmed - use PORT=3100 npm start instead"; exit 1; }
+lsof -t -iTCP:3000 -sTCP:LISTEN | grep -qx "$CONFIRMED_PID" ||
+  { echo "refusing: PID $CONFIRMED_PID does not hold port 3000 now"; exit 1; }
+kill -TERM "$CONFIRMED_PID"   # SIGTERM to that one re-confirmed process, and to nothing else
+)
 ```
+
+Pasted exactly as printed, it takes the first refusal and stops there — which is the check that the block is inert rather than merely described as such:
+
+```text
+refusing: CONFIRMED_PID must be the digits the query above printed, nothing else
+```
+
+and it exits `1`. A run that does signal prints **nothing** and exits `0`; the evidence it worked is the server terminal reporting that it stopped, and the `lsof` query above printing no row for the port any more.
+
+**Each of the three refusals is fail-closed, and the third is the one that matters most.** An empty, non-numeric or zero `CONFIRMED_PID` is refused before anything runs: digits are all `kill` may ever receive here, `0` is refused by name because `kill` reads it as *every process in your process group*, and a value carrying a `-` is refused because `kill` would read it as an option or as a negative process-group id. There is no portable way to end that argument list instead — `dash`, which is `/bin/sh` on several Linux distributions, rejects `kill -TERM -- "$CONFIRMED_PID"` with `kill: Illegal number: -` and exits `2` — so the guard, rather than a `--` delimiter, is what makes the value safe to pass. A missing `lsof` is refused rather than worked around, because without it the next check cannot run. And the `lsof … | grep -qx` line **re-confirms ownership in the moment before signalling**: the PID you read a minute ago may have exited and had its number reused by something else, and this closes that window — if the PID does not hold the port *now*, nothing is signalled. The enclosing `( … )` keeps all of it in a subshell, so `CONFIRMED_PID` never enters your own shell and each `exit 1` ends only the check.
+
+**On Windows, do the same two steps by hand**, in that order and with no command printed here to paste: read the PID from the last column of the `LISTENING` row that `netstat -ano | findstr :3000` prints, confirm it with the `tasklist /FI "PID eq CONFIRMED_PID"` filter named above, and only then run `taskkill /PID` on that same confirmed number. `tasklist` is the confirmation step `netstat` leaves out, and `taskkill` on a number you have not just confirmed is the mistake this whole case exists to prevent.
 
 **Nothing here should signal a PID you have not read for yourself.** If the listener turns out to be something you would rather not disturb, or you cannot tell what it is, the `PORT=3100 npm start` above sidesteps the question entirely: nothing has to be stopped for this tutorial to work.
 
 **Why keep 3000 as the default at all?** Three reasons. The collision only exists while the container stack or the Flask server is actually running, which is not the state a reader of this tutorial is usually in. 3000 is both the canonical Express convention — the framework's own [Hello world example](https://expressjs.com/en/starter/hello-world.html) declares `const port = 3000` — and the port `CONTRIBUTING.md:175-177` documents for this project, so choosing anything else would put the tutorial at odds with its own specification. And the failure is loud, immediate and fully recoverable — one environment variable resolves it — which makes it a better default than a surprising port that nobody expects.
 
-### 2. The runtime is older than the pin
+### 2. The runtime or npm is older than the declared floors
 
-**Symptom.** `node --version` prints something below `v22.16.0`, and `npm ci` prints a warning rather than refusing:
+**Symptom.** `node --version` prints something below `v22.23.2`, or `npm --version` prints something below `11.19.1`, and `npm ci` prints a warning rather than refusing. On the 22.16.0 runtime and npm 10.9.2 that earlier revisions of this tutorial pinned, both floors are unmet and the warning names both:
 
 ```text
 npm warn EBADENGINE Unsupported engine {
 npm warn EBADENGINE   package: 'nodejs-hello-world-tutorial@1.0.0',
-npm warn EBADENGINE   required: { node: '>=22.16.0', npm: '>=10.9.2' },
-npm warn EBADENGINE   current: { node: 'v20.x.x', npm: '10.x.x' }
+npm warn EBADENGINE   required: { node: '>=22.23.2', npm: '>=11.19.1' },
+npm warn EBADENGINE   current: { node: 'v22.16.0', npm: '10.9.2' }
 npm warn EBADENGINE }
 ```
 
-and then **exits 0**. The install completes. This surprises people, so say it plainly: `engines` is advisory by default, and nothing in this project blocks an old runtime — see [What `engines` does](#what-engines-does-and-what-it-does-not) for why no `.npmrc` is shipped to change that.
+The much more common case, though, is a reader who has just installed the pinned runtime and so meets the first floor but not the second, because **Node.js 22.23.2 bundles npm 10.9.8**:
 
-**Consequence.** The dependencies install, but the code may not behave. Express 5 needs Node.js 18 or newer (`src/nodejs-tutorial/package-lock.json:2035-2037`), and this project's `start` script passes `--env-file-if-exists` (`src/nodejs-tutorial/package.json:11`), a flag older runtimes do not recognise — on a runtime without it, `npm start` fails with `bad option`.
+```text
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'nodejs-hello-world-tutorial@1.0.0',
+npm warn EBADENGINE   required: { node: '>=22.23.2', npm: '>=11.19.1' },
+npm warn EBADENGINE   current: { node: 'v22.23.2', npm: '10.9.8' }
+npm warn EBADENGINE }
+```
 
-**Fix.** Switch the runtime rather than editing the manifest, from inside `src/nodejs-tutorial`:
+Either way npm then **exits 0**. The install completes. This surprises people, so say it plainly: `engines` is advisory by default, and nothing in this project blocks an old runtime or an old package manager — see [What `engines` does](#what-engines-does-and-what-it-does-not) for why no `.npmrc` is shipped to change that. The warning is the only notice you get, so read it rather than scrolling past it.
+
+**Consequence, for the runtime.** The dependencies install, but the code may not behave. Express 5 needs Node.js 18 or newer (`src/nodejs-tutorial/package-lock.json:2035-2037`), and this project's `start` script passes `--env-file-if-exists` (`src/nodejs-tutorial/package.json:11`), a flag older runtimes do not recognise — on a runtime without it, `npm start` fails with `bad option`. A 22.x below 22.23.2 runs everything here on an executable that is missing the security fixes its own release line has published, which is the reason the pin is a patch release at all ([Technology Stack](#technology-stack)).
+
+**Consequence, for npm.** Nothing appears to go wrong, which is what makes this one worth reading. npm 10.9.x vendors its own copies of `tar`, `sigstore`, `@sigstore/core`, `pacote` and six other packages, and those copies carry published advisories — including a critical path-traversal issue in the `tar` that unpacks every package archive, and signature-verification flaws that weaken what `npm audit signatures` can tell you. The install still succeeds and `npm audit` still reports `found 0 vulnerabilities`, because that command audits the three dependencies this project declares and never the program running the install. So a clean audit on an old npm is not evidence that the install was safe, and the floor at `src/nodejs-tutorial/package.json:8` is what carries that requirement instead.
+
+**Fix, for the runtime.** Switch it rather than editing the manifest, from inside `src/nodejs-tutorial`:
 
 ```bash
 nvm use
 ```
 
 ```text
-Now using node v22.16.0 (npm v10.9.2)
+Found '/path/to/src/nodejs-tutorial/.nvmrc' with version <22.23.2>
+Now using node v22.23.2 (npm v10.9.8)
 ```
 
-`nvm use` with no argument reads `.nvmrc`. If nvm says the version is not installed, run `nvm install` — also with no argument — and then `nvm use` again. If you do not use nvm, install Node.js 22.16.0 or any later release from [nodejs.org](https://nodejs.org/); the `>=` range means a newer LTS line is fine.
+`nvm use` with no argument reads `.nvmrc`. If nvm says the version is not installed, run `nvm install` — also with no argument — and then `nvm use` again. If you do not use nvm, install Node.js 22.23.2 or any later release from [nodejs.org](https://nodejs.org/); the `>=` range means a newer LTS line is fine.
+
+**Fix, for npm.** Install the floor version explicitly — once per Node.js installation, because each one carries its own npm:
+
+```bash
+npm install -g npm@11.19.1
+```
+
+```text
+added 1 package in 1s
+
+15 packages are looking for funding
+  run `npm fund` for details
+```
+
+That block is representative: the counts and the elapsed time depend on your machine and on the npm you are upgrading from. **The pass condition is the version itself** — `npm --version` prints `11.19.1` (or higher) afterwards, and a re-run of `npm ci` prints no `EBADENGINE` block at all. The version is pinned in the command on purpose rather than written as `npm@latest`: it is the release whose vendored tree was checked against the advisories above, and installing a named version is the same habit [Next Steps](#next-steps) asks for when you add a dependency of your own. A later npm is fine — the floor is a minimum, and npm will tell you when a newer major exists — but check its own tree before adopting it, with `npm ls --all` run inside npm's installation directory, which `npm root -g` prints.
 
 ### 3. `npm ci` prints two deprecation warnings
 
@@ -1399,19 +1542,78 @@ You now have a service you can start, call and test. Five directions extend it, 
 
 **Log requests.** A middleware registered before the route — `app.use((req, res, next) => { …; next(); })` — sees every request and must call `next()` to let the route run. This project prints nothing per request on purpose, so that the one line `npm start` produces stays comparable with this document; a real service logs, and Express middleware is where that goes.
 
-**Handle shutdown gracefully.** This project installs **no `SIGTERM` or `SIGINT` handler** — `grep -rn "SIGTERM\|SIGINT" src/` finds only the comment that says so, at `src/nodejs-tutorial/src/server.js:79` — so `Ctrl+C` kills the process outright. That is a deliberate deferral rather than an oversight: an HTTP listener does hold state — keep-alive connections that a client may be about to reuse — so a production service stops accepting new connections, drains the open ones, and exits. Doing that properly means choosing a drain policy, a timeout, and what to do when the timeout expires, which is three decisions more than a single-endpoint tutorial can justify. `server.close()` and a `process.on('SIGTERM', …)` handler are where to start; `start` already returns the listener, so you have the handle you need.
+**Handle shutdown gracefully.** This project installs **no `SIGTERM` or `SIGINT` handler** — `grep -rn "SIGTERM\|SIGINT" src/` finds only the comment that says so, at `src/nodejs-tutorial/src/server.js:165` — so `Ctrl+C` kills the process outright. That is a deliberate deferral rather than an oversight: an HTTP listener does hold state — keep-alive connections that a client may be about to reuse — so a production service stops accepting new connections, drains the open ones, and exits. Doing that properly means choosing a drain policy, a timeout, and what to do when the timeout expires, which is three decisions more than a single-endpoint tutorial can justify. `server.close()` and a `process.on('SIGTERM', …)` handler are where to start; `start` already returns the listener, so you have the handle you need.
 
-**Containerise it.** A small `Dockerfile` on a `node:22-alpine` base, `npm ci --omit=dev`, and `CMD ["node", "src/server.js"]` is enough. Note that this repository's existing container assets under `infrastructure/docker/` belong to the Python application and publish port 3000 — see [Troubleshooting](#troubleshooting) case 1 before you run both.
-
-**Deploy it.** Deliberately not covered here: this tutorial's purpose is one endpoint on your own machine, and a deployment chapter would be longer than everything above it. Whatever platform you choose will want the process to read `PORT` from the environment, which this project already does (`src/nodejs-tutorial/src/server.js:10`), and to listen on `0.0.0.0` rather than loopback, which `HOST=0.0.0.0` gives you.
-
-When any of those needs a package this project does not have, that is the moment for `npm install`. `PACKAGE_NAME` below is a placeholder and not a package: replace it with the name of the one you are adding, exactly as the registry publishes it. It is written as a bare word rather than in angle brackets because a shell reads `<package>` as input redirection and fails before npm runs at all.
+**Containerise it.** A small `Dockerfile`, `npm ci --omit=dev` and `CMD ["node", "src/server.js"]` is enough for the build — but **pin the base image to an exact version and a digest**, never to a floating tag such as `node:22-alpine`. A tag is a mutable pointer: the same `Dockerfile` can build on different executable layers next month with nothing in the repository having changed and nothing in a diff to show for it. Pinning is the remedy [Docker's own build best practices](https://docs.docker.com/build/building/best-practices/) give for exactly that. The version to pin is the one this project already pins for the runtime, in the single line of `src/nodejs-tutorial/.nvmrc:1` — read it from there rather than retyping it — and the digest is whatever the registry serves for that tag when you look, giving the form `node:<version>-alpine@sha256:<digest>`. This reads the digest straight from the registry without pulling the image, run from `src/nodejs-tutorial`:
 
 ```bash
-npm install PACKAGE_NAME
+docker buildx imagetools inspect "node:$(cat .nvmrc)-alpine" --format "{{.Manifest.Digest}}"
 ```
 
-Unlike `npm ci`, `npm install` resolves the manifest afresh and **updates `package-lock.json`** to record what it chose — the difference npm's own references for [npm-install](https://docs.npmjs.com/cli/v10/commands/npm-install) and [npm-ci](https://docs.npmjs.com/cli/v10/commands/npm-ci) draw between them. That is exactly right when you are adding a dependency deliberately, and exactly wrong when you are trying to reproduce a known tree. Commit the changed lockfile alongside the changed manifest.
+```text
+sha256:41e4389f3d988d2ed55392df4db1420ad048ae53324a8e2b7c6d19508288107e
+```
+
+**That digest is representative output and not a value to copy** — it is what the registry served for that tag on the day this paragraph was written, and the entire point is that you read the current one yourself and write it into your own `Dockerfile`.
+
+**Confirm the publisher in the same breath.** The same command without `--format` prints the reference it resolved: a Docker Official Image answers under `docker.io/library/node`, not under a user namespace whose name merely resembles it, and it lists one manifest per platform, each carrying the `com.docker.official-images.bashbrew.arch` annotation that the Official Images build system adds. `--format "{{json .Provenance}}"` on the same reference returns a SLSA provenance document per platform, which records how the image was built rather than asking you to assume it.
+
+**Then refresh the pin deliberately, because a digest freezes the security fixes too.** Once pinned, your build stops picking up rebuilds published under that tag, so the digest has to be re-read — on whatever cadence you review dependencies, or by an updater that does it for you, which is something both [Dependabot](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-version-updates) and [Renovate](https://docs.renovatebot.com/docker/) maintain for Docker digests. Each refresh then lands as a commit, which is the property a floating tag denies you: every change of base layer is visible in the repository history.
+
+All of that is guidance for a `Dockerfile` you write. **This project ships none** — `ls Dockerfile`, run in `src/nodejs-tutorial`, reports `No such file or directory` — and a container image is out of scope here. Note too that this repository's existing container assets under `infrastructure/docker/` belong to the Python application and publish port 3000 — see [Troubleshooting](#troubleshooting) case 1 before you run both.
+
+**Deploy it.** Deliberately not covered here: this tutorial's purpose is one endpoint on your own machine, and a deployment chapter would be longer than everything above it. Whatever platform you choose will want the process to read `PORT` from the environment, which this project already does (`src/nodejs-tutorial/src/server.js:10`), and to listen on `0.0.0.0` rather than loopback, which `HOST=0.0.0.0` gives you — with the exposure that implies, so read the [warning in Configuration](#configuration) first and treat authentication and a reverse proxy in front of the service as part of the deployment work rather than as extras.
+
+When any of those needs a package this project does not have, that is the moment for `npm install` — and the moment to establish *what* you are installing, because the command resolves a name in a public registry and then runs code from whatever it resolved. `PACKAGE_NAME` and `VERSION` below are placeholders and not a package: replace them with the name of the one you are adding, exactly as the registry publishes it, and with the version you have chosen. The name is written as a bare word rather than in angle brackets because a shell reads `<package>` as input redirection and fails before npm runs at all.
+
+**First look the package up, rather than installing it to find out.** [`npm view`](https://docs.npmjs.com/cli/v10/commands/npm-view) reads registry metadata and downloads and executes nothing. Do it in two passes: this one asks who publishes the package and what its release history looks like, and the second — once you have chosen a version — asks what that exact release contains.
+
+```bash
+npm view PACKAGE_NAME name repository.url maintainers dist-tags time
+```
+
+With the placeholder left as printed it fails closed, which is what every command in this section does until you substitute a real name:
+
+```text
+npm error code E404
+npm error 404 Not Found - GET https://registry.npmjs.org/PACKAGE_NAME - Not found
+npm error 404
+npm error 404  'PACKAGE_NAME@*' is not in this registry.
+```
+
+— exiting `1`, with a few more lines suggesting other install sources. With a real name it prints the five fields instead, and each answers one question. `name` is the registry's spelling: compare it character by character against the package's own documentation, because one transposed letter is a **different package that anyone may publish**, and that is how a typo or a copied-in recommendation installs something nobody vouched for. `repository.url` and `maintainers` say who publishes it, and both should match the project you believe you are installing. `dist-tags` says what `latest` resolves to today, which is what an unversioned install would take.
+
+`time` is the publication history in full, and it is the field worth reading slowly: it prints `created`, then `modified`, then **one line for each published version** in the order they were published — 289 of those for Express, which makes the whole query a 333-line answer, so expect to page through it. What you are assessing is the shape of that history rather than any single date. A package `created` days ago, a name with one version and nothing behind it, a long silence followed by a sudden burst of releases, or a first publication that post-dates a change in the `maintainers` list above are each a reason to go back to the project's own site and confirm you have the right name before going further. When you want only the two endpoints of that history, `npm view PACKAGE_NAME time.created time.modified` prints them as two lines.
+
+**Then read the exact release you are about to install, not whatever `latest` points at.** Everything above is package-level metadata, and an unversioned query answers for the default-tag release — which need not be the one you install. The difference is real rather than theoretical: this project's own `express@5.1.0` lists four maintainers where the package-level query lists five. So once you have chosen `VERSION`, ask again with the version attached:
+
+```bash
+npm view PACKAGE_NAME@VERSION name version repository.url maintainers scripts
+```
+
+Left as printed this one fails closed too, naming the version it could not find:
+
+```text
+npm error 404  'PACKAGE_NAME@VERSION' is not in this registry.
+```
+
+`version` echoing back what you asked for is the confirmation that the release exists and that you have not mistyped it; `repository.url` and `maintainers` are worth re-reading here because they are the values recorded for *that* release; and `scripts` is the field the next paragraph is about.
+
+**Read the `scripts` field in particular** — the one from the version-qualified query, since those are the hooks that will actually run. npm runs a package's lifecycle scripts as part of installing it — `preinstall`, `install` and `postinstall` among them, as [npm scripts](https://docs.npmjs.com/cli/v10/using-npm/scripts) documents — so an install hook runs with your privileges, in your working directory, before any code of your own. When you are only evaluating a package and its hooks are not something you need, `npm install --ignore-scripts PACKAGE_NAME@VERSION` fetches the files without running them; a package that genuinely needs its hooks may then not work, which is the trade that flag makes.
+
+**Then install the version you reviewed, rather than whatever `latest` resolves to next week:**
+
+```bash
+npm install --save-exact PACKAGE_NAME@VERSION
+```
+
+```text
+npm error 404  'PACKAGE_NAME@VERSION' is not in this registry.
+```
+
+Unresolved placeholders fail here exactly as they did above — same `E404`, same exit `1`, and **the manifest is left untouched**. `--save-exact` is what records the version you chose as an exact string in `package.json` instead of a `^` range that a later install may widen, which is the convention this project's own dependencies already follow: they are written without a range operator (`src/nodejs-tutorial/package.json:16-22`).
+
+Unlike `npm ci`, `npm install` resolves the manifest afresh and **updates `package-lock.json`** to record what it chose — the difference npm's own references for [npm-install](https://docs.npmjs.com/cli/v10/commands/npm-install) and [npm-ci](https://docs.npmjs.com/cli/v10/commands/npm-ci) draw between them. That is exactly right when you are adding a dependency deliberately, and exactly wrong when you are trying to reproduce a known tree. Commit the changed lockfile alongside the changed manifest — and read both diffs first: `git diff package.json package-lock.json` is where the transitive packages you did not name appear, and it is the last point at which reviewing what you are adopting is cheaper than reverting it.
 
 ## Contributing
 

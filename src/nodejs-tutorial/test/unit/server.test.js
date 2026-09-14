@@ -5,26 +5,13 @@
  * the outside: the application factory's own contract, and the configuration
  * and listener in src/server.js.
  *
- * The integration suite drives the application through Supertest, which
- * proves what a client receives but says nothing about how the process got
- * there. These three cases cover the rest: that createApp() hands back a
- * request handler and never reaches the socket-bind boundary, that
- * resolveConfig resolves the documented defaults and honours the PORT and
- * HOST overrides, and that start binds a real listener, prints the one line
- * the tutorial documents when the bind succeeds, rethrows the error Express 5
- * hands the same callback when it fails, and closes again.
- *
- * Three of the project's eight test cases live here; the other five prove the
- * GET /hello contract in test/integration/hello-endpoint.test.js. This file is
- * the only suite that requires src/server.js, so whatever of that module these
- * cases do not execute is not covered anywhere - which is why case 7 calls
- * resolveConfig with no argument as well as with an explicit environment, and
- * why case 8 drives the listener callback down both of its paths.
+ * This file is the only suite that requires src/server.js, so whatever of that
+ * module these cases do not execute is not covered anywhere - which is why
+ * case 7 calls resolveConfig with no argument as well as with an explicit
+ * environment, and why case 8 drives the listener callback down both of its
+ * paths.
  */
 
-// The modules under test. server.js publishes both functions and both default
-// constants, so the defaults below are asserted against the source of truth
-// rather than against a second copy of the same numbers.
 const {
   resolveConfig,
   start,
@@ -40,24 +27,18 @@ const http = require('node:http');
 
 describe('Application Factory and Server Lifecycle Unit Tests', () => {
   it('should return a request handler from createApp() and bind no port', () => {
-    // An Express application is itself the (req, res) function that Node's
-    // http.Server calls, which is the single property the integration suite's
-    // request(app) pattern depends on: Supertest accepts either a listening
-    // http.Server or an unbound handler, and binds the latter to an ephemeral
-    // port of its own.
-    //
-    // Proving that no port was bound takes the bind boundary itself, not
-    // properties of the object handed back. app.listen() builds a *separate*
-    // http.Server and returns that, so a factory that called it could leak a
-    // listening socket while the application still looked untouched - which is
-    // precisely what asserting app.address or app.listening would miss. Every
-    // route to a socket ends at http.Server.prototype.listen, so that method
-    // is masked for the duration of the call and then asked whether it ever
-    // ran. Masking rather than passing through means such a regression cannot
-    // open a port even while this case fails. The method is inherited from
-    // net.Server.prototype rather than owned by http.Server.prototype, so
-    // restoring it means deleting the property this case added - done in a
-    // finally, so an exception from the factory cannot leave the mask behind.
+    // An Express application is itself the (req, res) function Node's
+    // http.Server calls - the property the integration suite's request(app)
+    // pattern depends on. Proving no port was bound takes the bind boundary,
+    // not properties of the object handed back: app.listen() builds a separate
+    // http.Server, so a factory that called it could leak a listening socket
+    // while the application still looked untouched, which asserting
+    // app.address or app.listening would miss. Every route to a socket ends at
+    // http.Server.prototype.listen, so it is masked for the call and then
+    // asked whether it ran; masking rather than passing through means such a
+    // regression cannot open a port even while this case fails. listen is
+    // inherited from net.Server.prototype, so restoring it means deleting the
+    // property added here - in a finally, against a throw from the factory.
     const listen = jest.fn();
     const descriptor = Object.getOwnPropertyDescriptor(
       http.Server.prototype,
@@ -78,19 +59,15 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
       }
     }
 
-    // Nothing reached the bind boundary: the factory opened no socket, took no
-    // port, and left nothing to leak into the next case.
     expect(listen).not.toHaveBeenCalled();
 
-    // The application contract itself: a callable request handler that still
-    // carries the listen method src/server.js calls later.
     expect(typeof app).toBe('function');
     expect(typeof app.listen).toBe('function');
   });
 
   it('should resolve the documented defaults 3000 and localhost and honour the PORT and HOST overrides', () => {
-    // An empty environment object is the state a reader's shell is in on a
-    // clean clone - neither variable set - so both values fall back. Passing
+    // An empty environment object models both variables being absent, so both
+    // values fall back. A real shell may already export PORT or HOST; passing
     // the environment in rather than clearing the real one is what keeps this
     // assertion independent of whatever the surrounding shell exported.
     //
@@ -105,24 +82,104 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
     });
 
     // The overrides. PORT arrives as a string from the environment in every
-    // case - `PORT=3100 npm start` included - and Number.parseInt turns it
-    // into the number asserted here; toEqual does not coerce, so a returned
-    // string '3100' would fail. HOST needs no conversion and is passed
-    // through, 0.0.0.0 being the value a reader reaches for when they want
-    // the listener on every interface rather than on loopback alone.
+    // case - `PORT=3100 npm start` included - and resolvePort turns it into
+    // the number asserted here; toEqual does not coerce, so a returned string
+    // '3100' would fail. HOST is returned as it stands once it validates:
+    // 0.0.0.0 is an IP literal node:net recognises, which is how the wildcard
+    // stays available to a reader who asks for it by name.
     expect(resolveConfig({ PORT: '3100', HOST: '0.0.0.0' })).toEqual({
       port: 3100,
       host: '0.0.0.0'
     });
 
-    // A PORT that is present but not a number falls back to the default:
-    // Number.parseInt returns NaN, which is falsy, so the single || covers
-    // the unparseable case and the absent one alike. HOST is absent from this
-    // object, so it takes its own fallback at the same time.
-    expect(resolveConfig({ PORT: 'not-a-number' })).toEqual({
-      port: DEFAULT_PORT,
-      host: DEFAULT_HOST
+    // Both values are trimmed, so a stray space in a .env line or around a
+    // shell assignment does not decide what gets bound.
+    expect(resolveConfig({ PORT: ' 3100 ', HOST: ' 127.0.0.1 ' })).toEqual({
+      port: 3100,
+      host: '127.0.0.1'
     });
+
+    // The rest of this case is the invalid-value policy, and every rejection
+    // in it writes the notice src/server.js documents to standard error. The
+    // spy captures those lines instead of letting them into the reporter's
+    // output, and the finally restores it whatever the assertions do.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      // PORT is matched as a whole string and then range-checked.
+      // Number.parseInt would have read '3000junk' as 3000 and '1e3' as 1;
+      // '-1' and 'not-a-number' are not decimal syntax at all; '65536' and
+      // '99999' are above the assignable range; and '0' is rejected as out of
+      // range rather than taken for absent, which is what testing it for
+      // falsiness did to it.
+      for (const port of [
+        '3000junk',
+        '1e3',
+        '-1',
+        '0',
+        '65536',
+        '99999',
+        'not-a-number'
+      ]) {
+        expect(resolveConfig({ PORT: port })).toEqual({
+          port: DEFAULT_PORT,
+          host: DEFAULT_HOST
+        });
+      }
+
+      // The top of the range binds, so it is accepted - which is what keeps
+      // the range check from being a blanket rejection of large ports.
+      expect(resolveConfig({ PORT: '65535' })).toEqual({
+        port: 65535,
+        host: DEFAULT_HOST
+      });
+
+      // HOST's numeric aliases are the rejection with a security
+      // consequence: the resolver widens '0', '0x0' and '0000' to 0.0.0.0 and
+      // '127.1' to 127.0.0.1, so binding them as given would settle the
+      // listener's exposure on a value that does not look like an address at
+      // all. They fall back to loopback instead, as do a name DNS does not
+      // allow and one longer than 253 characters.
+      for (const host of [
+        '0',
+        '0x0',
+        '0000',
+        '127.1',
+        'host_name',
+        'a'.repeat(254)
+      ]) {
+        expect(resolveConfig({ HOST: host })).toEqual({
+          port: DEFAULT_PORT,
+          host: DEFAULT_HOST
+        });
+      }
+
+      // The supported forms, so that validating cannot be mistaken for
+      // rejecting everything: an IPv6 literal - the wildcard included - and a
+      // DNS name both pass through untouched.
+      expect(resolveConfig({ HOST: '::' })).toEqual({
+        port: DEFAULT_PORT,
+        host: '::'
+      });
+      expect(resolveConfig({ HOST: 'db.internal' })).toEqual({
+        port: DEFAULT_PORT,
+        host: 'db.internal'
+      });
+
+      // One notice per rejected value - thirteen of them above - each naming
+      // the variable, the value it ignored and the default it used in place
+      // of it, so a malformed deployment template is visible rather than
+      // silent.
+      expect(warn).toHaveBeenCalledTimes(13);
+      expect(warn).toHaveBeenCalledWith(
+        'Ignoring HOST="0": unsupported value. Using HOST=localhost instead.'
+      );
+      expect(warn).toHaveBeenCalledWith(
+        'Ignoring PORT="3000junk": unsupported value. Using PORT=3000 instead.'
+      );
+    } finally {
+      warn.mockRestore();
+    }
 
     // Called with no argument at all, resolveConfig reads the real
     // process.env through its default parameter. That is the form `npm start`
@@ -203,8 +260,6 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
     try {
       server = start(app, config);
 
-      // The configuration reached the bind call verbatim: both values, in the
-      // documented order, with the listener callback last.
       expect(listen).toHaveBeenCalledTimes(1);
       expect(listen).toHaveBeenCalledWith(
         config.port,
@@ -225,9 +280,6 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
 
       expect(server.listening).toBe(true);
 
-      // The socket honoured both values it was handed: the address is the
-      // loopback host this case asked for, and the port is a real one the
-      // operating system assigned in place of the 0 that requested it.
       const address = server.address();
 
       expect(address.address).toBe('127.0.0.1');
@@ -292,8 +344,6 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
       expect(thrown.code).toBe('EADDRINUSE');
       expect(log).toHaveBeenCalledTimes(2);
 
-      // Closing is the last part of the contract: the server start returns is
-      // the handle that releases the port again.
       await new Promise((resolve) => server.close(resolve));
 
       expect(server.listening).toBe(false);
@@ -302,10 +352,8 @@ describe('Application Factory and Server Lifecycle Unit Tests', () => {
       // spies: a listener left open would leak into the next case and hold the
       // runner open at exit, and an unrestored console.log would silence the
       // reporter's own output. The close is guarded only on the server having
-      // been created, and its callback argument is discarded: closing a server
-      // that is already closed, or one still completing its bind, reports
-      // ERR_SERVER_NOT_RUNNING rather than failing, and releasing the handle
-      // is the only thing that matters here.
+      // been created; closing one already down passes ERR_SERVER_NOT_RUNNING
+      // to the discarded callback rather than throwing.
       if (server !== undefined) {
         await new Promise((resolve) => server.close(() => resolve()));
       }

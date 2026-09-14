@@ -1,28 +1,15 @@
 'use strict';
 
 /**
- * End-to-end contract tests for the tutorial's single endpoint, GET /hello.
+ * Proves the published GET /hello contract and both of the error paths.
  *
- * This suite proves the whole published contract: that GET /hello answers 200
- * with the eleven-byte plain-text body 'Hello world', that it sends the
- * documented headers and suppresses the one that names the framework, that
- * HEAD /hello answers with the same headers and no body, and that both error
- * paths - an unknown path and a method the route does not register - fall
- * through to the JSON 404 envelope.
- *
- * It drives the real Express application in process. createApp() returns an
- * application that has never opened a socket, and Supertest binds that
- * unbound request handler to an ephemeral port of its own for the duration of
- * each request, then closes it. No listener is started, no fixed port is
- * claimed, and nothing here can collide with a reader's own `npm start` or
- * with anything else already holding the project's default port.
- *
- * Five of the project's eight test cases live here; the other three cover the
- * configuration and the listener in test/unit/server.test.js.
+ * The suite drives the real Express application in process: createApp() returns
+ * an application that has never opened a socket, and Supertest binds that
+ * unbound request handler to an ephemeral port of its own for each request. So
+ * the suite claims no fixed port and cannot collide with a reader's running
+ * `npm start` or anything else already holding the project's default port.
  */
 
-// Supertest is the only external module this file needs: it issues the HTTP
-// requests and exposes the response for assertion.
 const request = require('supertest');
 
 // The application factory is the unit under test. Only createApp is required -
@@ -48,7 +35,6 @@ describe('Hello Endpoint Integration Tests', () => {
 
   describe('GET /hello', () => {
     it('should respond with status 200 and the exact eleven-byte body "Hello world"', async () => {
-      // Proves the payload itself: the status line and the body, byte for byte.
       const response = await request(app)
         .get('/hello')
         .expect(200);
@@ -66,16 +52,14 @@ describe('Hello Endpoint Integration Tests', () => {
     });
 
     it('should respond with text/plain, Content-Length 11 and no X-Powered-By header', async () => {
-      // Proves the header contract that accompanies the same 200 response.
       const response = await request(app)
         .get('/hello')
         .expect(200)
         .expect('Content-Type', /text\/plain/);
 
       // Node lower-cases every header name it parses, so the keys on
-      // response.headers are addressed in lower case. The value is compared
-      // as the string '11' rather than the number 11, because HTTP header
-      // values are always text - Content-Length is no exception.
+      // response.headers are addressed in lower case, and this content-length
+      // value is exposed as the string '11' rather than the number 11.
       expect(response.headers).toHaveProperty('content-length', '11');
 
       // Express advertises itself in an X-Powered-By header by default. Its
@@ -101,12 +85,10 @@ describe('Hello Endpoint Integration Tests', () => {
       // Content-Length is still 11 even though no bytes are sent.
       expect(response.headers).toHaveProperty('content-length', '11');
 
-      // HTTP forbids a body on a HEAD response, and superagent leaves
-      // response.text undefined rather than empty when there is nothing to
-      // read - measured against this application on Node.js 22.16.0 and
-      // Supertest 7.2.2. Coalescing to '' asserts "no body was sent" for
-      // either representation, so the case cannot pass or fail on that
-      // library detail.
+      // HTTP forbids a body on a HEAD response, and the client may represent
+      // that absence either as an empty string or as undefined. Coalescing to
+      // '' asserts "no body was sent" for either representation, so the case
+      // cannot pass or fail on that library detail.
       expect(response.text ?? '').toBe('');
     });
   });
@@ -129,18 +111,8 @@ describe('Hello Endpoint Integration Tests', () => {
         path: '/nonexistent'
       });
 
-      // timestamp records the instant of this request, so it cannot be
-      // compared against a fixed value - a toEqual over the whole body would
-      // check a live ISO 8601 value against a literal and fail on the next
-      // millisecond. The instant is not assertable, but the shape is: the four
-      // checks below pin the canonical form without pinning the moment.
-      // Asserting only that the key is present would stay green if the handler
-      // were changed to emit undefined, null, Date.now() or a locale string,
-      // which is exactly the malformed-timestamp regression these catch.
       const { timestamp } = response.body;
 
-      // Checked as a string first, so a missing or numeric value fails here
-      // with a readable type mismatch rather than inside a later matcher.
       expect(typeof timestamp).toBe('string');
 
       // The canonical UTC form that Date.prototype.toISOString produces:

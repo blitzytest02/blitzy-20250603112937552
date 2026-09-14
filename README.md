@@ -987,7 +987,7 @@ See [LICENSE](LICENSE) file for complete license text and terms.
 
 ### Related Tutorials
 
-- **Node.js Hello World Tutorial**: [src/nodejs-tutorial/README.md](src/nodejs-tutorial/README.md) - Parallel tutorial on Node.js v22.16.0 LTS with Express.js v5.1.0 exposing a single `GET /hello` endpoint that returns the plain-text body `Hello world`
+- **Node.js Hello World Tutorial**: [src/nodejs-tutorial/README.md](src/nodejs-tutorial/README.md) - Parallel tutorial on Node.js v22.23.2 LTS with Express.js v5.1.0 exposing a single `GET /hello` endpoint that returns the plain-text body `Hello world`
 - **Relationship to This Tutorial**: The Node.js project is an additive parallel teaching artifact, not a reversal of the v2.0.0 migration recorded in Version History below; the Python Flask application documented here remains the delivered implementation and this repository's primary tutorial
 
 ### Community Support
