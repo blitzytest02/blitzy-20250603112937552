@@ -1,23 +1,23 @@
 # Code of Conduct
-## Node.js Tutorial Application Community Standards
+## Hello World Tutorial Repository Community Standards
 
 ### Establishing a welcoming, inclusive, and educational environment for all community members
 
 **Scope:** Applies to all community spaces including GitHub repository, issues, pull requests, discussions, and related communications
 
-**Educational Context:** This code of conduct supports our mission to provide an accessible learning environment for Node.js v22.16.0 LTS and Express.js v5.1.0 education
+**Educational Context:** This code of conduct supports our mission to provide an accessible learning environment for every tutorial in this repository, whatever language, runtime, or framework it teaches
 
 ---
 
 ## Our Pledge
 
-We as members, contributors, and leaders pledge to make participation in our **Node.js Hello World Tutorial** community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
+We as members, contributors, and leaders pledge to make participation in our **Hello World Tutorial Repository** community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
-**Educational Commitment:** We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy learning community focused on Node.js and Express.js education.
+**Educational Commitment:** We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy learning community focused on web development education.
 
-**Learning Environment:** We are committed to creating an environment where learners of all skill levels feel supported, encouraged, and empowered to grow their Node.js development skills through hands-on HTTP server implementation and modern JavaScript fundamentals.
+**Learning Environment:** We are committed to creating an environment where learners of all skill levels feel supported, encouraged, and empowered to grow their web development skills through hands-on HTTP server implementation and the fundamentals of the languages and frameworks these tutorials teach.
 
-**Contribution Commitment:** We pledge to foster an environment where all community members can contribute meaningfully to the educational project, regardless of their current skill level or background in Node.js development.
+**Contribution Commitment:** We pledge to foster an environment where all community members can contribute meaningfully to the educational project, regardless of their current skill level or background in web development.
 
 ---
 
@@ -26,15 +26,15 @@ We as members, contributors, and leaders pledge to make participation in our **N
 ### Examples of behavior that contributes to a positive environment for our community include:
 
 #### Educational Excellence and Inclusive Learning
-- **Demonstrating empathy and kindness toward other people** - Especially important when helping beginners understand Node.js v22 LTS and Express.js v5 concepts
-- **Being respectful of differing opinions, viewpoints, and experiences** - Recognizing that there are multiple valid approaches to learning and implementing Node.js solutions
-- **Giving and gracefully accepting constructive feedback** - Essential for code reviews and learning progression in Node.js development
+- **Demonstrating empathy and kindness toward other people** - Especially important when helping beginners understand a new runtime, framework, or HTTP concept
+- **Being respectful of differing opinions, viewpoints, and experiences** - Recognizing that there are multiple valid approaches to learning and implementing web service solutions
+- **Giving and gracefully accepting constructive feedback** - Essential for code reviews and learning progression in web development
 - **Accepting responsibility and apologizing to those affected by our mistakes, and learning from the experience** - Modeling growth mindset and continuous learning in software development
 - **Focusing on what is best not just for us as individuals, but for the overall community** - Prioritizing collective learning and educational value over individual preferences
 
 #### Learning Support and Mentorship
-- **Providing patient guidance and support for learners at all skill levels** - Recognizing that everyone starts as a beginner in Node.js and Express.js development
-- **Sharing knowledge and resources generously** - Contributing to the collective understanding of Node.js v22 LTS and Express.js v5 features
+- **Providing patient guidance and support for learners at all skill levels** - Recognizing that everyone starts as a beginner with a new language or framework
+- **Sharing knowledge and resources generously** - Contributing to the collective understanding of the runtimes and frameworks these tutorials use
 - **Asking questions respectfully and providing context for learning** - Encouraging curiosity and deep understanding of HTTP server concepts
 - **Contributing to the educational project with clear, well-documented code and explanations** - Ensuring contributions enhance learning value and maintain educational quality standards
 
@@ -54,8 +54,8 @@ We as members, contributors, and leaders pledge to make participation in our **N
 - **Other conduct which could reasonably be considered inappropriate in a professional setting** → *Warning and corrective action as appropriate*
 
 #### Educational Environment Violations
-- **Dismissive or condescending responses to learning questions** - Particularly harmful in educational environment focused on Node.js learning → *Warning and required participation in educational communication training*
-- **Gatekeeping or elitist attitudes toward beginners** - Undermines inclusive learning environment for Node.js education → *Warning and mentoring on inclusive teaching practices*
+- **Dismissive or condescending responses to learning questions** - Particularly harmful in an educational environment built for learners → *Warning and required participation in educational communication training*
+- **Gatekeeping or elitist attitudes toward beginners** - Undermines the inclusive learning environment these tutorials depend on → *Warning and mentoring on inclusive teaching practices*
 - **Deliberately providing incorrect or misleading technical information** - Damages learning outcomes and trust in educational content → *Immediate correction required and potential temporary ban*
 
 #### Collaboration and Contribution Violations
@@ -73,7 +73,7 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 **Educational Leadership Excellence:** Maintainers are expected to model excellent educational practices, demonstrate patience with learners, and prioritize the learning environment in all enforcement decisions.
 
-**Technical Authority:** Maintainers have authority over technical decisions related to Node.js v22.16.0 LTS and Express.js v5.1.0 implementation while maintaining educational focus and community standards.
+**Technical Authority:** Maintainers have authority over technical decisions related to the implementation of this repository's tutorial projects while maintaining educational focus and community standards.
 
 **Contribution Oversight:** Maintainers are responsible for ensuring all contributions meet educational quality standards and provide value to the learning community through comprehensive review processes.
 
@@ -95,7 +95,7 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 **Representation Examples:** Using an official e-mail address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
 
-**Educational Context:** Special consideration is given to educational contexts where community members are learning Node.js and Express.js concepts, requiring extra patience and supportive communication.
+**Educational Context:** Special consideration is given to educational contexts where community members are learning the concepts these tutorials teach, requiring extra patience and supportive communication.
 
 **Contribution Context:** All contribution activities including code submissions, reviews, and collaborative development are governed by these standards with emphasis on educational value and professional development.
 
@@ -108,7 +108,7 @@ We as members, contributors, and leaders pledge to make participation in our **N
 **Primary Contact:** Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement.
 
 #### Reporting Channels:
-- **Email:** conduct@nodejs-tutorial.example.com *(Confidential reporting with identity protection)*
+- **Email:** conduct@example.com *(Confidential reporting with identity protection)*
 - **GitHub Issues:** Private issue with @maintainers tag *(Private repository for sensitive reports)*
 - **Direct Message:** Any project maintainer via GitHub DM *(Direct confidential communication)*
 
@@ -170,7 +170,7 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 #### Core Principles:
 - Assume positive intent and genuine desire to learn
-- Provide patient, clear explanations for Node.js and Express.js concepts
+- Provide patient, clear explanations for the concepts each tutorial teaches
 - Offer multiple learning approaches to accommodate different styles
 - Encourage questions and curiosity about HTTP server development
 - Share resources and documentation links for further learning
@@ -179,20 +179,20 @@ We as members, contributors, and leaders pledge to make participation in our **N
 ### Skill Level Inclusivity
 
 #### Beginner Support:
-- Extra patience for developers new to Node.js and server-side JavaScript
+- Extra patience for developers new to server-side web programming
 - Clear, step-by-step explanations without assuming prior knowledge
 - Encouragement to ask questions without fear of judgment
 - Gentle correction of misconceptions with educational explanations
 
 #### Intermediate Guidance:
-- Support for developers transitioning from other technologies to Node.js
-- Guidance on Express.js best practices and modern patterns
-- Help with understanding Node.js v22 LTS features and benefits
-- Assistance with testing strategies using Jest and Supertest
+- Support for developers transitioning between languages and frameworks
+- Guidance on web framework best practices and modern patterns
+- Help with understanding each project's runtime features and benefits
+- Assistance with testing strategies and each project's test tooling
 
 #### Advanced Mentoring:
 - Opportunities for experienced developers to mentor newcomers
-- Sharing of advanced Node.js patterns and performance optimization
+- Sharing of advanced server-side patterns and performance optimization
 - Leadership in code reviews with educational focus
 - Contribution to educational content and tutorial improvements
 
@@ -208,13 +208,13 @@ We as members, contributors, and leaders pledge to make participation in our **N
 - Help with development environment setup and troubleshooting
 - Assistance with Git workflow and GitHub collaboration
 - Support for different operating systems and development tools
-- Guidance on Node.js installation and version management
+- Guidance on runtime installation and version management
 
 #### Learning Differences:
 - Accommodation of different learning paces and styles
 - Multiple explanation approaches (visual, textual, hands-on)
 - Patience with repetitive questions and concept reinforcement
-- Recognition that everyone learns Node.js concepts differently
+- Recognition that everyone learns technical concepts differently
 
 ---
 
@@ -241,7 +241,7 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 #### Code Comments:
 - Write clear, educational comments explaining complex logic
-- Provide context for Node.js and Express.js implementation decisions
+- Provide context for runtime and framework implementation decisions
 - Include references to relevant documentation when helpful
 - Maintain professional tone in all code-related discussions
 
@@ -290,10 +290,10 @@ We as members, contributors, and leaders pledge to make participation in our **N
 ### Quality and Educational Standards
 
 #### Code Quality:
-- Follow JavaScript ES6+ best practices and Node.js conventions
+- Follow the best practices of the language and framework a change targets
 - Include educational comments and clear documentation
-- Maintain compatibility with Node.js v22.16.0 LTS and Express.js v5.1.0
-- Ensure comprehensive test coverage with Jest and Supertest
+- Maintain compatibility with each project's documented supported versions
+- Ensure comprehensive test coverage with the documented test tooling
 - Write code that enhances learning value and demonstrates best practices
 
 #### Documentation Quality:
@@ -333,13 +333,13 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 **Contributor Covenant:** This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1, available at https://www.contributor-covenant.org/version/2/1/code_of_conduct.html.
 
-**Educational Adaptations:** Additional sections on educational environment, skill level inclusivity, learning support, contribution standards, and collaborative development have been added to address the specific needs of our Node.js tutorial community.
+**Educational Adaptations:** Additional sections on educational environment, skill level inclusivity, learning support, contribution standards, and collaborative development have been added to address the specific needs of our tutorial community.
 
-**Community Input:** This code of conduct has been developed with input from the Node.js educational community and reflects best practices for inclusive technical education and collaborative development.
+**Community Input:** This code of conduct has been developed with input from this repository's educational community and reflects best practices for inclusive technical education and collaborative development.
 
-**Version Information:** Version 1.0 - Initial release aligned with Node.js v22.16.0 LTS and Express.js v5.1.0 tutorial project launch.
+**Version Information:** Version 1.0 - Initial release aligned with the launch of this repository's tutorial projects.
 
-**License Compatibility:** This code of conduct is compatible with the MIT license of the Node.js tutorial project and supports open source educational use.
+**License Compatibility:** This code of conduct is compatible with the repository's MIT license, whose authoritative text is the License section of the repository [README](README.md), and supports open source educational use.
 
 ---
 
@@ -349,12 +349,12 @@ We as members, contributors, and leaders pledge to make participation in our **N
 
 **Community Type:** Educational Open Source
 
-**Project:** Node.js Hello World Tutorial
+**Project:** Hello World Tutorial Repository
 
 **Contributor Covenant Version:** 2.1
 
 ---
 
-*This Code of Conduct is committed to fostering an inclusive, educational, and collaborative environment where all community members can learn, grow, and contribute to the Node.js tutorial project. We believe that by working together with respect, patience, and shared commitment to learning, we can create an exceptional educational resource for the Node.js and Express.js community.*
+*This Code of Conduct is committed to fostering an inclusive, educational, and collaborative environment where all community members can learn, grow, and contribute to this repository's tutorial projects. We believe that by working together with respect, patience, and shared commitment to learning, we can create an exceptional educational resource for everyone learning to build HTTP services.*
 
 **🎓 Happy Learning and Contributing!**

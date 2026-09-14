@@ -137,8 +137,16 @@ This command downloads Flask v3.1.1, pytest, coverage tools, and creates the vir
 The application supports environment-based configuration for deployment flexibility using python-dotenv:
 
 **Environment Variables:**
-- `PORT`: Server port (default: 3000)
-- `HOST`: Host address (default: localhost)
+- `PORT`: Server port. With no environment present the code default is
+  `8000` [src/backend/app.py:722], [src/backend/wsgi.py:106],
+  [src/backend/wsgi.py:503]. The value `3000` is supplied by the optional
+  environment template and by the container configuration
+  [src/backend/.env.example:38], [infrastructure/docker/Dockerfile:54], so
+  copying `.env.example` to `.env` is what makes the server listen on 3000.
+- `HOST`: Host address (default: `localhost`) [src/backend/app.py:721]. The
+  WSGI factory path used for container binding defaults to `0.0.0.0`
+  instead [src/backend/wsgi.py:105]; the two startup paths are distinct and
+  must not be conflated.
 - `FLASK_ENV`: Environment mode (development/production/testing)
 - `FLASK_DEBUG`: Debug mode (true/false)
 - `SECRET_KEY`: Flask secret key for session security
@@ -176,9 +184,19 @@ pytest             # Execute test suite to verify setup
 
 ### Starting the Development Server
 
-Launch the Flask development server using the WSGI entry point:
+Launch the Flask development server using the WSGI entry point. Check which
+of the two paths you are on before you run anything: `wsgi.py` starts a
+development server **only when `FLASK_ENV=development` is set**
+[src/backend/wsgi.py:495]. Without that variable the module initialises the
+WSGI application and starts no server — it logs production guidance instead,
+telling you to start Gunicorn [src/backend/wsgi.py:510-513]. A reader who
+runs `python wsgi.py` with no `FLASK_ENV` and sees no listening server is on
+that production path.
+
 ```bash
 # Using WSGI entry point (recommended)
+# Starts a development server only when FLASK_ENV=development is set
+export FLASK_ENV=development
 python wsgi.py
 
 # Alternative: Using Flask CLI
@@ -190,8 +208,17 @@ flask run --host=localhost --port=3000
 gunicorn wsgi:application --bind 0.0.0.0:3000 --workers 4
 ```
 
-**Expected Output:**
-```
+**Port used by each startup path:** the banner below reports `3000` because
+the environment supplies `PORT=3000` from the optional template
+[src/backend/.env.example:38] that the Environment Configuration section
+above instructs you to copy. With no environment file present the same
+development path falls back to `8000` [src/backend/wsgi.py:503]. Every
+`localhost:3000` transcript in the rest of this document therefore assumes
+the development path with the template-supplied port.
+
+**Expected Output (with `FLASK_ENV=development`):**
+
+```text
 🚀 WSGI Application Successfully Initialized!
 ============================================================
 ⏰ Startup time: 2024-01-01T12:00:00.000000
@@ -226,16 +253,31 @@ curl http://localhost:3000/hello
 ```
 
 **Expected JSON Response:**
+
 ```json
 {
-  "message": "Hello world"
+  "message": "Hello world",
+  "status": "success",
+  "timestamp": "2024-01-01T12:00:00.000000"
 }
 ```
 
+The handler builds this three-field envelope and `jsonify()` sorts its keys,
+so the wire order is `message`, `status`, `timestamp`
+[src/backend/app.py:367-411], [src/backend/app.py:391-399]. It is shown
+pretty-printed above for readability; the application factory sends it
+compact on the wire as a single line, as the header transcript under
+Command Line Testing Examples below shows. The `timestamp` value is
+generated per request and therefore differs on every call.
+
 **HTTP Response Details:**
-- Status Code: `200 OK`
-- Content-Type: `application/json`
-- Content-Length: `27`
+- Status Code: `200 OK` [src/backend/app.py:400]
+- Content-Type: `application/json` [src/backend/app.py:403]
+- Content-Length: `86` — the compact-JSON body produced by the application
+  factory (`create_app('production')`, `'development'` or `'testing'`, the
+  path Gunicorn and the test suite take). Direct `python app.py` execution
+  yields `99` bytes instead, because debug pretty-printing inserts spaces
+  after the JSON separators [src/backend/app.py:367-411].
 - Response Time: < 50ms
 
 ### Command Line Testing Examples
@@ -246,17 +288,41 @@ curl -i http://localhost:3000/hello
 ```
 
 **Output with headers:**
-```
+
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 27
+Content-Length: 86
+X-API-Version: 1.0
+X-Response-Time: 1.83ms
+X-Request-ID: req_1704110400000
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
+X-Permitted-Cross-Domain-Policies: none
 Date: Mon, 01 Jan 2024 12:00:00 GMT
 
-{"message": "Hello world"}
+{"message":"Hello world","status":"success","timestamp":"2024-01-01T12:00:00.000000"}
 ```
+
+The `86`-byte `Content-Length` is the application-factory (compact JSON)
+body; direct `python app.py` execution yields `99` bytes because of debug
+pretty-printing [src/backend/app.py:367-411]. The handler itself sets only
+`Content-Type` and `X-API-Version` [src/backend/app.py:403-404]; the
+security headers come from the after-request hook
+[src/backend/app.py:240-251], and the timing and tracing headers from
+[src/backend/app.py:342] and [src/backend/app.py:350].
+
+`Date`, `X-Response-Time`, `X-Request-ID` and the `timestamp` value vary per
+request, so the values above are illustrative rather than reproducible.
+
+This `curl` sends no `Origin` header, so no CORS headers appear in the
+response. When a request does carry a matching `Origin`, Flask-CORS adds
+`Access-Control-Allow-Origin: http://localhost:3000` and `Vary: Origin`; the
+allowed origins are `http://localhost:3000` and `http://localhost:8000`
+[src/backend/app.py:271].
 
 **Testing health check endpoint:**
 ```bash
@@ -298,20 +364,38 @@ Accept: application/json
 ### Response Format and Headers
 
 **Successful Response (200 OK):**
+
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 27
+Content-Length: 86
+X-API-Version: 1.0
+X-Response-Time: 1.83ms
+X-Request-ID: req_1704110400000
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
-Cache-Control: no-cache, no-store, must-revalidate
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
+X-Permitted-Cross-Domain-Policies: none
 Date: Mon, 01 Jan 2024 12:00:00 GMT
 
-{"message": "Hello world"}
+{"message":"Hello world","status":"success","timestamp":"2024-01-01T12:00:00.000000"}
 ```
 
-**Response Body:** JSON object with message field containing "Hello world"
+The `86`-byte `Content-Length` is the application-factory (compact JSON)
+body, and direct `python app.py` execution yields `99` bytes
+[src/backend/app.py:367-411]. This endpoint sends no `Cache-Control` header:
+the handler sets only `Content-Type` and `X-API-Version`
+[src/backend/app.py:403-404], and the remaining headers are added by the
+after-request hooks [src/backend/app.py:240-251], [src/backend/app.py:342],
+[src/backend/app.py:350]. The two CORS headers appear only when the request
+carries a matching `Origin` [src/backend/app.py:271], as described under
+Command Line Testing Examples above.
+
+**Response Body:** JSON object with `message`, `status` and `timestamp`
+fields, the `message` field carrying `Hello world`
+[src/backend/app.py:391-399].
 
 ### GET /health Health Check Endpoint
 
@@ -322,6 +406,7 @@ Date: Mon, 01 Jan 2024 12:00:00 GMT
 - **Response Format**: JSON with timestamp and service information
 
 **Successful Health Response:**
+
 ```json
 {
   "status": "healthy",
@@ -330,6 +415,11 @@ Date: Mon, 01 Jan 2024 12:00:00 GMT
   "version": "1.0.0"
 }
 ```
+
+The health handler additionally sets
+`Cache-Control: no-cache, no-store, must-revalidate` so that monitoring
+probes are never served from a cache [src/backend/app.py:449]. That header
+belongs to this endpoint only — `GET /hello` does not send it.
 
 ### Error Handling and Status Codes
 
