@@ -129,10 +129,39 @@ describe('Hello Endpoint Integration Tests', () => {
         path: '/nonexistent'
       });
 
-      // timestamp is generated per request, so only its presence can be
-      // asserted - a toEqual over the whole body would compare a live ISO
-      // 8601 value against a fixed one and fail on the next millisecond.
-      expect(response.body).toHaveProperty('timestamp');
+      // timestamp records the instant of this request, so it cannot be
+      // compared against a fixed value - a toEqual over the whole body would
+      // check a live ISO 8601 value against a literal and fail on the next
+      // millisecond. The instant is not assertable, but the shape is: the four
+      // checks below pin the canonical form without pinning the moment.
+      // Asserting only that the key is present would stay green if the handler
+      // were changed to emit undefined, null, Date.now() or a locale string,
+      // which is exactly the malformed-timestamp regression these catch.
+      const { timestamp } = response.body;
+
+      // Checked as a string first, so a missing or numeric value fails here
+      // with a readable type mismatch rather than inside a later matcher.
+      expect(typeof timestamp).toBe('string');
+
+      // The canonical UTC form that Date.prototype.toISOString produces:
+      // four-digit year, month, day, the literal T, a time carried to
+      // milliseconds, and a literal Z. Anchored at both ends, so no extra
+      // character - an offset such as +02:00 in place of the Z, or a stray
+      // space - can slip past the pattern.
+      expect(timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+
+      // Shape alone still admits an impossible instant such as
+      // '2026-13-45T99:99:99.999Z'. Date.parse returns NaN for those, and
+      // rejecting them here reports the failure as a plain assertion instead
+      // of letting the round-trip below throw a RangeError.
+      expect(Number.isNaN(Date.parse(timestamp))).toBe(false);
+
+      // The round trip, and the assertion that carries the contract:
+      // re-serialising the parsed instant reproduces the value character for
+      // character only when the handler emitted exactly what toISOString
+      // produces - proof of the documented ISO 8601 form, and still no claim
+      // about which millisecond it names.
+      expect(new Date(timestamp).toISOString()).toBe(timestamp);
     });
 
     it('should respond with 404 rather than 405 for POST /hello', async () => {

@@ -1,12 +1,12 @@
 /**
  * Route handler for the tutorial's single endpoint, GET /hello.
  *
- * Demonstrates the smallest useful Express route: a synchronous function that
- * receives the request and response objects, sets the status and the media
- * type, and sends a plain-text body. The handler is exported rather than
- * registered here, so src/app.js owns the routing table while this module owns
- * only the response - which is what lets the endpoint contract be tested
- * without starting a server.
+ * The smallest useful Express route: a synchronous function that receives
+ * the request and response objects and sends a plain-text body. Exporting it
+ * rather than registering it here keeps routing separate from response logic:
+ * src/app.js owns the routing table, this module only the reply. The endpoint
+ * is tested with no server of its own - createApp returns an application that
+ * never calls listen, and Supertest binds it to an ephemeral port per request.
  *
  * The module deliberately requires nothing. A route handler only ever touches
  * the objects Express hands it, so it needs neither the framework itself nor
@@ -24,12 +24,12 @@ const HELLO_BODY = 'Hello world';
 /**
  * Sends the plain-text body 'Hello world' with status 200.
  *
- * Two calls do all the work. .type('text/plain') resolves through Express's
- * mime lookup to the full 'text/plain; charset=utf-8' header, and .send()
- * derives Content-Length from the body it is given, so neither header is
- * written by hand here. Express answers HEAD /hello from this same handler
- * with identical headers and an empty body, which is why no second route is
- * registered for it.
+ * Three chained calls do all the work. .status(200) sets the status code;
+ * .type('text/plain') sets Content-Type, which Express normalises so a text
+ * type carries charset=utf-8; .send() writes the body as UTF-8 and takes
+ * Content-Length from its byte length. Neither header is written by hand here.
+ * Express answers HEAD /hello from this same handler with identical headers
+ * and an empty body, which is why no second route is registered for it.
  *
  * @param {express.Request} req Incoming request. Unused: this response never
  *   varies, but Express passes the request to every handler.

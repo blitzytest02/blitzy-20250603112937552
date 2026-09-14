@@ -26,8 +26,8 @@ function resolveConfig(env = process.env) {
 // multi-line header comment here would silently break those citations; the
 // longer explanation belongs from this point down instead.
 //
-// resolveConfig holds both defaults in one place and is the single point in
-// the whole project that touches process.env. Number.parseInt yields NaN for
+// resolveConfig holds both defaults in one place and is the only place in the
+// runtime code that touches process.env. Number.parseInt yields NaN for
 // an absent or non-numeric PORT and NaN is falsy, so one || fallback covers
 // both cases; HOST is already a string and needs only an empty-value
 // fallback. Taking the environment as a parameter - defaulting to the real
@@ -41,26 +41,26 @@ function resolveConfig(env = process.env) {
 /**
  * Starts the HTTP listener for the given application.
  *
- * Both arguments are required on purpose. Declaring them as default
- * parameters - start(app = createApp(), config = resolveConfig()) - would add
- * branches that no test executes, and jest.config.js gates branch coverage at
- * 95%, so `npm test` would fail on a clean clone.
+ * Both arguments are required on purpose: as default parameters - start(app =
+ * createApp(), config = resolveConfig()) - they would add branches that no
+ * test executes, and jest.config.js gates branch coverage at 95%.
  *
- * The listener's callback writes one line to stdout and interpolates the
- * config this function was handed rather than server.address(), so the message
- * a reader compares against the tutorial always names the host and port they
- * asked for. With the defaults it reads, character for character,
- * `Server listening on: http://localhost:3000`. That line is the only output
- * this project produces: no startup banner, no timestamp and no request
- * logging. The http.Server is returned so that a caller - the unit suite, in
- * practice - can close it again.
+ * Express 5 gives the callback both outcomes: app.listen registers it with
+ * server.once('error', done) as well as handing it to the socket, so an Error
+ * arrives as its first argument when the bind fails. Rethrowing it leaves the
+ * diagnostic Troubleshooting documents - the stack, `code: 'EADDRINUSE'`, a
+ * non-zero exit - rather than a success URL for a server that never bound.
+ * A successful bind writes `Server listening on: http://localhost:3000` with
+ * the defaults and nothing else: no banner, no timestamp, no request logging.
+ * The line names the config handed in rather than server.address(), and the
+ * http.Server is returned so that a caller can close it again.
  *
  * @param {import('express').Application} app - application from createApp()
  * @param {{port: number, host: string}} config - resolved listening config
  * @returns {import('http').Server} the listening HTTP server
  */
 function start(app, config) {
-  return app.listen(config.port, config.host, () => {
+  return app.listen(config.port, config.host, (error) => { if (error) throw error;
     console.log(`Server listening on: http://${config.host}:${config.port}`);
   });
 }
