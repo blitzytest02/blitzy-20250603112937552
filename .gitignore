@@ -404,3 +404,4 @@ newrelic_agent.log
 # Node.js Tutorial Application - Educational Repository Management
 # Total patterns: 100+ comprehensive exclusion rules for clean repository
 # =============================================================================
+!hello-node/.env.example
