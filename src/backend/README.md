@@ -164,24 +164,65 @@ FLASK_DEBUG=true
 SECRET_KEY=your-secret-key-change-in-production
 ```
 
-`src/backend/.env.example` already contains these values, so the copy step
-is a single command run from `src/backend`:
+The binding used by the `localhost:3000` commands in this document comes
+from `PORT` and `HOST` alone — the Usage section exports `FLASK_ENV`
+alongside them to select the development-server path — so the narrowest
+way to supply them is to export those two values. No file is created, and
+nothing else in the template is switched on:
+
+```bash
+export PORT=3000
+export HOST=localhost
+```
+
+`src/backend/.env.example` carries the same two values
+[src/backend/.env.example:38], [src/backend/.env.example:52], and copying
+it is a single command run from `src/backend`:
 
 ```bash
 cp .env.example .env
 ```
 
-Two consequences of that file are worth knowing before you run anything.
-It sets `PORT=3000` [src/backend/.env.example:38], which is what makes the
-`localhost:3000` commands in this document resolve. It also sets
-`FLASK_DEBUG=true`, which switches the application factory into debug mode
-[src/backend/app.py:156], and Flask then pretty-prints JSON instead of
-sending it compact — so the `/hello` body grows from 86 bytes to 99. The
-Usage section below states which byte count belongs to which startup path.
+That copy activates every value in the template, and two of them change
+how the application behaves. `FLASK_DEBUG=true`
+[src/backend/.env.example:96] puts the factory's development
+configuration into debug mode [src/backend/app.py:156],
+[src/backend/app.py:185]: measured through `create_app('development')`,
+the `/hello` body grows from 86 bytes compact to 99 pretty-printed, and
+the error handlers log full stack traces [src/backend/app.py:581],
+[src/backend/app.py:619]. The template also sets `FLASK_ENV=development`
+[src/backend/.env.example:75], which switches debug on for the `wsgi.py`
+startup paths whatever `FLASK_DEBUG` says — the Usage section documents
+that second mechanism. `SECRET_KEY` [src/backend/.env.example:162] ships
+a fixed development value that the factory reads as Flask's session
+signing key [src/backend/app.py:161]; because that value is committed
+here, anyone who can read this repository can forge a session signed
+with it.
+
+Both are local-development defaults only, and that applies equally to the
+example block above and to the copied file. Before the server is reachable
+from anything but `localhost`, and before any production run, replace both.
+Generate a unique high-entropy key:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Set `SECRET_KEY` in `.env` to that value — the template asks for at least
+32 characters from a cryptographically secure generator and says never to
+carry the development key forward [src/backend/.env.example:267-269] — and
+set `FLASK_DEBUG=false`, which the template's own security note requires
+outside local use [src/backend/.env.example:296]. Turning that one
+variable off is not sufficient on its own: set `FLASK_ENV=production` with
+it, because a development environment switches debug on by itself, as the
+template's own container example does [src/backend/.env.example:228-229].
+The Usage section below states which byte count belongs to which startup
+path.
 
 ### Verification Steps
 
 Confirm successful installation:
+
 ```bash
 # Verify Python version
 python --version  # Should show 3.12+ or higher
@@ -189,15 +230,69 @@ python --version  # Should show 3.12+ or higher
 # Verify pip version
 pip --version      # Should show 23.0+ or higher
 
-# Verify Flask installation
-pip show Flask     # Should show Flask>=3.1.1
+# Verify Flask installation: pip prints a concrete release, as in
+# "Version: 3.1.3", never a requirement expression. Any release that
+# satisfies the declared Flask>=3.1.1 is correct
+# [src/backend/requirements.txt:11]
+pip show Flask
 
 # Verify virtual environment activation
 which python       # Should show venv path
 
-# Run basic functionality test
-pytest             # Execute test suite to verify setup
+# Exercise the application factory and the /hello route in-process.
+# Run from src/backend, so that "app" resolves to app.py
+python - <<'PY'
+from app import create_app
+r = create_app('testing').test_client().get('/hello')
+print(r.status_code, r.headers['Content-Type'], len(r.data))
+PY
 ```
+
+The factory logs several INFO lines while it builds the application; the
+last line of output is the check itself:
+
+```text
+200 application/json 86
+```
+
+That is the 86-byte application-factory envelope described under Usage, so
+a matching line confirms the interpreter, the installed dependencies and
+the route together.
+
+`pytest` cannot stand in for that check in this repository today. Both
+pytest configuration files close their `collect_ignore` list with a stray
+`]` — [pytest.ini:200] and [src/backend/pytest.ini:105] — and pytest
+rejects the file while parsing it, before collecting a single test:
+
+```text
+ERROR: <repo>/src/backend/pytest.ini:105: unexpected line: ']'
+```
+
+The absolute path varies with the checkout location, the exit status is 4,
+and the run from the repository root aborts the same way against
+[pytest.ini:200].
+
+That parse failure is the first blocker rather than the only one, and
+correcting those two lines does not on its own make `pytest` a setup
+check. Collected with the configuration bypassed, neither test module runs
+as the repository is laid out:
+
+- `tests/test_app.py` imports `from src.app import create_app` and skips
+  the whole module when that import fails
+  [src/backend/tests/test_app.py:54-56]. There is no `src/app.py` and no
+  `src/backend/src/` directory, so collection reports no tests and exits
+  5.
+- `tests/test_wsgi.py` imports `src.backend.wsgi`
+  [src/backend/tests/test_wsgi.py:64], which imports top-level `app` at
+  module scope and calls `sys.exit(1)` when that fails
+  [src/backend/wsgi.py:49-54]. Run from the repository root the collector
+  dies with `SystemExit` and exits 3; with `src/backend` on `PYTHONPATH`
+  the same file collects its 11 tests.
+
+Use the in-process check above to verify setup. Making `pytest` itself
+verify anything needs the configuration parsed **and** those two import
+paths resolved — changes to Python and configuration files that are
+outside this document.
 
 ## Usage
 
@@ -693,7 +788,17 @@ The application uses pytest v8.4.0+ as the primary testing framework, providing 
 
 ### Running Unit Tests
 
+No `pytest` invocation in this section runs as the repository stands, and
+parsing the configuration successfully would not be enough to change that.
+pytest first aborts on the stray `]` in [pytest.ini:200] and
+[src/backend/pytest.ini:105] before collecting anything; with that
+bypassed, `tests/test_app.py` skips itself and `tests/test_wsgi.py` exits
+during import. The Verification Steps section records both layers with
+their exit statuses and supplies the in-process check to use instead. The
+commands below describe what the suite is written to cover.
+
 Execute the complete test suite:
+
 ```bash
 # Run all tests with coverage
 pytest
@@ -806,11 +911,14 @@ src/backend/
 ├── .env.example           # Environment variable template
 ├── .gitignore             # Git ignore patterns
 └── tests/
-    ├── conftest.py        # pytest fixtures and configuration
-    ├── test_app.py        # Flask application unit tests
-    ├── test_endpoints.py  # HTTP endpoint integration tests
-    └── test_wsgi.py       # WSGI application integration tests
+    ├── test_app.py        # Flask app, route, error and security tests
+    └── test_wsgi.py       # WSGI lifecycle and integration tests
 ```
+
+Those two modules are the whole suite. There is no `tests/conftest.py`:
+each module declares the fixtures it uses, so a fixture is read in the
+file that consumes it [src/backend/tests/test_app.py:620-691],
+[src/backend/tests/test_wsgi.py:85-294].
 
 ### Component Responsibilities
 
@@ -871,23 +979,28 @@ FLASK_APP=app.py
 
 ### Testing Structure
 
-**tests/conftest.py - pytest Fixtures:**
-- Flask application factory fixture for test isolation
-- Test client fixture for HTTP request simulation
-- Database fixtures (if implemented in future)
-- Mock data generators using Faker library
+**tests/test_app.py - Application and Endpoint Tests:**
 
-**tests/test_app.py - Application Unit Tests:**
-- Flask application factory functionality validation
-- Route handler logic testing in isolation
-- Middleware execution order verification
-- Configuration loading and validation
+- Flask application factory functionality and per-environment
+  configuration validation
+- `/hello` and `/health` request-response cycles through the Flask test
+  client, including response headers and timing
+- Error handling for 404, 405 and 500 responses, asserted on the JSON
+  body and status code
+- Security header and CORS configuration verification, plus middleware,
+  stateless-operation and configuration-management checks
+- Its own fixtures — the application, the test client, the CLI runner, an
+  auto-use environment setup and a memory monitor
+  [src/backend/tests/test_app.py:620-691]
 
-**tests/test_endpoints.py - Endpoint Integration Tests:**
-- Complete HTTP request-response cycle validation
-- JSON response format and content verification
-- Error handling and status code validation
-- Security header verification
+**tests/test_wsgi.py - WSGI Integration Tests:**
+
+- WSGI server startup, signal handling and port-binding validation
+- Flask-to-WSGI integration through the exported `application` callable
+- Response-time, memory-usage and concurrent-load measurement
+- python-dotenv environment loading and configuration validation
+- Its own fixtures, including the dynamic-port allocator and the memory
+  and performance monitors [src/backend/tests/test_wsgi.py:85-294]
 
 ## Educational Context
 
@@ -957,18 +1070,50 @@ OSError: [Errno 98] Address already in use
 ```
 
 **Solutions:**
-1. **Kill existing process:**
+1. **Stop the process that holds the port — after confirming it is
+   yours:**
+
+   Identify the listener and its owner first. A port-wide kill such as
+   `fuser -k 3000/tcp` signals every holder without telling you what it
+   was, which on a shared machine can stop a colleague's service or an
+   unrelated development server.
+
    ```bash
-   # Find process using port 3000
-   lsof -i:3000
+   # Show the listener with its command, PID and owning user
+   lsof -nP -iTCP:3000 -sTCP:LISTEN
+   # Where lsof is unavailable, ss reports the same owner information
+   ss -ltnp | grep :3000
+
+   # Confirm the PID really is your Flask server before signalling it
+   ps -p <PID> -o pid,user,args
+   ```
+
+   Then ask it to stop. Plain `kill` sends SIGTERM, which is what
+   `wsgi.py` registers a handler for [src/backend/wsgi.py:239-240], so
+   the graceful shutdown path runs [src/backend/wsgi.py:258]:
+
+   ```bash
+   kill <PID>
+
+   # Confirm it released the port
+   lsof -nP -iTCP:3000 -sTCP:LISTEN
+   ```
+
+   Only if the process is still listening after SIGTERM, escalate.
+   `kill -9` cannot be caught, so the shutdown handler never runs and the
+   server exits without closing down cleanly — it is a last resort:
+
+   ```bash
    kill -9 <PID>
-   
-   # Or use fuser
-   fuser -k 3000/tcp
-   
-   # Windows equivalent
+   ```
+
+   On Windows, the same order applies: identify the owning image, ask it
+   to exit, and add `/F` only if it refuses.
+
+   ```text
    netstat -ano | findstr :3000
-   taskkill /PID <PID> /F
+   tasklist /FI "PID eq <PID>"
+   taskkill /PID <PID>
    ```
 
 2. **Use alternative port:**
@@ -1087,7 +1232,8 @@ ImportError: cannot import name 'create_app' from 'app'
 
 2. **Fix Python path in tests:**
    ```python
-   # In conftest.py or test files
+   # At the top of a test module, or of a conftest.py you add — this
+   # repository ships neither a conftest.py nor this path shim
    import sys
    import os
    sys.path.insert(0, os.path.dirname(__file__))

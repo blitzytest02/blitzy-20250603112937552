@@ -14,9 +14,9 @@ The service publishes exactly **one endpoint**, `GET /hello`. It answers with
 the eleven-byte plain-text body `Hello world`, and there is nothing else to
 call: no second route, no health check, no API versioning, and no
 authentication on any path or method. The route is registered once
-[src/nodejs-tutorial/src/routes/hello.js:28], and the application that mounts
+[src/nodejs-tutorial/src/routes/hello.js:22], and the application that mounts
 it is assembled by the `createApp()` factory
-[src/nodejs-tutorial/src/app.js:31].
+[src/nodejs-tutorial/src/app.js:23].
 
 Three behaviours come from Express rather than from the tutorial's own code,
 and all three are documented here because a reference that listed only `GET`
@@ -51,7 +51,7 @@ out.
 The `ETag` is a deterministic weak hash of the fixed body, so it is the same
 on every run of the unmodified service. `X-Powered-By` is absent because it is
 disabled immediately after the application is created
-[src/nodejs-tutorial/src/app.js:37]. `HEAD /hello` returns no body while still
+[src/nodejs-tutorial/src/app.js:29]. `HEAD /hello` returns no body while still
 advertising `Content-Length: 11`.
 
 **The body has exactly one interior space.** The request this tutorial answers
@@ -59,7 +59,7 @@ was written with a double space, but that space sat *outside* the quoted
 string. The verified `Content-Length: 11` settles the question:
 `H-e-l-l-o-SPACE-w-o-r-l-d` is eleven bytes, where a doubled interior space
 would be twelve. The string has a single definition in the codebase, the
-`HELLO_BODY` constant [src/nodejs-tutorial/src/routes/hello.js:19].
+`HELLO_BODY` constant [src/nodejs-tutorial/src/routes/hello.js:13].
 
 ### Service-wide properties
 
@@ -73,16 +73,16 @@ These hold regardless of which response is returned.
 | Versioning | None — no version prefix and no version header |
 
 The two defaults are literals in the server entry point — the `DEFAULT_HOST`
-constant [src/nodejs-tutorial/src/server.js:33] and the `DEFAULT_PORT`
-constant [src/nodejs-tutorial/src/server.js:43]; every command documented in
+constant [src/nodejs-tutorial/src/server.js:24] and the `DEFAULT_PORT`
+constant [src/nodejs-tutorial/src/server.js:30]; every command documented in
 this tutorial uses them unchanged. Loopback binding is deliberate, so the
 tutorial server is not reachable from the network.
 
 An override is validated before anything is bound, so not every value is
 accepted: blank or unset takes the default, a `PORT` must be a whole number
-from 1024 to 65535 [src/nodejs-tutorial/src/server.js:122-144], and a `HOST`
+from 1024 to 65535 [src/nodejs-tutorial/src/server.js:161-183], and a `HOST`
 must contain no whitespace and no control characters
-[src/nodejs-tutorial/src/server.js:152-171]. A value that breaks either rule
+[src/nodejs-tutorial/src/server.js:191-208]. A value that breaks either rule
 is refused with one line on standard error and an exit status of `1`, and no
 socket is opened at all — so the responses documented here are served only on
 a binding the entry point accepted.
@@ -97,13 +97,13 @@ different things:
 - **inferred** — no transcript is published for that row and no automated
   assertion covers it. It is known from the source and from Express's own
   routing: a request that matches no route reaches the same terminal
-  not-found handler [src/nodejs-tutorial/src/app.js:50-55] that produced the
+  not-found handler [src/nodejs-tutorial/src/app.js:42-47] that produced the
   executed `404` transcripts, and a `HEAD` response never carries a body.
 
 What the automated suite proves is narrower than either column. The four
 tests in `test/hello.test.js` pin the status, the body bytes and the media
 type of `GET /hello`, and the status, body, byte count and media type of one
-unmatched `GET` [src/nodejs-tutorial/test/hello.test.js:37-102]. They assert
+unmatched `GET` [src/nodejs-tutorial/test/hello.test.js:24-71]. They assert
 nothing about the other methods and nothing about the `HEAD`, `OPTIONS` or
 conditional-`304` behaviours. Everything beyond those two paths rests on the
 captured transcripts below or, for the inferred rows, on the source reasoning
@@ -159,7 +159,7 @@ Accept: text/plain
 
 The host is written `127.0.0.1` here and everywhere else in this tutorial,
 matching the `DEFAULT_HOST` literal in the server entry point
-[src/nodejs-tutorial/src/server.js:33].
+[src/nodejs-tutorial/src/server.js:24].
 
 ## The 200 response
 
@@ -190,7 +190,7 @@ status, the media type, the eleven-byte length, the `ETag`, and the body.
 ## Unknown paths and other methods
 
 Every request the single route does not match reaches the terminal handler
-registered last in the application [src/nodejs-tutorial/src/app.js:50-55].
+registered last in the application [src/nodejs-tutorial/src/app.js:42-47].
 That handler answers `404` with a nine-byte `text/plain` body, and that `404`
 is the only response the tutorial's own code produces besides the `200` on
 `GET /hello`. The service returns two more that no handler here writes: the
@@ -270,7 +270,7 @@ Keep-Alive: timeout=5
 `Content-Length: 11` is advertised while no body is sent, which is correct for
 `HEAD`: the headers describe the representation a `GET` would return. The
 route module registers no `HEAD` handler at all
-[src/nodejs-tutorial/src/routes/hello.js:28] — Express derives this response
+[src/nodejs-tutorial/src/routes/hello.js:22] — Express derives this response
 from the `GET` route.
 
 ## The `OPTIONS /hello` response
@@ -314,7 +314,7 @@ method list to answer with and the request receives the ordinary `404`.
 ## Conditional requests
 
 Express computes a default weak `ETag` over the response body, and the
-tutorial keeps it [src/nodejs-tutorial/src/routes/hello.js:36]. Because the
+tutorial keeps it [src/nodejs-tutorial/src/routes/hello.js:30]. Because the
 body never changes, the `ETag` is stable, which makes a conditional request a
 demonstrable lesson rather than an unexplained header: send the `ETag` back in
 an `If-None-Match` header and the server answers `304 Not Modified` instead of
@@ -401,7 +401,7 @@ flowchart TD
 Two branches of that diagram are not the tutorial's code. The `OPTIONS` answer
 is produced by **Express, not by the route module**, and so is the `HEAD`
 response; the tutorial registers a single `GET` handler and nothing else
-[src/nodejs-tutorial/src/routes/hello.js:28].
+[src/nodejs-tutorial/src/routes/hello.js:22].
 
 The `405` a production API would return in place of the fall-through is
 **deliberately omitted** here, not overlooked. The Flask application in this
@@ -416,7 +416,7 @@ two projects look alike when they are not.
 
 - `Content-Type`: `text/plain; charset=utf-8` — the media type of the body,
   expanded by Express from the short form `text/plain` passed by the handler
-  [src/nodejs-tutorial/src/routes/hello.js:36]. The `OPTIONS` response is the
+  [src/nodejs-tutorial/src/routes/hello.js:30]. The `OPTIONS` response is the
   one exception: Express sets `text/plain` there with no charset parameter.
 - `Content-Length`: `11` — the response body length in bytes, derived by
   Express from the body the handler sent. It is `9` on the `404` and on the
@@ -429,7 +429,7 @@ two projects look alike when they are not.
   response only, and not by the tutorial's code.
 - `X-Powered-By`: *disabled* — Express would advertise itself with this header
   on every response; it is switched off once, during assembly
-  [src/nodejs-tutorial/src/app.js:37], so it appears on no response at all.
+  [src/nodejs-tutorial/src/app.js:29], so it appears on no response at all.
 
 ### Security headers, and the production alternative
 
@@ -442,7 +442,7 @@ subsection: the security headers a production service is expected to send are
 `X-Content-Type-Options` on the `200` or on the `404` — the `nosniff` header
 listed above is sent by Express on the `OPTIONS` answer and nowhere else. The
 application registers no security-header middleware at all
-[src/nodejs-tutorial/src/app.js:31-58].
+[src/nodejs-tutorial/src/app.js:23-50].
 
 That omission is deliberate, for the same reason the `405` is: the tutorial
 serves one public, read-only greeting on the loopback interface, and every
@@ -493,7 +493,7 @@ space.
 **There is none.** No credentials, tokens, API keys, cookies or signed headers
 are required on any path or method, and none are checked: the application
 registers no authentication middleware
-[src/nodejs-tutorial/src/app.js:31-58]. A bare `curl` with no headers beyond
+[src/nodejs-tutorial/src/app.js:23-50]. A bare `curl` with no headers beyond
 `Host` receives the full `200` response, which is what every transcript above
 shows. Nothing about this is a recommendation for a real service; it is the
 consequence of a tutorial that serves one public, read-only greeting.
@@ -525,6 +525,6 @@ contribution guide had published for the endpoint before any implementation
 existed to serve it. That guide no longer states the contract itself: its
 `API Documentation Format` section points here for it, and documents the
 endpoint by linking rather than by restating
-[CONTRIBUTING.md:1980-2016]. The Flask application keeps its JSON envelope
+[CONTRIBUTING.md:2114-2150]. The Flask application keeps its JSON envelope
 untouched. Documenting the difference explicitly is what keeps either project
 from asserting a contract its own application does not serve.

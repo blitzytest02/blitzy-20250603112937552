@@ -149,7 +149,7 @@ which python  # Should show .venv path
 ### 3. Install Dependencies
 
 ```bash
-# Install Flask v3.1.1 and production dependencies
+# Install Flask (>=3.1.1) and the other production dependencies
 pip install -r requirements.txt
 
 # Install development dependencies (optional)
@@ -265,8 +265,9 @@ curl -i http://localhost:8000/hello
 # Test error handling
 curl http://localhost:8000/invalid
 
-# Confirm the JSON media type the endpoint already returns
-curl -H "Accept: application/json" http://localhost:8000/hello
+# Confirm the JSON media type from the response headers
+curl -sI http://localhost:8000/hello | grep -i '^content-type:'
+# Should print: Content-Type: application/json
 ```
 
 **Expected Responses:**
@@ -544,9 +545,6 @@ pytest
 
 # Run tests with verbose output
 pytest -v
-
-# Run tests in watch mode for development (requires pytest-watch)
-pytest-watch
 
 # Generate coverage report
 pytest --cov=. --cov-report=html
@@ -988,7 +986,8 @@ docker exec -it <container-id> sh
 **Solutions:**
 ```bash
 # Verify system resources
-free -h  # Linux/macOS memory check
+free -h  # Linux memory check
+vm_stat  # macOS memory check
 top      # Process monitoring
 
 # Optimize pip install
@@ -1002,11 +1001,11 @@ python -X dev app.py
 
 **Monitoring:**
 ```bash
+# Create curl-format.txt first: the -w "@file" form reads it
+echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.txt
+
 # Monitor response times
 curl -w "@curl-format.txt" http://localhost:8000/hello
-
-# Create curl-format.txt
-echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.txt
 ```
 
 **Performance Targets:**

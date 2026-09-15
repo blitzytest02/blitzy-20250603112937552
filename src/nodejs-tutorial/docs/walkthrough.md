@@ -78,7 +78,7 @@ const HELLO_BODY = 'Hello world';
 ```
 
 `express.Router()` returns a mountable request handler of its own
-[src/nodejs-tutorial/src/routes/hello.js:14]. Using one keeps route
+[src/nodejs-tutorial/src/routes/hello.js:8]. Using one keeps route
 registration out of application assembly: this file decides what `/hello`
 answers, and `src/app.js` decides only where the router is mounted.
 
@@ -96,7 +96,7 @@ module.exports = { router, HELLO_BODY };
 
 `router.get('/hello', ...)` registers the full path rather than a bare `'/'`,
 which is why `src/app.js` can mount the router at the application root without
-the path being nested twice [src/nodejs-tutorial/src/routes/hello.js:28].
+the path being nested twice [src/nodejs-tutorial/src/routes/hello.js:22].
 
 ### The status-type-send chain, link by link
 
@@ -121,7 +121,7 @@ a captured transcript.
 
 `HELLO_BODY` is the single definition of one specific thing: the body of the
 successful `GET /hello` response, and of the `HEAD` response Express derives
-from it [src/nodejs-tutorial/src/routes/hello.js:19]. It is not the only body
+from it [src/nodejs-tutorial/src/routes/hello.js:13]. It is not the only body
 a client can receive on that path — the terminal handler's `NOT_FOUND_BODY`
 answers an unsupported method, and Express answers `OPTIONS` with its own
 allowed-method list — and [the API reference](api-reference.md) documents both
@@ -139,9 +139,9 @@ four distinct roles:
 
 | Role | Example |
 | --- | --- |
-| the authoritative definition | `src/routes/hello.js:19` |
-| an independent assertion | `test/hello.test.js:56` |
-| metadata and JSDoc | `package.json:5`, `routes/hello.js:22-26` |
+| the authoritative definition | `src/routes/hello.js:13` |
+| an independent assertion | `test/hello.test.js:36` |
+| metadata and JSDoc | `package.json:5`, `routes/hello.js:16-20` |
 | quoted source and captured output | the snippets in this document |
 
 Only the first serves a byte to a client, which is why the others take nothing
@@ -155,7 +155,7 @@ itself and could never fail, while an independent literal fails the moment the
 constant changes without the contract changing with it. Exporting the constant
 alongside the router keeps the value available to any future consumer that
 wants the string rather than the bytes
-[src/nodejs-tutorial/src/routes/hello.js:39].
+[src/nodejs-tutorial/src/routes/hello.js:33].
 
 ### How the project bounds repetition
 
@@ -201,10 +201,10 @@ one place, and the response is one status-type-send chain — but it teaches
 them on a route module for an endpoint the tutorial does not serve, labelled
 illustrative only, and cites the delivered module by path instead of
 reproducing it, so that no value of the published contract is restated there
-[CONTRIBUTING.md:984-998]. The rationale for the absent instrumentation is
+[CONTRIBUTING.md:1069-1080]. The rationale for the absent instrumentation is
 annotated on that illustrative handler: "No timing instrumentation either: an
 endpoint that publishes no performance target gains nothing from measuring
-one here" [CONTRIBUTING.md:1014-1017]. A learner reading an eleven-byte
+one here" [CONTRIBUTING.md:1095-1098]. A learner reading an eleven-byte
 response handler should see the response, not a stopwatch.
 
 The same guide's "Module Organization" section documents the identical
@@ -212,7 +212,7 @@ three-module split — the route declares the endpoint, the application
 assembles it, the server binds it — and names all three delivered modules by
 path rather than reproducing any of them there; the sketch beneath that
 prose is labelled illustrative only and mounts a router for an endpoint the
-tutorial does not serve [CONTRIBUTING.md:718-728]. The three modules
+tutorial does not serve [CONTRIBUTING.md:737-747]. The three modules
 described in this document are therefore the whole service: there is no
 fourth module, no health route and no middleware or utility directory
 anywhere in the project.
@@ -246,7 +246,7 @@ module.exports = { createApp };
 ```
 
 Note what the require line destructures: only `router` is taken from
-`{ router, HELLO_BODY }` [src/nodejs-tutorial/src/app.js:14]. The body string
+`{ router, HELLO_BODY }` [src/nodejs-tutorial/src/app.js:8]. The body string
 is the route module's business, so this file never restates it.
 
 Requiring this module has no side effects at all. It binds no socket, reads no
@@ -256,9 +256,9 @@ environment variable and starts nothing — everything happens inside
 ### Why a factory instead of a shared application
 
 `module.exports = { createApp }` exports a function, never a ready-made
-application instance [src/nodejs-tutorial/src/app.js:60]. Each call assembles
+application instance [src/nodejs-tutorial/src/app.js:52]. Each call assembles
 and returns a fresh Express application
-[src/nodejs-tutorial/src/app.js:31-58].
+[src/nodejs-tutorial/src/app.js:23-50].
 
 That single decision is what makes the test suite cheap. Every test calls
 `createApp()` and hands the result straight to `supertest`, which drives the
@@ -274,19 +274,22 @@ independent.
 
 `app.disable('x-powered-by')` switches off the header Express would otherwise
 add to every response, advertising the framework serving it
-[src/nodejs-tutorial/src/app.js:37]. Removing framework fingerprinting is the
+[src/nodejs-tutorial/src/app.js:29]. Removing framework fingerprinting is the
 cheapest hardening available to a Node service — one call, applied once during
 assembly, effective on every path and every method. This repository's
 contributor guide reaches for the same call in two different registers, in
 both cases inside illustrative code rather than as a quotation of this
-module. In its "Module Organization" section the call carries the inline
-comment "Security: Remove framework fingerprinting" [CONTRIBUTING.md:744],
-within the sketch that section labels illustrative only
-[CONTRIBUTING.md:720-728]. In its "Security Features Utilization" section it
-appears again under the comment "Framework fingerprinting prevention"
-[CONTRIBUTING.md:972-973], as the one measure in that illustrative block the
-tutorial actually applies — and the lead-in that says so cites the delivered
-call, the one quoted above at `src/app.js:37` [CONTRIBUTING.md:951-954].
+module. In its "Module Organization" section the call is annotated as
+hardening placed before routing, scoped to what it achieves — dropping
+`X-Powered-By` "removes one direct disclosure" and does not stop an observer
+identifying the framework by its behaviour [CONTRIBUTING.md:763-766] — within
+the sketch that section labels illustrative only [CONTRIBUTING.md:739-747].
+In its "Security Features Utilization" section it appears again, annotated
+there as a setting rather than middleware, so its position does not matter
+[CONTRIBUTING.md:1044-1047], as the one measure in that illustrative block
+the tutorial actually applies — and the lead-in that says so cites the
+delivered call, the one quoted above at `src/app.js:29`
+[CONTRIBUTING.md:1010-1013].
 
 ### Middleware order, and how a terminal handler differs from a route
 
@@ -295,9 +298,9 @@ Express runs what you register in the order you register it, so the two
 
 - `app.use(router)` mounts the router at the application root, with no path
   prefix, because the route module already declares the full path
-  [src/nodejs-tutorial/src/app.js:41].
+  [src/nodejs-tutorial/src/app.js:33].
 - The function registered after it is the terminal handler
-  [src/nodejs-tutorial/src/app.js:50-55]. It is registered last, and that
+  [src/nodejs-tutorial/src/app.js:42-47]. It is registered last, and that
   position is load-bearing rather than tidy.
 
 The difference between the two is worth stating plainly. A route matches a
@@ -313,7 +316,7 @@ It takes `(req, res)` and no `next`, because it is the end of the line — there
 is nothing after it to hand the request on to. Its body is the same chain the
 route uses, with a different status and a different constant. That constant,
 `NOT_FOUND_BODY`, is named once for the same reason `HELLO_BODY` is
-[src/nodejs-tutorial/src/app.js:18].
+[src/nodejs-tutorial/src/app.js:10].
 
 ### What the assembly module deliberately leaves out
 
@@ -340,9 +343,9 @@ signal, and `node src/server.js` runs it as the process entry point
 
 It requires the factory rather than a ready-made application —
 `const { createApp } = require('./app')`
-[src/nodejs-tutorial/src/server.js:26] — calls it once, and keeps the object
+[src/nodejs-tutorial/src/server.js:17] — calls it once, and keeps the object
 `listen()` returns, because the shutdown path needs that object to close
-[src/nodejs-tutorial/src/server.js:274-277]. That call is conditional: the
+[src/nodejs-tutorial/src/server.js:369-372]. That call is conditional: the
 factory runs, and a socket is opened, only when both configuration values
 survive the validation described next.
 
@@ -351,11 +354,11 @@ survive the validation described next.
 This service's whole configuration surface is two environment variables, and
 the template is where their contract is written down. `PORT` is the TCP port
 to bind, an integer in the unprivileged range 1024-65535, defaulting to
-`3000` [src/nodejs-tutorial/.env.example:38-48]. `HOST` is the interface to
+`3000` [src/nodejs-tutorial/.env.example:15-22]. `HOST` is the interface to
 bind, defaulting to `127.0.0.1`
-[src/nodejs-tutorial/.env.example:69-81]. Each is read once, in this module
-and nowhere else [src/nodejs-tutorial/.env.example:49],
-[src/nodejs-tutorial/.env.example:81], so there is no configuration library,
+[src/nodejs-tutorial/.env.example:35-46]. Each is read once, in this module
+and nowhere else [src/nodejs-tutorial/.env.example:23],
+[src/nodejs-tutorial/.env.example:46], so there is no configuration library,
 no schema file and no second place to look: the contract those two blocks
 state is enforced by the two resolvers in this file, a few lines each, and
 nowhere else.
@@ -363,8 +366,8 @@ nowhere else.
 Both defaults are literals *in the source*, and each is a named constant
 applied by the resolver that reads its variable rather than a fallback spelled
 inline at the point of use: `DEFAULT_HOST`
-[src/nodejs-tutorial/src/server.js:33] and `DEFAULT_PORT`
-[src/nodejs-tutorial/src/server.js:43]. Two consequences follow. The default
+[src/nodejs-tutorial/src/server.js:24] and `DEFAULT_PORT`
+[src/nodejs-tutorial/src/server.js:30]. Two consequences follow. The default
 binding has exactly one definition in the code — the template records the same
 values as documentation, not as a second source — so changing the default port
 is a one-line change. And because the default is a literal rather than a
@@ -375,10 +378,10 @@ Four more constants sit beside them, and they are there for the same
 one-definition reason. `MIN_PORT` and `MAX_PORT` hold the accepted range, the
 lower bound being where unprivileged ports begin, so the tutorial never has to
 be run with elevated privileges
-[src/nodejs-tutorial/src/server.js:48-49]. `PORT_RULE` and `HOST_RULE` hold
+[src/nodejs-tutorial/src/server.js:35-36]. `PORT_RULE` and `HOST_RULE` hold
 the rule text each refusal quotes, stated once as data so the message a
 learner reads cannot drift away from the check that produced it
-[src/nodejs-tutorial/src/server.js:55-60].
+[src/nodejs-tutorial/src/server.js:42-47].
 
 `127.0.0.1` is the loopback interface, so the tutorial server is deliberately
 unreachable from the network. That is a property of the default rather than of
@@ -417,37 +420,34 @@ blank or absent, and otherwise requires base-10 digits across the whole
 trimmed value and a result inside `MIN_PORT`-`MAX_PORT`, so `'3000x'`,
 `'0x10'`, `'3.5'`, `'+3000'`, `'0'` and `'70000'` are refused rather than
 coerced, and what reaches `listen()` is a Number
-[src/nodejs-tutorial/src/server.js:122-144]. `resolveHost()` applies the same
+[src/nodejs-tutorial/src/server.js:161-183]. `resolveHost()` applies the same
 blank-or-absent rule and refuses interior whitespace and control characters,
 because that value reaches both the listener and the readiness banner, where a
 carriage return would let an environment value forge a line of output
-[src/nodejs-tutorial/src/server.js:152-171]. Both run before the `listen()`
+[src/nodejs-tutorial/src/server.js:191-208]. Both run before the `listen()`
 call is reached, and both run on every start, so a learner who got both values
 wrong is told about both in one run
-[src/nodejs-tutorial/src/server.js:197-198].
+[src/nodejs-tutorial/src/server.js:232-233].
 
 A refusal is reported rather than thrown, because a configuration mistake is
 the learner's to fix and not a stack trace to read: one line on standard error
 naming the variable, the value as it arrived and the rule it broke, then
 `process.exitCode = 1` and no socket opened at all
-[src/nodejs-tutorial/src/server.js:100-107]. The value is quoted with
-`JSON.stringify` there, so a newline inside it cannot forge a second line of
-output and an invisible character is shown as an escape instead of vanishing
-from the message. Measured on Node 24.21.0, `PORT=abc`, `PORT=80`, `PORT=0`
-and `PORT=70000` each wrote nothing to stdout, printed exactly one stderr line
-beginning `Invalid PORT=` and ending `Nothing was bound.`, bound no socket,
-and exited `1`; `HOST='bad host'` behaved the same way, beginning
-`Invalid HOST=`.
+[src/nodejs-tutorial/src/server.js:142-147]. Measured on Node 24.21.0,
+`PORT=abc`, `PORT=80`, `PORT=0` and `PORT=70000` each wrote nothing to stdout,
+printed exactly one stderr line beginning `Invalid PORT=` and ending
+`Nothing was bound.`, bound no socket, and exited `1`; `HOST='bad host'`
+behaved the same way, beginning `Invalid HOST=`.
 
 Two rules follow, and they are the transferable lesson of this file — stated
 as what it does rather than as what it leaves to the reader. Parse and
 range-check a value read from the environment before it reaches `listen()`,
 and refuse one outside the documented range instead of binding whatever it
 coerces to: the template states that range as a contract rather than as advice
-[src/nodejs-tutorial/.env.example:41-48], and the resolver enforces exactly
+[src/nodejs-tutorial/.env.example:18-22], and the resolver enforces exactly
 that contract. Then announce the address the socket actually got, by reading
 `server.address()` after the bind rather than the values that were asked for
-[src/nodejs-tutorial/src/server.js:266-267]. The Flask sibling does the first
+[src/nodejs-tutorial/src/server.js:365-366]. The Flask sibling does the first
 half the same way, which makes the two a parallel rather than a contrast: its
 `validate_port_number()` parses an integer, enforces 1-65535, warns below 1024
 and raises on anything else [src/backend/wsgi.py:299-333], and its docstring
@@ -458,13 +458,58 @@ line: the Python function warns below 1024 and carries on, while this resolver
 refuses, because the tutorial documents no path that needs elevated
 privileges.
 
+### Printing a value you did not write
+
+The value in that line arrived from outside the process, and a rejected value
+is exactly the text nobody vetted, so it is rendered before it is printed
+rather than interpolated as it came. One function does that rendering —
+`renderForLog()` — and every field of every stderr line that this file did not
+write itself goes through it: the refused value, the URL a failed bind was
+attempted on, the errno, an error's own message, and a close error
+[src/nodejs-tutorial/src/server.js:96-127]. A rendered field is always
+quoted, which is what makes the untrusted part of a line obvious at a glance;
+the remedy clauses and the rule text are the file's own words and are not.
+
+It does three things, and each closes a distinct hole that quoting alone
+leaves open.
+
+- **Escaping wider than `JSON.stringify`.** The standard algorithm escapes
+  the controls below U+0020, so a newline cannot forge a second line, but it
+  passes on DEL, the C1 controls, the line and paragraph separators U+2028 and
+  U+2029, and the bidi and invisible formatting controls exactly as they
+  arrived [src/nodejs-tutorial/src/server.js:63-67]. None of those is visible
+  in a terminal, and between them they can begin what reads as a new record,
+  reverse the text around them, or hide characters inside it. Measured on
+  24.21.0, a `PORT` value of `3000` followed by U+2028 and a forged readiness
+  line printed as one line whose value field read
+  `"3000\u2028Listening on http://evil"`, and values carrying U+202E, U+0085
+  or U+007F escaped each of those the same way.
+- **A length bound.** The length of an exported value is chosen by whoever
+  exported it, so the renderer cuts it to 120 characters and states the
+  original length rather than copying it whole
+  [src/nodejs-tutorial/src/server.js:56]. A 400-character value printed 120
+  of them followed by `(truncated from 400 characters)`.
+- **Redaction.** A value whose text names a secret, or which carries the
+  `user:password` component of a URL, is replaced rather than shown
+  [src/nodejs-tutorial/src/server.js:69-74] — exporting the wrong variable is
+  how a credential reaches a process that only wanted a port number, and a
+  log a terminal keeps is the wrong place for it to land.
+  `PORT=api_key=AKIAIOSFODNN7EXAMPLE` printed
+  `Invalid PORT="[redacted, 28 characters]"`, and a `user:s3cr3t@example.test`
+  value printed `[redacted, 24 characters]` the same way.
+
+The rule worth carrying away is the structural one: render untrusted text in
+one place, and route every path that prints it through that place. A second
+renderer is a second set of rules to keep in step, and the path that skips the
+renderer altogether is the one that gets exploited.
+
 ### What the listen callback proves
 
 `listen()` starts binding the socket and returns immediately — the server is
 *not* ready when the call returns. The callback passed after the host runs
 once the socket is bound and accepting connections, so *on that path* the
 line it prints is a genuine readiness signal rather than an optimistic
-announcement [src/nodejs-tutorial/src/server.js:243-268].
+announcement [src/nodejs-tutorial/src/server.js:335-367].
 
 That qualifier is load-bearing, because Express is not the bare `http` module
 here. `app.listen()` hands its trailing callback to `server.listen()` *and*
@@ -477,52 +522,74 @@ occupied port, the callback was called with `EADDRINUSE`, while
 
 `announceListening(error)` is the pattern that follows from it, and this
 module implements it rather than illustrating its absence
-[src/nodejs-tutorial/src/server.js:243-268]. It declares the error parameter,
+[src/nodejs-tutorial/src/server.js:335-367]. It declares the error parameter,
 so it can tell the two cases apart. On the error path it hands the error to
-`reportBindFailure()` and returns without printing anything, and that reporter
-writes one line on standard error naming the errno and a remedy for it, then
-sets a non-zero exit status
-[src/nodejs-tutorial/src/server.js:211-225]. On the no-error path, and only
+`handleListenerError()` and returns without printing anything, and the
+reporter behind it writes one line on standard error naming the errno and a
+remedy for it, then sets a non-zero exit status
+[src/nodejs-tutorial/src/server.js:262-289]. On the no-error path, and only
 there, it writes the readiness banner
-[src/nodejs-tutorial/src/server.js:267]. Measured on 24.21.0, a second
+[src/nodejs-tutorial/src/server.js:366]. Measured on 24.21.0, a second
 instance started against the port the first one still held printed nothing at
-all on stdout, one stderr line naming `EADDRINUSE` and the remedy for it, and
-exited `1`.
+all on stdout, exited `1`, and printed exactly one stderr line: the rendered
+URL it had tried, `Cannot listen on "http://127.0.0.1:3000":`, then the
+rendered errno `"EADDRINUSE"` and the remedy clause for a port already held.
 
 Two details finish the wiring, and both follow from that callback being
 once-wrapped: it can report only the first event it sees. A listener error
 arriving *after* startup would find it already spent, and an unhandled
-`'error'` event crashes the process, so the same reporter stays registered as
+`'error'` event crashes the process, so the same handler stays registered as
 a durable `'error'` listener for the listener's whole life
-[src/nodejs-tutorial/src/server.js:285]. That leaves two paths able to report
-one failure, which is why the reporter is latched: whichever arrives first
-reports, and the other returns silently, so a single bind failure produces a
-single message [src/nodejs-tutorial/src/server.js:211-215].
+[src/nodejs-tutorial/src/server.js:380]. That leaves two paths able to report
+one failure, which is why the report is latched: whichever arrives first
+reports, and the other returns silently, so a single failure produces a single
+message [src/nodejs-tutorial/src/server.js:262-269].
+
+#### A bind that never succeeded is not a listener that failed later
+
+Those two paths see two different failures, and the module keeps them apart
+rather than treating the second as a late arrival of the first. A bind that
+never succeeded means nothing was ever served, and the remedy is about the
+port or the address. An error raised once the listener is up — an accept
+failure, say — means the opposite: the socket bound, requests were served, and
+the port and address are not the problem. So the wording differs, and a bind
+remedy is never offered for a runtime failure
+[src/nodejs-tutorial/src/server.js:272-288]. Measured on 24.21.0, a synthetic
+`EMFILE` emitted on a listening server printed
+`Listener failed after startup: "EMFILE" - "simulated accept failure"`.
+
+The consequence that matters more is what happens next. Node emits that
+`'error'` event and leaves the listening handle open, so a process that only
+reported the failure would go on serving while already recording itself as
+failed, and a signal arriving later would be answered from what failed earlier
+rather than from what the socket is doing. This module instead asks the handle
+— `server.listening` — and, finding it open, enters the same bounded shutdown
+a signal would have started [src/nodejs-tutorial/src/server.js:297-318]. The
+same run confirmed it: after the synthetic error the handle reported
+`listening=false`, a `curl` to the port was refused, and the process exited
+`1`.
 
 The callback carries one more case, and it is the one a single-endpoint
-tutorial would be forgiven for missing. A signal can arrive while the socket
-is still coming up — `listen()` is asynchronous, and a pending listen cannot
-be cancelled — so the signal is recorded rather than acted on, and this
-callback honours it the moment a listener exists by closing instead of
-announcing a readiness the process is about to give up
-[src/nodejs-tutorial/src/server.js:254-257].
+tutorial would be forgiven for missing: a signal can arrive while the socket
+is still coming up. The next section describes what the shutdown path does
+with it. From this callback's side the rule is simply that a bind already
+called off has no readiness to announce, so it closes rather than printing a
+banner [src/nodejs-tutorial/src/server.js:347-356].
 
 While the service is running, that readiness banner is the only thing it
 writes to stdout — there is no second banner and no per-request log. It is not
 the only line the process ever prints, though: the shutdown handler logs the
 signal it received, one line per run, and the next section describes it, while
-every abnormal condition — a refused configuration value, a bind failure, a
-forced or failed close — goes to standard error instead. Those two stdout
-lines and that stderr set are the whole observability surface, because no
-logging framework is installed, and the module's header comment inventories
-them so the process's output can be predicted exactly
-[src/nodejs-tutorial/src/server.js:19-23].
+every abnormal condition — a refused configuration value, a listener failure,
+a bind called off, a forced or failed close — goes to standard error instead.
+Those two stdout lines and that stderr set are the whole observability
+surface, because no logging framework is installed.
 
 The readiness line is built from what the listener reports rather than from
 what it was asked for: the address comes from `server.address()`, and
 `formatAuthority()` renders it as a URL authority, bracketing an IPv6 address
 so its own colons cannot run into the port separator
-[src/nodejs-tutorial/src/server.js:186-192]. Reading the address back is what
+[src/nodejs-tutorial/src/server.js:223-227]. Reading the address back is what
 makes the announcement true rather than merely consistent, and the difference
 is worth stating precisely rather than comfortably: the values a bind is
 *given* are not always the address it *gets* — the port-`0` row above is
@@ -531,7 +598,7 @@ and read the bound address back, are what keep the line honest at both ends.
 
 ### Why the signal handlers matter
 
-The shutdown path is one function and two registrations. The registrations
+The shutdown path is one entry point and two registrations. The registrations
 are the whole of the wiring:
 
 ```js
@@ -539,33 +606,92 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 ```
 
-The `shutdown()` function they share logs the signal it received — the second
-of this module's two stdout lines
-[src/nodejs-tutorial/src/server.js:343] — then closes the server and lets the
+`shutdown()` is that entry point. It decides which of four situations it is in
+and hands off accordingly — to `drainAndClose()`, `cancelPendingListen()` or
+`escalateShutdown()` — and the next subsection is that decision. On the
+ordinary path, a listener that is accepting, it logs the signal it received —
+the second of this module's two stdout lines
+[src/nodejs-tutorial/src/server.js:556] — then closes the server and lets the
 drained event loop end the process
-[src/nodejs-tutorial/src/server.js:304-393]. What it does *not* do is call
-`process.exit()`; there is no such call anywhere in the file. The close
-callback sets `process.exitCode` instead: `0` only for a shutdown that was
-clean in both senses — connections drained on their own rather than being cut
-mid-flight, and no listener failure was reported earlier in the run — and `1`
-otherwise [src/nodejs-tutorial/src/server.js:362-388]. Setting the status
-rather than exiting on it is what guarantees the lines already written are
-flushed, and it leaves room for any cleanup a later lesson adds.
+[src/nodejs-tutorial/src/server.js:519-558]. On that path it does *not* call
+`process.exit()`. The close callback sets `process.exitCode` instead: `0` only
+for a shutdown that was clean in both senses — connections drained on their
+own rather than being cut mid-flight, and no listener failure was reported
+earlier in the run — and `1` otherwise
+[src/nodejs-tutorial/src/server.js:409-435]. Setting the status rather than
+exiting on it is what guarantees the lines already written are flushed.
+Measured on 24.21.0, `SIGTERM` and `SIGINT` each printed one shutdown line and
+ended the process with status `0`.
+
+#### What a signal does depends on what the listener is doing
+
+One signal, four situations, and the branch taken is decided from the
+listener's current state rather than from anything that went wrong earlier
+[src/nodejs-tutorial/src/server.js:519-558]. That ordering is the lesson: a
+shutdown routine that reads a flag left behind by an earlier failure will
+eventually answer the wrong question.
+
+| Situation | What the signal does |
+| --- | --- |
+| A listener is accepting | drains it within the grace period, status `0` |
+| The bind has not settled | calls the bind off, arms the deadline |
+| Nothing is listening | reports it, keeps the status already recorded |
+| A shutdown is under way | escalates: cuts connections, or exits |
+
+The second row is the one worth dwelling on, because `listen()` is
+asynchronous: the server object exists before it is listening, and that window
+lasts as long as a host name takes to resolve. A signal arriving inside it is
+acted on where it arrives — `close()` is what calls a pending bind off. On
+Node 24.21.0 that is measurable rather than assumed: `close()` increments the
+server's internal listening id, and the lookup behind the pending listen
+abandons its own callback once that id has changed, so no socket is bound, no
+readiness is announced and no `'error'` event follows
+[src/nodejs-tutorial/src/server.js:445-479]. Measured on that runtime with a
+stalled resolver, `SIGTERM` during the window printed one stderr line —
+`SIGTERM received before the listener was up: the pending bind has been called
+off` — wrote nothing to stdout, and exited `0` once the resolver answered.
+
+Calling the bind off is not the same as ending the process, which is the
+second half of that row. The host name lookup cannot be cancelled, and it
+keeps the event loop alive until the resolver answers, so a resolver that
+stalls would defer the exit for as long as it stalls — exactly the bound the
+grace period is supposed to impose. A deadline is therefore armed at the
+moment the bind is called off, and its expiry ends the process directly
+[src/nodejs-tutorial/src/server.js:469-478]. That deadline and the
+second-signal branch described below are the **only two** calls to
+`process.exit()` in the file, and both are reached only after a bind has been
+called off — because nothing else can end a process whose event loop is held
+open by a request it cannot withdraw. With a resolver that never answered, the
+process exited `1` after 10.0 seconds rather than waiting on the resolver.
+
+A second signal escalates instead of re-entering, because whoever sent the
+first has plainly stopped waiting — and what escalation means depends on which
+shutdown is under way [src/nodejs-tutorial/src/server.js:488-505]. During a
+drain it closes every open connection, releasing a request that is holding the
+drain open. During a bind that was called off there are no connections to cut
+and no drain to shorten, so it ends the process. Measured on 24.21.0: a second
+signal during a drain held open by an unfinished request printed
+`SIGINT received during shutdown: closing open connections now` and exited
+`1`; a second signal after a cancelled bind printed
+`SIGINT received during shutdown: exiting now` and exited `1` immediately.
 
 The drain is not unbounded either. `close()` cannot give up on its own, so one
 stalled request would leave it pending forever; a ten-second grace timer is
 armed alongside it, and its expiry is what keeps `Ctrl-C` responsive
-[src/nodejs-tutorial/src/server.js:350-356]. The timer is `unref()`-ed so it
+[src/nodejs-tutorial/src/server.js:397-402]. The timer is `unref()`-ed so it
 can never hold the process open by itself, and the close callback clears it
-[src/nodejs-tutorial/src/server.js:360-363]. Measured on 24.21.0, `SIGTERM` to
+[src/nodejs-tutorial/src/server.js:404-410]. Measured on 24.21.0, `SIGTERM` to
 a running instance printed its one shutdown line, ended the process with
 status `0`, and a `curl` to the same port immediately afterwards failed to
-connect — the port was released rather than left held.
+connect — the port was released rather than left held. With an unfinished
+request holding the drain open, the timer fired after 10.0 seconds, printed
+`Shutdown grace period of 10000 ms expired: closing open connections now`, and
+the process exited `1` — a forced close, recorded as one.
 
 Exactly two signals are handled, and both arrive in normal use.
 `Ctrl-C` in the terminal running the server sends `SIGINT`; an automated run's
 `kill` of the recorded process id sends `SIGTERM`
-[src/nodejs-tutorial/src/server.js:395-396]. One shared handler serves both,
+[src/nodejs-tutorial/src/server.js:563-564]. One shared handler serves both,
 so neither path can drift from the other.
 
 Without these handlers the default signal disposition would tear the process
@@ -609,15 +735,16 @@ The sequence to learn, then, is `close()` first — it is the single call that
 stops accepting *and* reaps the idle sockets — with `closeIdleConnections()`
 after it only where a documented reason calls for it, such as supporting a
 runtime older than 19.0.0. On the pinned runtime it is redundant, which is why
-this module does without it. The only close call it makes is `close()`
-[src/nodejs-tutorial/src/server.js:362], and the only place it cuts
-connections rather than draining them is `closeAllConnections()` — a different
-method, reached only when the ten-second grace period expires
-[src/nodejs-tutorial/src/server.js:354] or when a second signal arrives during
-a shutdown already in progress, whoever sent the first having plainly stopped
-waiting [src/nodejs-tutorial/src/server.js:316]. Both of those paths record
-that connections were cut, which is what makes the exit status `1` rather than
-`0`.
+this module does without it. The close calls it makes are `close()` on a
+listener it is draining [src/nodejs-tutorial/src/server.js:409] and `close()`
+on a bind it is calling off [src/nodejs-tutorial/src/server.js:461], and the
+only place it cuts connections rather than draining them is
+`closeAllConnections()` — a different method, reached only when the ten-second
+grace period expires [src/nodejs-tutorial/src/server.js:401] or when a second
+signal arrives during a drain already in progress, whoever sent the first
+having plainly stopped waiting [src/nodejs-tutorial/src/server.js:496]. Both
+of those paths record that connections were cut, which is what makes the exit
+status `1` rather than `0`.
 
 The Flask sibling solves the same problem the same way. Its
 `setup_signal_handlers()` [src/backend/wsgi.py:192] registers one handler for
@@ -668,7 +795,7 @@ which manages the transport itself: it wraps the application in an HTTP server
 and calls `listen(0)`, so the socket lands on whatever ephemeral port the OS
 hands out rather than on a known one. That is why the suite runs while a
 server is already running on the default port, and why two runs never collide
-[src/nodejs-tutorial/test/hello.test.js:37-43].
+[src/nodejs-tutorial/test/hello.test.js:24-27].
 
 ### The four test names and the property each one pins
 
@@ -694,11 +821,11 @@ loads. Here is what each assertion does establish:
   asserts `res.status` only, so it fails if the router was never mounted, if
   the path was registered as something other than `/hello`, or if the request
   fell through to the terminal handler
-  [src/nodejs-tutorial/test/hello.test.js:42].
+  [src/nodejs-tutorial/test/hello.test.js:26].
 - **`GET /hello body is exactly "Hello world"`** proves the bytes, not a
   resemblance. It compares `res.text` against its own literal and then asserts
   `Buffer.byteLength(res.text)` is `11`
-  [src/nodejs-tutorial/test/hello.test.js:56-61]. The length is measured on
+  [src/nodejs-tutorial/test/hello.test.js:36-41]. The length is measured on
   the received body rather than read from a header, so it proves the bytes
   instead of trusting the claim — and eleven of them means one interior space
   and no trailing newline. The literal is spelled out rather than imported
@@ -708,7 +835,7 @@ loads. Here is what each assertion does establish:
   type is the one the contract fixes. It compares the header value in full,
   charset parameter included, so a handler that dropped the parameter or sent
   JSON fails here rather than silently serving a different representation
-  [src/nodejs-tutorial/test/hello.test.js:73]. The header name is read in
+  [src/nodejs-tutorial/test/hello.test.js:49]. The header name is read in
   lower case because Node normalises response header names.
 - **`unknown path responds 404`** proves unmatched paths reach the terminal
   handler, and it is what keeps the fall-through in `src/app.js` covered. It
@@ -719,7 +846,7 @@ loads. Here is what each assertion does establish:
   handler and the status is still `404`, but the body no longer matches and
   this test fails; register it ahead of the router instead and the first two
   `/hello` tests fail, because every request reaches it first
-  [src/nodejs-tutorial/test/hello.test.js:80-102].
+  [src/nodejs-tutorial/test/hello.test.js:52-71].
 
 ### How the runner finds this file
 

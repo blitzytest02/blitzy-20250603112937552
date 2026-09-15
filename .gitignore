@@ -9,10 +9,12 @@
 # =============================================================================
 
 # =============================================================================
-# SECURITY-CRITICAL PATTERNS (HIGHEST PRIORITY)
+# SECRETS AND CREDENTIALS
 # =============================================================================
-# These patterns prevent sensitive information from being committed to version control
-# Critical for preventing credential exposure and maintaining application security
+# Defense in depth against accidental staging only: these patterns keep an
+# untracked secret out of `git add .`, but they do not untrack a file that is
+# already committed and they do not stop `git add -f`. Code review and secret
+# scanning are the controls that cover those two cases.
 
 # Environment Variables and Secrets
 .env
@@ -23,10 +25,9 @@
 .env.production.local
 *.env
 
-# Committed environment templates (no secrets) - exempted from the patterns
-# above. The exemption is by basename: a file named .env.example stays trackable
-# in either project, while every real .env file above stays ignored. Git applies
-# a deeper .gitignore last, so src/backend/.gitignore repeats this negation.
+# Committed environment template (no secrets), exempted from the patterns above
+# by basename: a file named .env.example stays trackable wherever these root
+# rules are the last match, while every real .env file above stays ignored.
 !.env.example
 
 # Private Keys and Certificates
@@ -91,8 +92,8 @@ lerna-debug.log*
 # =============================================================================
 # DEVELOPMENT TOOLS AND IDE CONFIGURATION
 # =============================================================================
-# IDE-specific files should not be shared as they are user/environment specific
-# Demonstrates separation between personal dev environment and project config
+# Personal workspace state is ignored, while the selected project settings
+# negated below are shared deliberately.
 
 # Visual Studio Code
 .vscode/
@@ -379,36 +380,13 @@ newrelic_agent.log
 .eslintrc.local
 .prettierrc.local
 
-# Lock Files (Optional - some teams prefer to commit these)
-# Uncomment if your team decides not to commit lock files
-# package-lock.json
-# yarn.lock
-
 # Local Configuration Override Files
 *.local
 *.dev
 .development
 
 # =============================================================================
-# EDUCATIONAL SECTION: PATTERNS EXPLANATION
-# =============================================================================
-# This section demonstrates understanding of why files are excluded:
-#
-# 1. SECURITY: .env*, *.key, secrets/ - Prevents credential exposure
-# 2. DEPENDENCIES: node_modules/ - Installed via package.json, not committed
-# 3. GENERATED: coverage/, dist/, *.log - Created during development/testing
-# 4. PLATFORM: .DS_Store, Thumbs.db - OS-specific, irrelevant to application
-# 5. PERSONAL: .vscode/, .idea/ - Individual developer preferences
-#
-# Educational Value:
-# - Demonstrates security awareness through comprehensive exclusion patterns
-# - Shows understanding of Node.js ecosystem and development workflow
-# - Illustrates cross-platform development considerations
-# - Teaches separation between source code and generated artifacts
-# =============================================================================
-
-# =============================================================================
-# END OF .GITIGNORE
-# /hello tutorial repository - Educational Repository Management
-# Total patterns: 100+ comprehensive exclusion rules for clean repository
+# Invariant for both tutorials: the manifests and lockfiles that describe a
+# dependency tree are tracked, while the installed tree and every generated or
+# per-machine artifact it produces are not.
 # =============================================================================

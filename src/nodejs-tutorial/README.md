@@ -22,9 +22,9 @@ single file — nothing here has to be scaffolded, generated or filled in.
   [src/nodejs-tutorial/package.json:8-10], so every command below behaves
   the same way for every reader.
 - **A three-module shape.** `src/routes/hello.js` registers the route
-  [src/nodejs-tutorial/src/routes/hello.js:28], `src/app.js` assembles the
-  application [src/nodejs-tutorial/src/app.js:31], and `src/server.js` binds
-  the socket [src/nodejs-tutorial/src/server.js:274-277].
+  [src/nodejs-tutorial/src/routes/hello.js:22], `src/app.js` assembles the
+  application [src/nodejs-tutorial/src/app.js:23], and `src/server.js` binds
+  the socket [src/nodejs-tutorial/src/server.js:369-372].
   Keeping the listener out of the application is what lets the test suite
   drive the application object directly, with no pre-started server and no
   fixed port — `supertest` starts a transient listener on an ephemeral one.
@@ -175,12 +175,22 @@ project.
 
 **Installing and selecting the runtime with `nvm`:**
 
+If you take this route, pin `nvm` itself to the GPG-signed **`v0.40.7`** tag
+or later — the bar [the contribution guide](../../CONTRIBUTING.md) sets for
+the same tool. Every release through 0.40.5 is affected by at least one of
+CVE-2026-1665, CVE-2026-10796 and CVE-2026-15921; 0.40.6 is the lowest
+release carrying all three fixes, and `v0.40.7` is the current signed
+release. Check what you have with `nvm --version` first, and install or
+upgrade by cloning that signed tag rather than by piping nvm's installer into
+a shell — the contribution guide gives that route in four steps, with the
+signature check and the exact affected range behind each advisory.
+
 ```bash
 nvm install 24.21.0
 nvm use 24.21.0
 ```
 
-**Output, recorded when this version was first installed:**
+**Output, captured on `nvm` 0.40.7:**
 
 ```text
 Downloading and installing node v24.21.0...
@@ -193,8 +203,12 @@ Creating default alias: default -> 24.21.0 (-> v24.21.0 *)
 ```
 
 The download progress bar is animated in a terminal and is **elided above to
-its final line**; every other line is stable. The `nvm` in use reported
-version `0.40.3`.
+its final line**; the rest is stable, with two lines worth naming because
+both are nvm's own output rather than Node's. `Now using node` reports the
+version nvm activated. `Creating default alias` appears only where the `nvm`
+installation had no default alias yet, so an `nvm` you have already used for
+another version omits that line. What this tutorial asserts is the
+post-condition above, `node --version` reporting `v24.21.0`.
 
 Run from this directory with no argument, `nvm use` reads the committed pin
 instead of taking a version on the command line, which is the whole reason
@@ -254,7 +268,7 @@ Two packages are declared, both at exact versions
 dependency, and `supertest` 7.2.2 for the tests. There is deliberately no
 Jest, nodemon, dotenv or *third-party* assertion package — assertions come
 from Node's own `node:assert/strict`, which ships with the runtime
-[src/nodejs-tutorial/test/hello.test.js:29];
+[src/nodejs-tutorial/test/hello.test.js:20];
 [the walkthrough](docs/walkthrough.md) names the Node built-in that replaces
 each of the others.
 
@@ -281,7 +295,7 @@ third line is the only output this application produces at startup — there is
 no banner and no per-request logging — and it is printed only once the socket
 is bound, interpolated from the host and port actually bound, which the
 listener itself reports rather than the values it was handed
-[src/nodejs-tutorial/src/server.js:243-268], so it stays truthful when either
+[src/nodejs-tutorial/src/server.js:335-367], so it stays truthful when either
 is overridden. One further line is written later, when the server shuts down;
 the Stop section below publishes it.
 
@@ -353,8 +367,8 @@ of that, and this README deliberately does not paraphrase it.
 ## Test
 
 Neither test command needs a running server. The suite drives the application
-object returned by `createApp()` [src/nodejs-tutorial/src/app.js:31] through
-`supertest` [src/nodejs-tutorial/test/hello.test.js:30-31], which manages the
+object returned by `createApp()` [src/nodejs-tutorial/src/app.js:23] through
+`supertest` [src/nodejs-tutorial/test/hello.test.js:21-22], which manages the
 transport itself, so the tests pass whether or not anything is listening.
 
 The `test` script is exactly `node --test`
@@ -448,14 +462,14 @@ Two properties of that report deserve naming. The flag behind it,
 output is informative rather than a stable interface. And `src/server.js` is
 **absent from the table** by design: the suite requires `../src/app` and
 drives what `createApp()` returns
-[src/nodejs-tutorial/src/app.js:23-26], so the module that binds this
+[src/nodejs-tutorial/src/app.js:15-18], so the module that binds this
 service's own socket is never loaded.
 
 ## Stop
 
 Press `Ctrl-C` in the terminal running the server. That sends `SIGINT`, which
 `src/server.js` handles in one shutdown routine
-[src/nodejs-tutorial/src/server.js:304-393]: it stops accepting new
+[src/nodejs-tutorial/src/server.js:519-558]: it stops accepting new
 connections and closes the server once the in-flight requests have drained.
 Idle keep-alive connections need no separate handling, because `close()`
 reaps them itself on this runtime.
@@ -464,15 +478,35 @@ The wait is **bounded at ten seconds**. If a request is still in flight when
 that grace period expires, the remaining connections are closed outright and
 the shutdown is recorded as forced; pressing `Ctrl-C` a second time does the
 same thing immediately, because whoever sent the first signal is plainly no
-longer waiting. Either way the process is never killed from inside — nothing
-in the file calls `process.exit`. It sets an exit status and lets the drained
-event loop end the process on its own: `0` when the drain completed inside
-the grace period and no listener failure was reported earlier in the run, and
-`1` otherwise.
+longer waiting. On this path the process is not killed from inside: the close
+callback sets an exit status and the drained event loop ends the process on
+its own — `0` when the drain completed inside the grace period and no listener
+failure was reported earlier in the run, and `1` otherwise.
+
+Two less obvious cases are worth knowing before you meet them.
+
+- **A signal that arrives while the server is still starting** is acted on
+  where it arrives rather than remembered for later: the pending bind is
+  called off, nothing is ever served, and the line goes to standard error
+  because no server was closing. The startup window is as long as `HOST`
+  takes to resolve, which is nothing at all for the default `127.0.0.1` and
+  can be seconds for a host name.
+- **A resolver that never answers** cannot be cancelled and would otherwise
+  hold the process open past the ten seconds, so a deadline armed when the
+  bind is called off ends the process itself with status `1`. A second signal
+  in that same state does it immediately. Those two are the only calls to
+  `process.exit` in `src/server.js`, and both are reached only after a bind
+  has been called off — every other path settles a status and lets the
+  drained event loop end the process.
+
+A listener failure that arrives *after* startup — as opposed to a bind that
+never succeeded — is reported on standard error and then closes the server
+through the same bounded shutdown, so a failed service does not keep the port
+while claiming to have failed.
 
 An automated run that signals the process with `kill` sends `SIGTERM` instead
 and reaches that same routine, because both signals are registered against it
-[src/nodejs-tutorial/src/server.js:395-396]; the line it writes reports
+[src/nodejs-tutorial/src/server.js:563-564]; the line it writes reports
 whichever signal arrived.
 
 **Expected output on the server's terminal:**
@@ -505,18 +539,18 @@ there any more.
 
 Both variables are optional, so every command in this document works with
 nothing set at all. `PORT` chooses the TCP port the HTTP server binds and is
-resolved by `resolvePort()` [src/nodejs-tutorial/src/server.js:122-144];
+resolved by `resolvePort()` [src/nodejs-tutorial/src/server.js:161-183];
 `HOST` chooses the network interface it binds and is resolved by
-`resolveHost()` [src/nodejs-tutorial/src/server.js:152-171]. The default
+`resolveHost()` [src/nodejs-tutorial/src/server.js:191-208]. The default
 `127.0.0.1` is the loopback interface, which keeps this tutorial server
 unreachable from the network deliberately rather than incidentally.
 
 Each variable is read exactly once — `process.env.PORT` at
-[src/nodejs-tutorial/src/server.js:123] and `process.env.HOST` at
-[src/nodejs-tutorial/src/server.js:153] — and each default is a named
+[src/nodejs-tutorial/src/server.js:162] and `process.env.HOST` at
+[src/nodejs-tutorial/src/server.js:192] — and each default is a named
 constant in that same file, `DEFAULT_PORT`
-[src/nodejs-tutorial/src/server.js:43] and `DEFAULT_HOST`
-[src/nodejs-tutorial/src/server.js:33], which its resolver applies when the
+[src/nodejs-tutorial/src/server.js:30] and `DEFAULT_HOST`
+[src/nodejs-tutorial/src/server.js:24], which its resolver applies when the
 variable is blank or unset. Neither default is a value loaded from a file.
 
 An override is checked before anything is bound, so a value the server cannot
@@ -538,7 +572,7 @@ tutorial keeps them.
 reads `.env` or `.env.example`; both see only variables already exported in
 the shell. `.env.example` is a **reference and export template**: it records
 the two variables and their defaults
-[src/nodejs-tutorial/.env.example:40], [src/nodejs-tutorial/.env.example:71],
+[src/nodejs-tutorial/.env.example:17], [src/nodejs-tutorial/.env.example:37],
 and nothing loads it implicitly.
 
 To load that template explicitly, use Node's own loader, which is what
@@ -754,6 +788,6 @@ path such as `node --test test/hello.test.js`.
 This tutorial is covered by the repository's licence rather than issuing one
 of its own, so nothing here adds a new legal claim. The authoritative grant
 is the full MIT licence text in the repository README, under its
-[License section](../../README.md#license) at [README.md:1102-1124], which
+[License section](../../README.md#license) at [README.md:1112-1134], which
 carries the copyright line, the permission grant and the warranty disclaimer
 in full.

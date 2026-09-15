@@ -2,7 +2,7 @@
   "name": "nodejs-hello-tutorial",
   "version": "1.0.0",
   "private": true,
-  "description": "Node.js tutorial service. Contract: docs/api-reference.md.",
+  "description": "Node.js tutorial service serving the single endpoint GET /hello. Contract: docs/api-reference.md.",
   "license": "MIT",
   "type": "commonjs",
   "engines": {

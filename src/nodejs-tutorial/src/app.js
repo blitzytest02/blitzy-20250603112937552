@@ -1,20 +1,12 @@
 /**
- * Application-assembly module of the Node.js tutorial service.
- *
- * This module owns one job: wiring an Express application together. It binds no
- * socket and starts nothing — src/server.js does that — so requiring this file
- * has no side effects at all. The endpoint contract it serves is documented in
- * ../docs/api-reference.md, which is its single authority.
+ * Application assembly for the Node.js tutorial service: this module wires an
+ * Express application together and binds no socket — src/server.js owns the
+ * listener. ../docs/api-reference.md is the single authority for its contract.
  */
 
 const express = require('express');
-
-// Only the router is needed here. The response body is defined once, in the
-// route module itself, so this file never restates it.
 const { router } = require('./routes/hello');
 
-// Body of the terminal not-found response, named once so the handler below
-// reads as a single statement of intent.
 const NOT_FOUND_BODY = 'Not Found';
 
 /**

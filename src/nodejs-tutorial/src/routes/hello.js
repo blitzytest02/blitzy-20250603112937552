@@ -1,21 +1,15 @@
 /**
- * Single route module of the Node.js tutorial service.
- *
- * Registers the one endpoint this tutorial serves, GET /hello, and holds the
- * single definition of its response body. src/app.js mounts this router at the
- * application root, so the path declared below is the path a client requests.
- * The endpoint contract itself is documented in docs/api-reference.md.
+ * The tutorial's only route module: it registers GET /hello, the single
+ * endpoint this service serves.
  */
 
 const express = require('express');
 
-// A router keeps route registration separate from application assembly, leaving
-// src/app.js the single job of wiring the pieces together.
 const router = express.Router();
 
-// The single definition of the response body: 11 bytes, one interior space and
-// no trailing newline. Every byte count and assertion in the tutorial resolves
-// to this constant, so the string has exactly one source of truth.
+// The only definition of the response body in source: 11 bytes, one interior
+// space, no trailing newline. test/hello.test.js asserts its own literal, not
+// this constant, so a typo here fails the suite instead of matching itself.
 const HELLO_BODY = 'Hello world';
 
 /**
@@ -23,7 +17,7 @@ const HELLO_BODY = 'Hello world';
  * Educational focus: basic HTTP GET handling and response generation.
  *
  * @route GET /hello
- * @returns {string} Plain text "Hello world" response
+ * @returns {void} Nothing; the handler sends the 200 plain-text response itself.
  */
 router.get('/hello', (req, res) => {
   // Passing the short form 'text/plain' lets Express expand it into the full

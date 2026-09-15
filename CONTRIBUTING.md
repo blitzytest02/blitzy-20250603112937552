@@ -177,10 +177,28 @@ with your account's privileges. The four steps below install `nvm` by
 **cloning its repository at a GPG-signed release tag** and verifying that
 signature, which replaces the installer entirely.
 
-Pin `v0.40.7` or later, and not an older release: CVE-2026-1665 affects every
-nvm release before 0.40.4, which is the release that fixes it, and
-CVE-2026-10796 affects every release through 0.40.4 and is fixed in 0.40.5.
-`v0.40.7` is the current release and carries both fixes.
+Pin `v0.40.7` or later, and not an older release. Three advisories bound the
+floor, and each is fixed in a different release:
+
+- **CVE-2026-1665** affects 0.40.0 through 0.40.3, and is fixed in 0.40.4:
+  `NVM_AUTH_HEADER` reached `eval` on the `wget` download path.
+- **CVE-2026-10796** affects every release through 0.40.4, and is fixed in
+  0.40.5: a mirror's version strings reached `eval` and an `awk` program.
+- **CVE-2026-15921** affects 0.32.1 through 0.40.5, and is fixed in 0.40.6:
+  a mirror's LTS codename was used as an alias filename without validation,
+  so `..` inside one writes outside `$NVM_DIR/alias` - over a shell startup
+  file, in the default layout.
+
+**0.40.6 is the lowest release carrying all three fixes**, and `v0.40.7` is
+the current release - the tag step 3 below pins. The last two advisories are
+reachable only through the mirror nvm downloads from, so they need a
+compromised, malicious or intercepted mirror rather than a local foothold
+alone, and the default `https://nodejs.org` over TLS is not that path. That
+narrows who can exploit them, not which releases are affected.
+
+If `nvm` is already installed, do not read its presence as safety. Check it
+with `nvm --version` and upgrade anything at 0.40.5 or below, because every
+such release is affected by at least one of the three.
 
 This route needs `gpg` in addition to `git` and `curl`; the System
 Requirements table above says how to obtain it on each platform. Step 3
@@ -356,8 +374,8 @@ That line is the only line the application writes to stdout **while it is
 serving**: there is no second startup line and no per-request logging. It is
 interpolated from the host and port actually bound — the listen callback
 builds it from what `server.address()` reports rather than from the values
-it was handed [src/nodejs-tutorial/src/server.js:243-268], the banner itself
-at [:267] — so it stays truthful when either is overridden. `npm run dev` is
+it was handed [src/nodejs-tutorial/src/server.js:335-367], the banner itself
+at [:366] — so it stays truthful when either is overridden. `npm run dev` is
 the watch-mode alternative and prints the same line.
 
 Stopping the server writes one more line, so the serving claim above is not a
@@ -369,18 +387,24 @@ SIGINT received: closing server
 ```
 
 A signalled stop — `kill "$SERVER_PID"` — sends `SIGTERM` and logs
-`SIGTERM received: closing server` instead. From either signal the handler
-calls `close()` once: that stops accepting, and on this runtime it reaps the
-idle keep-alive sockets itself, so nothing has to drop them first. In-flight
+`SIGTERM received: closing server` instead. Both signals reach one shutdown
+entry point, which decides from the state of the listener rather than doing
+the same thing every time
+[src/nodejs-tutorial/src/server.js:519-558]: with a listener up it calls
+`close()` once, which stops accepting and on this runtime reaps the idle
+keep-alive sockets itself, so nothing has to drop them first. In-flight
 requests then drain inside a ten-second grace period; the connections still
 open are cut only when that period expires, or when a second signal arrives
-and escalates rather than leaving you waiting
-[src/nodejs-tutorial/src/server.js:304-390]. It calls no `process.exit` —
-it sets the exit status and lets the drained event loop end the process —
-and that status is `0` only for a drain that finished on its own inside the
-grace period with no bind failure recorded earlier in the run; a forced
-close or an earlier failure leaves `1`. The two signal registrations that
-reach the handler are at [src/nodejs-tutorial/src/server.js:395-396].
+and escalates rather than leaving you waiting. On that path nothing kills the
+process from inside: the close callback sets the exit status and the drained
+event loop ends the process, and that status is `0` only for a drain that
+finished on its own inside the grace period with no listener failure
+reported earlier in the run; a forced close or an earlier failure leaves
+`1`. A signal arriving before the listener is up instead calls the pending
+bind off, which is the one case that does exit from inside — see the
+tutorial's own [Stop section](src/nodejs-tutorial/README.md#stop) for the two
+`process.exit` call sites and the conditions that reach them. The two signal
+registrations are at [src/nodejs-tutorial/src/server.js:563-564].
 
 **Test the endpoint in a new terminal:**
 
@@ -394,15 +418,6 @@ curl http://127.0.0.1:3000/hello
 
 # Test with headers - the status line and every response header
 curl -i http://127.0.0.1:3000/hello
-
-# Stop the server: Ctrl-C in the server terminal sends SIGINT, which logs the
-# signal and closes the server - close() reaps the idle keep-alive sockets
-# itself, in-flight requests drain inside a ten-second grace period, and the
-# handler calls no process.exit: it sets the status and lets the drained event
-# loop end the process, leaving 0 for a drain that finished inside that period
-# with no bind failure recorded, per the shutdown handler
-# [src/nodejs-tutorial/src/server.js:304-390]; the signal reaches that handler
-# through the two registrations at [src/nodejs-tutorial/src/server.js:395-396]
 ```
 
 What those two commands should return is documented in full — the status, the
@@ -419,7 +434,7 @@ object `createApp()` returns rather than a running server, and `supertest`
 manages the transport itself, opening its own ephemeral loopback listener per
 request. So no **fixed** port is bound, and nothing has to be running before
 you type the command
-[src/nodejs-tutorial/test/hello.test.js:28-31,37-102].
+[src/nodejs-tutorial/test/hello.test.js:19-22,24-71].
 
 ```bash
 # Execute complete test suite
@@ -472,7 +487,7 @@ code --install-extension esbenp.prettier-vscode
 **VS Code settings.json** — also personal preference, for the same reason.
 Format-on-save applies whatever your editor or the extension above decides,
 not a repository rule; the quote style matches the single quotes the
-tutorial's own source uses [src/nodejs-tutorial/src/server.js:33]:
+tutorial's own source uses [src/nodejs-tutorial/src/server.js:24]:
 
 ```json
 {
@@ -591,48 +606,51 @@ it, `.flake8` and `pyproject.toml`.
 #### **Modern Syntax Requirements**
 
 ```javascript
-// ✅ GOOD: Use const/let instead of var
+// const for a binding never reassigned, let for one that is. Both are
+// block-scoped, so neither can be read before its declaration or redeclared
 const express = require('express');
 const app = express();
 let serverInstance;
 
-// ❌ AVOID: var declarations
+// The same import with var: function-scoped and hoisted, so a second
+// declaration of the same name silently replaces the first rather than
+// failing, and the name is readable as undefined above this line
 var express = require('express');
 ```
 
 ```javascript
-// ✅ GOOD: Arrow functions for callbacks - quoted from the tutorial's two
-// signal registrations [src/nodejs-tutorial/src/server.js:395-396]
+// Arrow functions for callbacks - quoted from the tutorial's two
+// signal registrations [src/nodejs-tutorial/src/server.js:563-564]
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-// ✅ GOOD: Template literals for the strings a callback builds - quoted
-// from the readiness line [src/nodejs-tutorial/src/server.js:266-267],
+// Template literals for the strings a callback builds - quoted
+// from the readiness line [src/nodejs-tutorial/src/server.js:365-366],
 // which interpolates the authority the listener itself reports rather than
 // the values that were requested
 const authority = formatAuthority(server.address());
 console.log(`Listening on http://${authority} (GET /hello)`);
 
-// ✅ GOOD: Destructuring assignment, used the way the tutorial uses it - on
-// a module's exports [src/nodejs-tutorial/src/server.js:26]
+// Destructuring assignment, used the way the tutorial uses it - on
+// a module's exports [src/nodejs-tutorial/src/server.js:17]
 const { createApp } = require('./app');
 
-// ✅ GOOD: Defaults named once as constants instead of being spelled inline
-// at the point of use - quoted from [src/nodejs-tutorial/src/server.js:33]
-// and [:43]. The host default is the loopback address 127.0.0.1, spelled
+// Defaults named once as constants instead of being spelled inline
+// at the point of use - quoted from [src/nodejs-tutorial/src/server.js:24]
+// and [:30]. The host default is the loopback address 127.0.0.1, spelled
 // that way in every command, transcript and URL this repository publishes
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 3000;
 
-// ✅ GOOD: How the environment is actually read - the opening line of
-// resolvePort(), quoted [src/nodejs-tutorial/src/server.js:123]; the host
-// resolver opens the same way at [:153]. `??` with a trim treats an
+// How the environment is actually read - the opening line of
+// resolvePort(), quoted [src/nodejs-tutorial/src/server.js:162]; the host
+// resolver opens the same way at [:192]. `??` with a trim treats an
 // exported-but-empty value the same as an unexported one, and the checks
 // that follow it decide whether the default above applies
 const raw = (process.env.PORT ?? '').trim();
 
-// ✅ GOOD: The one listener, created only once both values have validated -
-// quoted [src/nodejs-tutorial/src/server.js:274-277]. Its callback is a
+// The one listener, created only once both values have validated -
+// quoted [src/nodejs-tutorial/src/server.js:369-372]. Its callback is a
 // named function rather than an arrow, because it carries a docblock and
 // two exits, and the name is what a reader sees at the call site
 const server =
@@ -655,14 +673,14 @@ default inside a destructuring pattern applies **only** when the property is
 destructuring default would leave the empty string in place and hand it to
 `listen()` instead of the constant. Empty-string handling is exactly why the
 shipped resolvers trim what they read and then test for blank explicitly
-[src/nodejs-tutorial/src/server.js:127-129] and [:157-159]: a blank value
+[src/nodejs-tutorial/src/server.js:166-168] and [:194-196]: a blank value
 takes the default, and anything else is validated before it reaches the
 listener rather than being decided by a falsy test. The snippet below is an
 **illustration this tutorial does not contain**, kept only for that
 contrast:
 
 ```javascript
-// ❌ NOT IN THIS TUTORIAL: destructuring defaults, shown only to contrast
+// NOT IN THIS TUTORIAL: destructuring defaults, shown only to contrast
 // with the resolver line quoted above. They apply to `undefined` alone, so
 // an exported-but-empty PORT= would survive as the empty string
 const { PORT = 3000, HOST = '127.0.0.1' } = process.env;
@@ -674,7 +692,7 @@ Comments should explain the decision, not restate the syntax. The factory
 below is **illustrative only; it is not this repository's source.** It makes
 the same three decisions the tutorial's own factory makes - one application
 per call, hardening before routing, terminal handler last
-[src/nodejs-tutorial/src/app.js:31-58] - but it answers with a body of its
+[src/nodejs-tutorial/src/app.js:23-50] - but it answers with a body of its
 own, so no value of the published contract appears in this guide. That
 contract is specified in
 [the tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md),
@@ -696,8 +714,9 @@ the one lesson.
 function createApp() {
   const app = express();
 
-  // Disable X-Powered-By header for security awareness
-  // Express.js v5 security enhancement - prevents framework fingerprinting
+  // Removes the X-Powered-By header, so no response names the framework.
+  // That is one direct disclosure fewer, not prevention: error pages,
+  // routing behaviour and header ordering still identify Express
   app.disable('x-powered-by');
 
   // Mounted at the application root, because the route module declares the
@@ -728,20 +747,23 @@ what the real endpoint answers is specified in
 [the tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md).
 
 ```javascript
-// ✅ GOOD: Clear module structure
 // File: src/app.js (illustrative, not this repository's source)
 const express = require('express');
 const { router } = require('./routes/uptime');
 
 /**
- * Creates and configures the Express.js application
- * Educational focus: Demonstrates modular application structure
+ * Creates and configures the Express.js application.
+ *
+ * One application per call, so a caller that needs its own - a test, most
+ * often - is never handed a shared instance.
  */
 function createApp() {
   const app = express();
 
-  // Core middleware setup
-  app.disable('x-powered-by');  // Security: Remove framework fingerprinting
+  // Hardening before routing, so it applies to whatever is mounted next.
+  // Dropping X-Powered-By removes one direct disclosure; it does not stop
+  // an observer identifying the framework by its behaviour
+  app.disable('x-powered-by');
 
   // Route configuration: the router declares the full path, so mount at root
   app.use(router);
@@ -759,21 +781,21 @@ module.exports = { createApp };
 
 The factory is the module's whole public interface — `module.exports =
 { createApp }` — and in the tutorial that is what `src/server.js` requires
-[src/nodejs-tutorial/src/server.js:26] and what `test/hello.test.js` drives
-[src/nodejs-tutorial/test/hello.test.js:31].
+[src/nodejs-tutorial/src/server.js:17] and what `test/hello.test.js` drives
+[src/nodejs-tutorial/test/hello.test.js:22].
 
 #### **Error Handling Patterns**
 
 **Illustrative pattern, not tutorial code.** The tutorial registers no error
 middleware at all: its only fallback is the terminal not-found handler in its
-own application module [src/nodejs-tutorial/src/app.js:50-55] - the
+own application module [src/nodejs-tutorial/src/app.js:42-47] - the
 illustrative factories above show where such a handler sits, not what the
 tutorial's answers with - and an unhandled rejection therefore reaches
 Express's own default handler, which answers `500` with an HTML body. The
 handler below is the shape a contribution that *adds* error handling should
 follow.
 
-Three rules decide whether such a handler is safe, and the third is the one
+Four rules decide whether such a handler is safe, and the third is the one
 that actually bounds what a log can leak.
 
 1. **Untrusted text is never interpolated into a log message.** It is
@@ -781,22 +803,34 @@ that actually bounds what a log can leak.
    `CR`/`LF` cannot forge a second log line (CWE-117).
 2. **Only allowlisted fields are logged.** No header, no cookie, no client
    IP and no `User-Agent` reaches the record at all (CWE-532).
-3. **In production the record carries safe metadata only** - a stable error
-   code, a category, an allowlisted method and the route pattern the
-   application itself declared - and never the error's own message or the
-   path the client chose.
+3. **That allowlist is the default, not one mode of two.** The record carries
+   a stable error code, a category, an allowlisted method and the route
+   pattern the application itself declared. The error's own message, the path
+   the client chose and the stack are absent unless a deployment asks for
+   them by name, so a handler copied into a project with nothing configured
+   logs the safe record (CWE-200, CWE-532).
+4. **The client's body is generic at every setting.** No error text, no path
+   and no stack is returned to a caller in any mode, so nothing the redaction
+   below missed can reach one.
 
-Redaction is what makes the development record survivable, not what makes
-the production one safe. It rewrites the secret shapes its patterns
-recognise - a bearer token, a `password=` or `api_key=` assignment, a
-JWT-shaped string, a long hexadecimal run, an email address - and it is
-**not a guarantee**: a secret in a shape no pattern matches is still in the
-value. That residue is what rule 3 exists for. Truncation is not a control
-either; it shortens a record, and a shortened secret is still a secret.
+**Redaction is defense in depth, and not a control to rely on.** It rewrites
+the secret shapes its patterns recognise - an `Authorization` scheme with its
+credential, a `password`, `api_key`, `access_token`, `client_secret` or
+`private_key` assignment in bare, quoted or JSON form, a JWT-shaped string, a
+long hexadecimal run, a PEM-armoured key block, an email address - and a
+secret in a shape no pattern matches is still in the value. The patterns
+below match the quote rather than excluding it, and consume an
+`Authorization` scheme together with its credential, because the narrower
+versions of both stopped dead at `password="..."`, at a JSON `"password":
+"..."`, and at `Authorization: Basic ...`, redacting nothing while the
+docblock still called the result safe. That is the standing risk with an
+allowlist of shapes: it is never finished, and its gaps are silent. So a
+change to these patterns adds a case per shape it claims to cover, and what
+keeps the default record safe is rule 3 rather than this list. Truncation is
+not a control either; it shortens a record, and a shortened secret is still a
+secret.
 
 ```javascript
-// ✅ GOOD: Error handling whose logging is safe to trust
-
 // Hard cap applied to an untrusted value BEFORE the redaction patterns run,
 // so no pattern is ever handed an unbounded string
 const LOG_INPUT_MAX = 2048;
@@ -810,6 +844,15 @@ const LOG_METHODS = new Set([
   'GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
 ]);
 
+// Diagnostics are opt-in, read once, and the value must be this exact
+// literal. Absence, a typo and an unexpected value all leave it false, so
+// the safe record is what a handler logs until someone asks for more - the
+// opposite of a `NODE_ENV !== 'production'` test, which treats every one of
+// those three as a reason to start logging message, path and stack. The
+// tutorial's own template defines no NODE_ENV at all, which is exactly the
+// case that test gets wrong [src/nodejs-tutorial/.env.example]
+const LOG_DIAGNOSTICS = process.env.ERROR_LOG_DIAGNOSTICS === 'verbose';
+
 /**
  * Redaction patterns, applied in order.
  *
@@ -820,11 +863,20 @@ const LOG_METHODS = new Set([
  * rather than wondering whether the value was empty.
  */
 const LOG_REDACTIONS = [
-  // Authorization: Bearer <token>, wherever it appears in the text
-  [/\bbearer\s+[A-Za-z0-9._~+/=-]{8,}/gi, 'bearer [redacted]'],
-  // key=value and key: value assignments for the secret-bearing names
-  [/\b(api[_-]?key|apikey|token|password|secret)(\s*[:=]\s*)[^\s,;&)"']+/gi,
-    '$1$2[redacted]'],
+  // A secret-bearing name assigned a value, in bare, quoted or JSON form.
+  // The quote is matched rather than excluded, because a value class that
+  // excluded it stopped at `password="..."` and redacted nothing. An
+  // Authorization scheme is consumed with its credential, so the header
+  // form collapses to one marker instead of leaving the credential behind
+  [/\b(api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|id[_-]?token|client[_-]?secret|token|password|passwd|pwd|secret|private[_-]?key|authorization)(["']?\s*[:=]\s*)(["']?)(?:(?:bearer|basic|digest|negotiate)\s+)?[^\s,;&)}\]"']*/gi,
+    '$1$2$3[redacted]'],
+  // The same credential where no field name precedes it. Basic and Digest
+  // carry one exactly as Bearer does, so the scheme is an alternation
+  [/\b(bearer|basic|digest|negotiate)\s+[A-Za-z0-9._~+/=-]{8,}/gi,
+    '$1 [redacted]'],
+  // PEM-armoured key material, single-line by the time step 1 has run
+  [/-----BEGIN [A-Z ]{1,40}-----[A-Za-z0-9+/=]{0,4096}(-----END [A-Z ]{1,40}-----)?/g,
+    '[redacted-pem]'],
   // JWT-shaped three-segment strings: <base64url>.<base64url>.<base64url>
   [/\b[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g,
     '[redacted-jwt]'],
@@ -836,7 +888,11 @@ const LOG_REDACTIONS = [
 ];
 
 /**
- * Make one untrusted value safe to log.
+ * Reduce one untrusted value before it is logged.
+ *
+ * This is the defense-in-depth step, not the control: what makes the default
+ * record safe is that no field this function produces is in it. Call it only
+ * for a field a deployment has asked for by name.
  *
  * The four steps run in this order, and the order is the whole point:
  *
@@ -855,7 +911,9 @@ const LOG_REDACTIONS = [
  * @param {unknown} value Untrusted value of any type
  * @param {number} [max=LOG_FIELD_MAX] Characters to keep. Raise it only for
  *   a field that is legitimately long, such as a development stack trace
- * @returns {string} Single-line, redacted, length-capped text safe to log
+ * @returns {string} Single-line, length-capped text with the secret shapes
+ *   the patterns recognise replaced. Reduced, not sanitised: a secret in a
+ *   shape no pattern matches survives this function unchanged
  */
 function forLog(value, max = LOG_FIELD_MAX) {
   let text = String(value)
@@ -903,10 +961,9 @@ function createErrorHandler() {
   // Express, so `next` stays in the signature even when unused
   return (err, req, res, next) => {
     const statusCode = err.statusCode || 500;
-    const isProduction = process.env.NODE_ENV === 'production';
 
-    // One structured record instead of an interpolated message, and in
-    // production these seven fields are the whole of it: a stable code, a
+    // One structured record instead of an interpolated message, and by
+    // default these seven fields are the whole of it: a stable code, a
     // category, an allowlisted method and the matched route pattern. No
     // raw message, no request path, no header, no cookie, no client IP
     const record = {
@@ -919,10 +976,11 @@ function createErrorHandler() {
       timestamp: new Date().toISOString()
     };
 
-    // Outside production the three diagnostic fields are added, each one
-    // through forLog(). A stack maps the server's internals, so it never
-    // appears in a production record at any length
-    if (!isProduction) {
+    // Only a deployment that set the variable to the exact literal gets the
+    // three diagnostic fields, each one through forLog(). A stack maps the
+    // server's internals and the path is a value the client chose, so both
+    // are absent from the default record at any length
+    if (LOG_DIAGNOSTICS) {
       record.message = forLog(err.message);
       record.path = forLog(req.path);
       record.stack = forLog(err.stack, 2000);
@@ -930,15 +988,16 @@ function createErrorHandler() {
 
     console.error(record);
 
-    // In production the detail stays server-side and the client gets a
-    // generic message; in development the redacted message is returned for
-    // learning. The request path is never echoed back
+    // The same generic body at every setting: the detail stays server-side
+    // whether or not diagnostics are on, so no redaction gap can reach a
+    // caller and no misconfiguration can turn this branch into a disclosure.
+    // Correlating a report to a log line needs a request identifier issued
+    // per request and echoed in both, which this handler does not mint - a
+    // contribution that wants one adds it to the record and to the body
     res.status(statusCode).json({
       status: statusCode,
-      message: isProduction
-        ? 'Internal Server Error'
-        : forLog(err.message),
-      timestamp: new Date().toISOString()
+      message: statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+      timestamp: record.timestamp
     });
   };
 }
@@ -949,34 +1008,58 @@ function createErrorHandler() {
 #### **Security Features Utilization**
 
 Of the measures below, only `app.disable('x-powered-by')` is in the tutorial
-[src/nodejs-tutorial/src/app.js:37]; the extra response headers are an
+[src/nodejs-tutorial/src/app.js:29]; the extra response headers are an
 illustrative pattern, and a route with an `await` in it is illustrative too —
 the tutorial's single handler is synchronous.
 
+Two of these are order-dependent and one is not. `app.disable` sets an
+application setting that is read when a response is built, so it applies
+wherever it is called. Header middleware is ordinary middleware: it runs only
+if a request reaches it, and a route handler that sends a response calls no
+`next()`, so anything registered after that route never runs for the requests
+it answers. Cross-cutting headers therefore go **before** the routes they are
+meant to cover.
+
+Route patterns are compiled by `path-to-regexp`, which Express does not
+declare itself: it declares `router` as `^2.2.0`, and `router@2.2.0` declares
+`path-to-regexp` as `^8.0.0`
+[src/nodejs-tutorial/package-lock.json]. The version that range resolves to
+is what decides whether the ReDoS fixes for CVE-2026-4923 and CVE-2026-4926
+are present: they landed in 8.4.0, and `8.0.0` through `8.3.x` are affected.
+This repository's committed lockfile resolves `8.4.2`, which carries them.
+The protection is a property of that resolved version, not of the `8.x` line,
+and `npm ls path-to-regexp` prints the whole chain.
+
 ```javascript
-// ✅ GOOD: Leverage Express.js v5 security enhancements
 const express = require('express');
 
+// Stands in for whatever the real route awaits, and is defined here so the
+// example runs as shown rather than referring to a function that exists
+// nowhere
+async function processHelloRequest() {
+  return 'Hello world';
+}
+
 function setupSecurityMiddleware(app) {
-  // Express.js v5 automatically handles promise rejections
-  // No need for manual .catch() on async route handlers
-  
-  // ReDoS protection: path-to-regexp@8.x automatically prevents
-  // regular expression denial of service attacks
-  app.get('/hello', async (req, res) => {
-    // This promise rejection is automatically forwarded to error middleware
-    const result = await processHelloRequest();
-    res.send(result);
-  });
-  
-  // Framework fingerprinting prevention
+  // A setting rather than middleware, so its position does not matter:
+  // dropping X-Powered-By removes one direct disclosure of the framework,
+  // which is less than preventing its identification
   app.disable('x-powered-by');
-  
-  // Basic security headers for educational awareness
+
+  // Registered before any route, so it runs for every request that reaches
+  // one - including the requests a route answers without calling next()
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     next();
+  });
+
+  // Registered after those headers, so a 200 from here carries them.
+  // Express 5 forwards a rejected promise to the error chain by itself,
+  // which is why this handler has no .catch() and no try/catch inside it
+  app.get('/hello', async (req, res) => {
+    const result = await processHelloRequest();
+    res.send(result);
   });
 }
 ```
@@ -997,15 +1080,13 @@ is specified in
 section `#the-get-hello-contract`, not here.
 
 ```javascript
-// ✅ GOOD: Express.js v5 routing with educational clarity
 // File: src/routes/uptime.js (illustrative, not this repository's source)
 const express = require('express');
 
 const router = express.Router();
 
 /**
- * Illustrative uptime endpoint demonstrating Express.js v5 routing
- * Educational focus: Basic HTTP GET handling and response generation
+ * Illustrative uptime endpoint: one GET, and a body computed per request
  *
  * @route GET /uptime
  * @returns {void} Sends a body computed per request, so nothing is fixed
@@ -1026,22 +1107,19 @@ module.exports = { router };
 
 #### **Functions and Variables**
 
+Name a binding for what it holds and a function for what it does, so a reader
+of the line using it does not have to find the declaration first:
+
 ```javascript
-// ✅ GOOD: Descriptive, educational naming
 const expressApp = createExpressApplication();
 const serverInstance = startHttpServer(expressApp);
 const helloRouteHandler = createHelloEndpoint();
-
-// Function names should describe educational purpose
-function validateNodejsCompatibility() { /* ... */ }
-function demonstrateMiddlewareChaining() { /* ... */ }
-function showcaseErrorHandling() { /* ... */ }
-
-// ❌ AVOID: Unclear, non-educational naming
-const app = create();
-const server = start(app);
-const handler = endpoint();
 ```
+
+The same three bindings named `app`, `server` and `handler`, assigned from
+`create()`, `start(app)` and `endpoint()`, carry no such information: every
+one of them needs its declaration read before the line using it means
+anything, and `create` and `start` do not say what they create or start.
 
 #### **File and Module Naming**
 
@@ -1119,7 +1197,7 @@ Three properties of the runner are worth knowing before you change anything:
 
 One test file, holding four flat `test()` declarations - four tests, and
 eight assertion calls between them
-[src/nodejs-tutorial/test/hello.test.js:42,56,61,73,85,93,97,101]. No suite
+[src/nodejs-tutorial/test/hello.test.js:26,36,41,49,54,62,66,70]. No suite
 nesting, no fixtures directory and no custom matchers: a contract this small
 needs none of them.
 
@@ -1185,10 +1263,10 @@ test('an undeclared path reaches the terminal handler', async () => {
 });
 ```
 
-The tutorial's own suite at [src/nodejs-tutorial/test/hello.test.js:37-102]
+The tutorial's own suite at [src/nodejs-tutorial/test/hello.test.js:24-71]
 holds four tests, one for each behaviour the canonical reference documents,
 with eight assertion calls between them
-[src/nodejs-tutorial/test/hello.test.js:42,56,61,73,85,93,97,101]; the
+[src/nodejs-tutorial/test/hello.test.js:26,36,41,49,54,62,66,70]; the
 runner reports `tests 4` and `suites 0`. Read it beside
 [the tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md),
 which is where the values it asserts are published.
@@ -1264,7 +1342,6 @@ rather than the tutorial's: what it demonstrates is a framework behaviour, not
 a contract the tutorial publishes.
 
 ```javascript
-// Educational test with comprehensive learning comments
 // Express.js v5 forwards a rejected promise to the error handling chain with
 // no manual .catch() block anywhere
 test('Express.js v5 forwards a rejected promise automatically', async () => {
@@ -1286,7 +1363,7 @@ test('Express.js v5 forwards a rejected promise automatically', async () => {
 
 Note what this does **not** assert: a JSON error envelope with a `message`
 field. The tutorial registers no error middleware, so there is none to assert
-[src/nodejs-tutorial/src/app.js:50-55]. A contribution that adds one adds its
+[src/nodejs-tutorial/src/app.js:42-47]. A contribution that adds one adds its
 assertions with it.
 
 ### Performance Testing Requirements with pytest-benchmark (Flask tutorial)
@@ -1636,9 +1713,15 @@ Complete this tier only if you touched that directory; delete it otherwise.
 ### Runtime and Framework
 - [ ] Stays inside the declared `engines.node` range `>=24.21.0 <25`
 - [ ] Uses modern JavaScript ES6+ features appropriately
-- [ ] Follows Express.js v5 patterns: automatic promise rejection handling,
-      and the ReDoS protection path-to-regexp@8.x applies with no
-      configuration
+- [ ] Follows Express.js v5 patterns, including its automatic promise
+      rejection handling
+- [ ] `path-to-regexp` still resolves to `8.4.2`, or to another release in
+      `>=8.4.0 <9`: the ReDoS fixes for CVE-2026-4923 and CVE-2026-4926
+      landed in 8.4.0, so `8.0.0` through `8.3.x` are affected and a
+      downgrade inside `8.x` is not a safe change. Express reaches it
+      transitively through `router`, which declares `^8.0.0`, so the
+      committed lockfile is what pins it - check with
+      `npm ls path-to-regexp`
 - [ ] Code follows JavaScript ES6+ standards and Node.js best practices
 
 ### Testing Framework Usage
@@ -1813,28 +1896,80 @@ with it and the branch-protection entries must be re-copied.
 
 #### **Pre-merge Validation**
 
-The first three commands are the Node.js tutorial's, and run from
-`src/nodejs-tutorial`; each resolves to one of its four scripts or to an npm
-built-in. A Flask-only change is validated with pytest instead, as
-`src/backend/README.md` describes.
+These checks are the Node.js tutorial's and run from `src/nodejs-tutorial`.
+Every npm invocation among them resolves to one of the tutorial's four
+scripts or to an npm built-in; the static gate calls the `node` binary
+directly, because the tutorial declares no script for it. A Flask-only change
+is validated with pytest instead, as `src/backend/README.md` describes.
+
+Four of these checks are automatable and the block below asserts all four:
+each one reads the result out of the command's own output, or out of its exit
+status where that status is the command's own, and fails the run when it is
+not what it requires. The `tee` pipelines are deliberate - a pipeline's exit
+status is `tee`'s, not the command's, so for those two the log is what is
+asserted and the status is not relied on.
 
 ```bash
-# Maintainer pre-merge checklist, from src/nodejs-tutorial:
-# 1. All automated checks passing
-npm test && echo "✅ Tests passed"
+# Maintainer pre-merge checks, run from src/nodejs-tutorial
+log=$(mktemp)
 
-# 2. Coverage threshold met
-npm run test:coverage && echo "✅ Coverage acceptable"
+# 0. Static gate: every JavaScript file in the package parses. `node --check`
+#    is syntax-only and says nothing about behaviour, but a file that does
+#    not parse fails the checks below for a reason their output does not
+#    name. The count is asserted for the same reason check 1 asserts its
+#    own: a sweep that matched no file would otherwise report success
+files=$(find src test -name '*.js' | wc -l)
+[ "$files" -gt 0 ] || { echo "FAIL: no .js file found to check"; exit 1; }
+find src test -name '*.js' -print0 | xargs -0 -I{} node --check {} ||
+  { echo "FAIL: a .js file does not parse"; exit 1; }
+echo "PASS: all $files .js files under src/ and test/ parse"
 
-# 3. Security audit clean
-npm audit && echo "✅ No security issues"
+# 1. The suite ran, it was not empty, and every test passed. `node --test`
+#    exits 0 on an empty suite, so a check on the exit status alone would
+#    accept a run of nothing: the reported counts are what is asserted
+npm test 2>&1 | tee "$log"
+awk '/ tests [0-9]+$/ { t = $NF }
+     / pass [0-9]+$/  { p = $NF }
+     / fail [0-9]+$/  { f = $NF }
+     END {
+       if (t == "" || t + 0 == 0) {
+         print "FAIL: no tests ran"; exit 1
+       }
+       if (p != t || f + 0 != 0) {
+         print "FAIL: " p "/" t " passed, " f " failed"; exit 1
+       }
+       print "PASS: " t " tests, " p " passed, " f " failed"
+     }' "$log" || exit 1
 
-# 4. Educational value confirmed
-echo "✅ Educational objectives enhanced"
+# 2. Coverage is 100% for lines, branches and functions. `test:coverage`
+#    enforces no threshold of its own and exits 0 at any percentage, so the
+#    report's own summary row is what is asserted. The three [^|]* groups
+#    hold the match to one column each, so a 92.31 in any of them fails
+row='all files[^|]*\|[^|]*100\.00[^|]*\|[^|]*100\.00[^|]*\|[^|]*100\.00'
+npm run test:coverage 2>&1 | tee "$log"
+grep -qE "$row" "$log" ||
+  { echo "FAIL: coverage summary is not 100/100/100"; exit 1; }
+echo "PASS: coverage 100% line, branch and function"
 
-# 5. Documentation updated
-echo "✅ Documentation reflects changes"
+# 3. No advisory at high severity or above. `npm audit` exits non-zero when
+#    it finds one, so this command fails the run on its own
+npm audit --audit-level=high
+
+rm -f "$log"
 ```
+
+The remaining two items are judgements, and no command settles them. They are
+checklist steps for the reviewer, not lines in a script:
+
+- **Educational value.** Say what a reader can do after the change that they
+  could not before, or why the change was needed to keep something true.
+- **Documentation.** Name each document the change alters, or state that none
+  needed altering and why. A changed command, transcript, port, version or
+  file tree always alters at least one.
+
+Do not add an `echo` for either. An unconditional `echo "✅ ..."` prints the
+same thing whether the work was done or skipped, which makes a manual step
+look like a passing check.
 
 ---
 
@@ -1857,7 +1992,7 @@ configured for it.
 #### **Educational Comment Style**
 
 Illustrative only; not this repository's source. The real factory is
-[src/nodejs-tutorial/src/app.js:31-58].
+[src/nodejs-tutorial/src/app.js:23-50].
 
 ```javascript
 /**
@@ -1882,9 +2017,9 @@ Illustrative only; not this repository's source. The real factory is
 function createApp() {
   const app = express();
 
-  // Security Enhancement: Remove Express.js framework fingerprinting
-  // Educational Note: This prevents attackers from knowing we use Express.js
-  // Express.js v5 feature: Configurable X-Powered-By header removal
+  // Removes the X-Powered-By header, so no response names the framework.
+  // That is one direct disclosure fewer rather than prevention: behaviour,
+  // error pages and header ordering still identify Express to a reader
   app.disable('x-powered-by');
 
   // Route configuration: the router declares the full path, so it is mounted
@@ -1905,8 +2040,8 @@ function createApp() {
 Two comment habits are worth copying from the real modules: every comment
 explains a decision rather than restating the call beneath it, and the
 absences are commented too - the reason there is no per-request logging
-[src/nodejs-tutorial/src/server.js:259-262], and the reason there is no `405`
-[src/nodejs-tutorial/src/app.js:43-49], are each written down where a reader
+[src/nodejs-tutorial/src/server.js:358-361], and the reason there is no `405`
+[src/nodejs-tutorial/src/app.js:35-41], are each written down where a reader
 looks for them.
 
 #### **Function Documentation Standards**
@@ -1914,7 +2049,7 @@ looks for them.
 Illustrative only; not this repository's source. The handler documented below
 serves an endpoint the tutorial does not have, so the standard can be shown
 without restating a contract value. The tutorial's own handler and its
-docblock are at [src/nodejs-tutorial/src/routes/hello.js:21-37], and what it
+docblock are at [src/nodejs-tutorial/src/routes/hello.js:15-31], and what it
 answers is specified in
 [the tutorial's API reference](src/nodejs-tutorial/docs/api-reference.md).
 
@@ -1948,7 +2083,6 @@ answers is specified in
  * // specifies its contract in full
  */
 function uptimeHandler(req, res) {
-  // HTTP Response: Send with appropriate status and content type.
   // Computing the body rather than writing a literal is what lets the
   // docblock above document the shape without pinning a byte count
   const body = JSON.stringify({ uptimeSeconds: process.uptime() });
@@ -2005,7 +2139,7 @@ Two things it does state are deliberately not contract values. Counts
 *about* the test suite - four tests, eight assertion calls - are facts about
 the test file. And the effect of `app.disable('x-powered-by')`, that no
 response carries an `X-Powered-By` header
-[src/nodejs-tutorial/src/app.js:37], is the consequence of a security call
+[src/nodejs-tutorial/src/app.js:29], is the consequence of a security call
 this guide teaches, stated where the call is explained rather than copied
 from the reference.
 
@@ -2576,47 +2710,87 @@ tier 3 above.
 
 **Scope: the Node.js tutorial at `src/nodejs-tutorial`.** Of the measures
 below, the one it actually applies is `app.disable('x-powered-by')`
-[src/nodejs-tutorial/src/app.js:37], which is why `X-Powered-By` is absent
+[src/nodejs-tutorial/src/app.js:29], which is why `X-Powered-By` is absent
 from every response on every path and method. The rest - the extra response
-headers, the async route, the per-request logging - are the pattern a
-contribution that adds them should follow, not a description of what the
-tutorial does today.
+headers and the async route - are the pattern a contribution that adds them
+should follow, not a description of what the tutorial does today.
 
 #### **Framework Security Utilization**
 
+Registration order decides whether these headers protect anything. A route
+handler that sends a response calls no `next()`, so middleware registered
+after it never runs for the requests it answers - and a header middleware
+that never runs sets no header on the very responses it was added to protect.
+The `app.use` block below therefore comes **before** the route, and the test
+after it is what holds that in place.
+
 ```javascript
-// Security best practices using Express.js v5 features
+const express = require('express');
+
+// Stands in for whatever the real route awaits, and is defined here so the
+// example runs exactly as shown. What the route demonstrates is that Express
+// 5 forwards a rejected promise to the error chain on its own, which needs an
+// awaited call rather than a particular one
+async function secureAsyncOperation() {
+  return { status: 'ok' };
+}
+
 function setupSecurityMiddleware(app) {
-  // Express.js v5 Security Enhancement: Framework fingerprinting prevention
-  // Educational Context: Prevents attackers from identifying Express.js usage
+  // Drops the X-Powered-By header, so no response names the framework.
+  // A setting rather than middleware, so its position does not matter here -
+  // and it reduces one direct disclosure rather than preventing an attacker
+  // from identifying Express, which behaviour and error pages still reveal
   app.disable('x-powered-by');
-  
-  // Express.js v5 Security Enhancement: ReDoS protection
-  // Educational Context: path-to-regexp@8.x prevents regex denial of service
-  // No configuration needed - automatically applied to all routes
-  
-  // Express.js v5 Security Enhancement: Automatic promise rejection handling
-  // Educational Context: Rejected promises automatically forwarded to error middleware
+
+  // Registered before the route, so these headers are set on the responses
+  // the route sends. After it they would be set on nothing it answers
+  app.use((req, res, next) => {
+    // Stops a browser from re-interpreting the declared media type
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    // Refuses framing by a different origin, which is what clickjacking
+    // needs
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    next();
+  });
+
+  // Express 5 forwards a rejected promise to the error chain by itself, so
+  // this handler needs no .catch() and no try/catch. ReDoS in the route
+  // pattern is bounded by the resolved path-to-regexp version rather than by
+  // the 8.x line - see the Express.js v5.2.1 Patterns section above
   app.get('/secure-endpoint', async (req, res) => {
-    // Any rejected promise here is automatically caught
     const result = await secureAsyncOperation();
     res.json(result);
   });
-  
-  // Basic security headers for educational awareness
-  app.use((req, res, next) => {
-    // Prevent MIME type sniffing attacks
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    
-    // Prevent clickjacking attacks
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    
-    // Educational logging: Show security headers applied
-    console.log('🔒 Security headers applied to request');
-    next();
-  });
 }
 ```
+
+The assertion that keeps it correct. It checks the headers on a **successful**
+response, which is the case the broken order silently loses, and it continues
+the same file as the block above - no other setup stands behind it:
+
+```javascript
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const request = require('supertest');
+
+test('the security headers reach a successful protected response', async () => {
+  const app = express();
+  setupSecurityMiddleware(app);
+
+  const res = await request(app).get('/secure-endpoint');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['x-content-type-options'], 'nosniff');
+  assert.equal(res.headers['x-frame-options'], 'SAMEORIGIN');
+  assert.equal(res.headers['x-powered-by'], undefined);
+});
+```
+
+Move the `app.use` block below the route and this test still sees `200`,
+because the route works either way - and both header assertions fail, because
+the values arrive `undefined`. A test that asserted only the status, or only
+the 404 path, would pass in both arrangements and prove nothing.
 
 ### Dependency Security Management
 
@@ -2626,24 +2800,62 @@ function setupSecurityMiddleware(app) {
 packages are the only npm dependencies in this repository. The Flask
 tutorial's Python dependencies are audited with the tooling configured for it.
 
+Both packages are pinned to an exact version, with no range operator, and the
+lockfile pins the 89-package tree they resolve to
+[src/nodejs-tutorial/package.json], [src/nodejs-tutorial/package-lock.json].
+Detection and remediation are therefore separate steps here: the commands
+below only report, and every change to a dependency is made deliberately in
+the manifest and the lockfile.
+
 ```bash
-# Every command below runs from the Node.js tutorial root
+# Every command below runs from the Node.js tutorial root, and none of them
+# changes a dependency
 cd src/nodejs-tutorial
 
-# Regular security auditing workflow
-# Run before every contribution
+# Report advisories. Run before every contribution
 npm audit
 # found 0 vulnerabilities
 
-# Fix automatically resolvable vulnerabilities
-npm audit fix
-
-# Review manual fixes needed
-npm audit fix --force  # Use cautiously, may break functionality
-
-# Generate audit report for documentation
+# The same report as data, for an issue or a review comment
 npm audit --json > security-audit.json
+
+# What is actually installed, when an advisory names a transitive package
+npm ls path-to-regexp
 ```
+
+When `npm audit` does report something, remediate it in four steps rather
+than with an automatic fix:
+
+1. **Read the advisory.** Which package, which versions are affected, which
+   release fixes it, and whether the path that triggers it is one this
+   tutorial uses at all.
+2. **State the intent in the manifest, never in the lockfile.** For a direct
+   dependency, set the exact version in `package.json` to the release the
+   advisory names. For a transitive one, raise the exact **direct parent**
+   that pulls it in, and where no released parent carries the fix yet, add a
+   deliberate exact `overrides` entry in `package.json` naming the
+   transitive package. Do not hand-edit `package-lock.json`: each of its
+   entries correlates a version with a `resolved` URL, an `integrity` hash
+   and that package's own dependency set, and those are consistent only when
+   npm writes them together, so a hand-edited entry is either rejected or
+   installed without the provenance the hash exists to prove.
+3. **Generate the lockfile** with `npm install`, then read the resulting
+   diff: the packages that moved and the versions they moved to are the
+   change being proposed, and they belong in the pull request description.
+   Confirm a transitive fix landed with `npm ls <package>`, which prints the
+   chain that reaches it.
+4. **Re-run the gates** in the Pre-merge Validation section above - the
+   static `node --check` gate, the suite, the coverage assertion and
+   `npm audit` - before proposing it.
+
+**`npm audit fix --force` is not part of this workflow, and neither is
+`npm audit fix`.** npm documents that a forced fix may install versions
+outside the declared ranges, up to and including a SemVer-major change, and
+both forms rewrite the lockfile as a side effect of a command run to find out
+what is wrong. Against an exact-version manifest that discards the pin the
+manifest exists to state, and it produces a dependency change nobody
+reviewed, which is the opposite of step 3. A report is not a remediation,
+and `--force` is not a review.
 
 #### **Dependency Update Strategy**
 
@@ -2653,14 +2865,16 @@ script to wrap them, which is why the tutorial's manifest declares only four:
 [src/nodejs-tutorial/package.json:11-16]. The block below is therefore **a
 suggestion for a project of your own**, not a description of scripts this
 repository provides — running `npm run security-check` here fails with a
-missing-script error.
+missing-script error. Every entry in it reports rather than remediates, for
+the reason the previous section gives: a script that wraps a mutating fix
+turns a dependency change into a side effect of asking a question.
 
 ```json
 {
   "scripts": {
     "security-check": "npm audit && npm outdated",
-    "update-dependencies": "npm update && npm audit",
-    "security-fix": "npm audit fix && npm test"
+    "security-report": "npm audit --json > security-audit.json",
+    "dependency-report": "npm outdated || true"
   }
 }
 ```
@@ -2694,43 +2908,46 @@ missing-script error.
 #### **Security Documentation Standards**
 
 **Illustrative pattern.** The Node.js tutorial registers no error middleware,
-so the handler below is not in it [src/nodejs-tutorial/src/app.js:50-55]; it
+so the handler below is not in it [src/nodejs-tutorial/src/app.js:42-47]; it
 is the documentation standard a contribution that adds one should meet.
 
-It meets the same three rules as the handler in the Error Handling Patterns
-section above, and reuses that section's helpers rather than repeating them.
-Untrusted values are sanitised into a structured record rather than
-interpolated into a message (CWE-117); the record is an explicit field
-allowlist, so no header, cookie, client IP or `User-Agent` is logged
-(CWE-532); and in production the record carries a stable error code, a
-category, an allowlisted method and the declared route pattern, never the
-error's own message and never the path the client chose. The redaction
+It meets the same four rules as the handler in the Error Handling Patterns
+section above, and reuses that section's helpers and its `LOG_DIAGNOSTICS`
+opt-in rather than repeating them. Untrusted values are sanitised into a
+structured record rather than interpolated into a message (CWE-117); the
+record is an explicit field allowlist, so no header, cookie, client IP or
+`User-Agent` is logged (CWE-532); by default the record carries a stable
+error code, a category, an allowlisted method and the declared route pattern,
+never the error's own message and never the path the client chose; and the
+body the client receives is generic whatever the configuration. The redaction
 patterns reduce the chance that a secret or an email address survives into a
-development record for the shapes they know, and they are not a guarantee -
-the production code-only rule above is what bounds the exposure of anything
+diagnostic record for the shapes they know, and they are not a guarantee -
+the allowlist-by-default rule above is what bounds the exposure of anything
 they miss.
 
 ```javascript
 /**
  * Secure error handling middleware with educational context
  *
- * Security Focus: Prevents information disclosure through error messages
- * while maintaining educational value for learning environments.
+ * Reduces information disclosure through error messages while keeping a
+ * record a maintainer can act on.
  *
- * Security Features:
- * - Generic error messages in production
- * - Detailed errors in development for learning
- * - No stack trace exposure to clients, and none logged in production
+ * What it does:
+ * - One generic client body at every setting, carrying no error text, no
+ *   request path and no stack
  * - One structured log record per error, not an interpolated message
- * - Untrusted values run through forLog(): control characters stripped,
- *   input capped, secret-shaped material redacted, then truncated
- * - A production record of safe metadata only: a stable code, a category,
- *   an allowlisted method and the matched route pattern. No raw message,
- *   no request path, no header, no cookie, no client IP, no User-Agent
+ * - A record of safe metadata by default: a stable code, a category, an
+ *   allowlisted method and the matched route pattern. No raw message, no
+ *   request path, no header, no cookie, no client IP, no User-Agent
+ * - Message, path and stack added only when LOG_DIAGNOSTICS is on, each
+ *   through forLog(): control characters stripped, input capped, the
+ *   recognised secret shapes replaced, then truncated. forLog() reduces
+ *   what it recognises and guarantees nothing beyond that
  *
- * forLog(), LOG_METHODS, errorCode() and loggableRoute() are the helpers
- * defined in the Error Handling Patterns section above; this handler adds
- * no normalisation of its own, so there is one pipeline to review.
+ * forLog(), LOG_METHODS, LOG_DIAGNOSTICS, errorCode() and loggableRoute()
+ * are the helpers defined in the Error Handling Patterns section above; this
+ * handler adds no normalisation of its own, so there is one pipeline to
+ * review.
  *
  * @param {Error} err - Error object containing failure details
  * @param {express.Request} req - Express request object
@@ -2738,10 +2955,9 @@ they miss.
  * @param {express.NextFunction} next - Express next function
  */
 function secureErrorHandler(err, req, res, next) {
-  const isProduction = process.env.NODE_ENV === 'production';
   const statusCode = err.statusCode || 500;
 
-  // Security: one structured record, logged server-side only. In production
+  // Security: one structured record, logged server-side only. By default
   // these seven fields are the whole of it, and every one of them is a
   // value this codebase produced rather than one the client supplied
   const record = {
@@ -2756,10 +2972,10 @@ function secureErrorHandler(err, req, res, next) {
 
   // Security: the error's own message and the path the client chose are
   // diagnostic fields, not safe ones - a redaction pattern catches the
-  // secret shapes it knows and nothing else - so they are added outside
-  // production only, redacted. A stack maps the server's internals, so it
-  // is emitted in development only, with a larger cap because it is long
-  if (!isProduction) {
+  // secret shapes it knows and nothing else - so they are added only when
+  // a deployment has opted in, redacted. A stack maps the server's
+  // internals, so it carries the same opt-in and a larger cap
+  if (LOG_DIAGNOSTICS) {
     record.message = forLog(err.message);
     record.path = forLog(req.path);
     record.stack = forLog(err.stack, 2000);
@@ -2767,15 +2983,15 @@ function secureErrorHandler(err, req, res, next) {
 
   console.error(record);
 
-  // Security: generic message in production, redacted detail in development
-  // for learning. The stack and the request path reach neither response
+  // Security: one generic body, whatever the configuration. The message,
+  // the stack and the request path reach no response, so a redaction gap
+  // stays inside the log and a misconfiguration cannot widen the response.
+  // The log record is where a maintainer looks, which is what the hint says
   const response = {
     status: statusCode,
-    message: isProduction ? 'Internal Server Error' : forLog(err.message),
-    timestamp: new Date().toISOString(),
-    ...(isProduction
-      ? {}
-      : { hint: 'Check the server log for the full record' })
+    message: statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+    timestamp: record.timestamp,
+    hint: 'Check the server log for the recorded error code'
   };
 
   res.status(response.status).json(response);
