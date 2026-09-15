@@ -35,7 +35,7 @@ const { createApp } = require('../../app');
  * changing this suite's documented test count.
  *
  * Educational Note: the three timestamp assertions are ordered deliberately.
- * `Date.parse` alone is not a format check — measured on this project's Node v22.16.0
+ * `Date.parse` alone is not a format check — measured on this project's Node v22.23.2
  * it returns a number for `'0'` and for `1` — so the round-trip
  * `new Date(timestamp).toISOString() === timestamp` is what pins the ISO-8601 spelling.
  * The type and parse checks precede it because the round-trip throws

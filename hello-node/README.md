@@ -2,7 +2,7 @@
 
 A self-contained Node.js and Express tutorial project that serves **exactly one endpoint**, `GET /hello`, and returns the plain-text greeting `Hello world` to the calling HTTP client. It is deliberately small: eleven bytes over a real socket, with every behaviour around those eleven bytes — the media type, the path casing, the methods the path accepts, what happens to every other path, and how the process shuts down — specified, documented and covered by tests. This project lives in `hello-node/` at the repository root and is entirely independent of the Python Flask application that also lives in this repository under `src/backend/`: it shares no code, no configuration, no port and no dependency manifest with it, and installing or running it changes nothing about the Flask service. The two can run side by side on one machine.
 
-Every command below is runnable **as written from the `hello-node/` directory**, unless the section says otherwise (the `curl` verification commands work from any directory). Every expected output shown was measured against this project on Node.js 22.16.0 with npm 11.4.1 — nothing here is predicted.
+Every command below is runnable **as written from the `hello-node/` directory**, unless the section says otherwise (the `curl` verification commands work from any directory). Every expected output shown was measured against this project on Node.js 22.23.2 with npm 11.19.1 — nothing here is predicted.
 
 ## Table of Contents
 
@@ -22,16 +22,18 @@ Every command below is runnable **as written from the `hello-node/` directory**,
 
 | Component | Required Version | Purpose |
 |-----------|------------------|---------|
-| **Node.js** | 22.16.0 | JavaScript runtime; pinned in `.nvmrc` and in `engines.node` |
-| **npm** | 11.4.1 | Package manager; pinned in `engines.npm` |
+| **Node.js** | 22.23.2 | JavaScript runtime; pinned in `.nvmrc` and in `engines.node` |
+| **npm** | 11.19.1 | Package manager; pinned in `engines.npm` |
 | **nvm** | 0.40.x (verified with 0.40.3) | Reads `.nvmrc` and selects the pinned Node.js for you. Needed only for the `nvm use` step below — Option B installs Node.js without it |
 | **curl** | any recent version | Used by the verification commands to call the endpoint |
 
-Node.js 22.16.0 is pinned twice — in `.nvmrc`, so `nvm use` selects it, and in the `engines` field of `package.json`, so npm warns if you install under a different runtime.
+Node.js 22.23.2 is pinned twice — in `.nvmrc`, so `nvm use` selects it, and in the `engines` field of `package.json`, so npm warns if you install under a different runtime.
 
-**npm 11.4.1 is not bundled with Node.js 22.16.0, so you have to install it explicitly.** Node.js 22.16.0 ships npm **10.9.2**; installing `npm@11.4.1` yourself is what produces the pinned version. This is worth stating plainly because the repository's contributor guide claims the opposite (`CONTRIBUTING.md:91` describes npm v11.4.1 as "bundled with Node.js") — npm is a separate release train from Node.js, that claim is incorrect for any pairing, and the install step below is not optional.
+**Both numbers are the newest release of the line they name, which is why they differ from the repository's contributor guide** (`CONTRIBUTING.md:90-91` names Node v22.16.0 and npm v11.4.1). Staying on the right major line is not the same as being patched: 22.16.0 is behind its own 22.x line and is listed against 35 entries in the Node.js security feed, while 22.23.2 is listed against none. The npm pin moves for the same reason and one more — the npm 11.4.1 executable ships a bundled dependency tree carrying 30 published advisories of its own, and those are advisories `npm audit` over *this* project's lockfile can never show you, because they live inside the package manager rather than in the tree it installs. When you advance these numbers later, move all three locations together — `engines.node`, `.nvmrc` and the lockfile root — and re-run everything in [Verification](#verification) and [Tests](#tests).
 
-### Getting Node.js 22.16.0
+**npm 11.19.1 is not bundled with Node.js 22.23.2, so you have to install it explicitly.** Node.js 22.23.2 ships npm **10.9.8**; installing `npm@11.19.1` yourself is what produces the pinned version. This is worth stating plainly because the repository's contributor guide claims the opposite (`CONTRIBUTING.md:91` describes npm v11.4.1 as "bundled with Node.js") — npm is a separate release train from Node.js, that claim is incorrect for any pairing, and the install step below is not optional.
+
+### Getting Node.js 22.23.2
 
 Pick one of these two routes before running anything in the next section. The repository's contributor guide documents the same pair (`CONTRIBUTING.md:100-128`).
 
@@ -41,26 +43,26 @@ Pick one of these two routes before running anything in the next section. The re
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm install                      # reads .nvmrc -> installs 22.16.0
-nvm use                          # reads .nvmrc -> selects 22.16.0
+nvm install                      # reads .nvmrc -> installs 22.23.2
+nvm use                          # reads .nvmrc -> selects 22.23.2
 ```
 
 ```text
-Found '<path>/hello-node/.nvmrc' with version <22.16.0>
-Now using node v22.16.0 (npm v10.9.2)
+Found '<path>/hello-node/.nvmrc' with version <22.23.2>
+Now using node v22.23.2 (npm v10.9.8)
 ```
 
-The npm version nvm reports in parentheses is whichever one is installed for that runtime: `10.9.2` on a fresh install — that is the npm the official Node.js 22.16.0 distribution bundles — and `11.4.1` after you run the upgrade in the next section. `v0.40.3` is the nvm release this project was verified with; nvm's own README at <https://github.com/nvm-sh/nvm> carries the current tag, and any 0.40.x behaves the same way here. The installer appends those two `NVM_DIR` lines to your shell profile, so you only need to run them by hand in the shell you installed from — a terminal opened afterwards loads nvm on its own. Run `nvm install`/`nvm use` from the `hello-node/` directory, because that is where the `.nvmrc` they read lives.
+The npm version nvm reports in parentheses is whichever one is installed for that runtime: `10.9.8` on a fresh install — that is the npm the official Node.js 22.23.2 distribution bundles — and `11.19.1` after you run the upgrade in the next section. `v0.40.3` is the nvm release this project was verified with; nvm's own README at <https://github.com/nvm-sh/nvm> carries the current tag, and any 0.40.x behaves the same way here. The installer appends those two `NVM_DIR` lines to your shell profile, so you only need to run them by hand in the shell you installed from — a terminal opened afterwards loads nvm on its own. Run `nvm install`/`nvm use` from the `hello-node/` directory, because that is where the `.nvmrc` they read lives.
 
-**Option B — install Node.js 22.16.0 directly.** Download the 22.16.0 release from <https://nodejs.org/> and install it with the installer for your operating system. Then skip the `nvm use` line in the next section; every other command is unchanged.
+**Option B — install Node.js 22.23.2 directly.** Download the 22.23.2 release from <https://nodejs.org/> and install it with the installer for your operating system. Then skip the `nvm use` line in the next section; every other command is unchanged.
 
-Either way, npm 11.4.1 still has to be installed explicitly, as the next section does.
+Either way, npm 11.19.1 still has to be installed explicitly, as the next section does.
 
 Verify the toolchain before installing anything:
 
 ```bash
-node -v    # must report: v22.16.0
-npm -v     # must report: 11.4.1
+node -v    # must report: v22.23.2
+npm -v     # must report: 11.19.1
 ```
 
 ## Install and Run
@@ -68,13 +70,13 @@ npm -v     # must report: 11.4.1
 From the `hello-node/` directory:
 
 ```bash
-nvm use                          # reads .nvmrc -> 22.16.0
-npm install -g npm@11.4.1        # required: 22.16.0 bundles npm 10.9.2
+nvm use                          # reads .nvmrc -> 22.23.2
+npm install -g npm@11.19.1       # required: 22.23.2 bundles npm 10.9.8
 npm ci                           # restores from the committed lockfile
 npm start
 ```
 
-The first line needs nvm installed and loaded (Option A above). If you installed Node.js 22.16.0 directly (Option B), skip it and run the other three.
+The first line needs nvm installed and loaded (Option A above). If you installed Node.js 22.23.2 directly (Option B), skip it and run the other three.
 
 `npm ci` is the authoritative install command. It installs exactly the tree recorded in the committed `package-lock.json`, which is what makes every learner's install identical to the one this document was verified against. Expected output:
 
@@ -82,7 +84,7 @@ The first line needs nvm installed and loaded (Option A above). If you installed
 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. ...
 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, ...
 
-added 348 packages, and audited 349 packages in <duration>
+added 347 packages, and audited 348 packages in <duration>
 
 62 packages are looking for funding
   run `npm fund` for details
@@ -90,13 +92,13 @@ added 348 packages, and audited 349 packages in <duration>
 found 0 vulnerabilities
 ```
 
-The package counts are fixed by the committed lockfile, so those numbers are worth checking. The elapsed time is not: npm prints whatever the run took, which is why this document shows `<duration>` in its place rather than a figure to compare against. For scale, three warm-cache runs of this exact command on the machine it was verified against reported `1s`, `942ms` and `997ms`, and a read-only `npm ci --dry-run` over the same lockfile reported `up to date in 241ms`; a cold npm cache or a slow network makes it considerably longer.
+The package counts are fixed by the committed lockfile, so those numbers are worth checking. The elapsed time is not: npm prints whatever the run took, which is why this document shows `<duration>` in its place rather than a figure to compare against. For scale, three warm-cache runs of this exact command on the machine it was verified against reported `961ms`, `888ms` and `865ms`, and a read-only `npm ci --dry-run` over the same lockfile reported `up to date in 254ms`; a cold npm cache or a slow network makes it considerably longer.
 
 Three things in that output are expected and none is a problem:
 
-- **348 packages** for one declared runtime dependency. Express 5.1.0 brings a substantial transitive tree — body parsing, content negotiation, ETag generation, MIME lookup, routing and error handling — and the production-only tree is 68 of those packages. The rest are the test runner and its dependencies.
+- **347 packages** for one declared runtime dependency. Express 5.1.0 brings a substantial transitive tree — body parsing, content negotiation, ETag generation, MIME lookup, routing and error handling — and the production-only tree is 68 of those packages. The rest are the test runner and its dependencies. The lockfile describes 348 packages, one more than are installed here, and npm's summary counts the tree it actually installed: the difference is `fsevents`, an optional macOS-only dependency Jest reaches through its file-watching layer, which Linux skips. That one-package gap is also why older notes in this repository quote 348 and 349.
 - **Exactly two deprecation warnings**, `inflight@1.0.6` and `glob@7.2.3`. Both are reached transitively through Jest, neither is a package this project selects, and neither carries a security advisory against this tree. They are accepted, not fixed: resolving them would mean replacing the test runner.
-- **`found 0 vulnerabilities`** — what the audit built into `npm ci` reports for this lock graph: no advisory *currently known to the registry* matches any of the 349 packages it audited. That is a point-in-time statement about known advisories, not a guarantee that installing is risk-free. Two things it does not say: an advisory published tomorrow against a package already in the lockfile would change the answer with no change to the tree, which is why `npm audit` is worth re-running rather than trusting once; and `npm ci` runs the install lifecycle scripts of the packages it installs unless you pass `--ignore-scripts` (`npm config get ignore-scripts` is `false` by default), so a clean audit is not a statement about what those scripts do.
+- **`found 0 vulnerabilities`** — what the audit built into `npm ci` reports for this lock graph: no advisory *currently known to the registry* matches any of the 348 packages it audited. That is a point-in-time statement about known advisories, not a guarantee that installing is risk-free. Two things it does not say: an advisory published tomorrow against a package already in the lockfile would change the answer with no change to the tree, which is why `npm audit` is worth re-running rather than trusting once; and `npm ci` runs the install lifecycle scripts of the packages it installs unless you pass `--ignore-scripts` (`npm config get ignore-scripts` is `false` by default), so a clean audit is not a statement about what those scripts do.
 
 Use `npm install` only when you have deliberately changed a dependency version in `package.json` and want to regenerate the lockfile. For simply installing the project, `npm ci` is the command.
 
@@ -324,7 +326,7 @@ exit status=0
 
 The listening port is released, so a request made afterwards is refused rather than answered.
 
-**Where the signal lands when you start the server through `npm`.** `npm start` does not run `node server.js` directly: it spawns a shell, and the shell runs Node, so there are three processes rather than two. npm 11.4.1 does try to pass termination signals down — its bundled `@npmcli/run-script` installs `SIGINT` and `SIGTERM` handlers and re-sends the signal to the process it spawned — but the process it spawned is that shell, and a shell which has already started `node` need not forward anything to it. Measured here on Linux, where `/bin/sh` is `dash`: `kill -TERM` on the `npm` process ended npm and the shell, while `node server.js` stayed up, kept holding the port, and printed neither shutdown line.
+**Where the signal lands when you start the server through `npm`.** `npm start` does not run `node server.js` directly: it spawns a shell, and the shell runs Node, so there are three processes rather than two. npm 11.19.1 does try to pass termination signals down — its bundled `@npmcli/run-script` installs `SIGINT` and `SIGTERM` handlers and re-sends the signal to the process it spawned — but the process it spawned is that shell, and a shell which has already started `node` need not forward anything to it. Measured here on Linux, where `/bin/sh` is `dash`: `kill -TERM` on the `npm` process ended npm and the shell, while `node server.js` stayed up, kept holding the port, and printed neither shutdown line.
 
 `Ctrl-C` is unaffected by any of this, because the terminal delivers `SIGINT` to every process in the foreground group — Node included — rather than to npm alone. Measured: both shutdown lines, then exit.
 
@@ -389,7 +391,7 @@ Eleven files, each with one job:
 hello-node/
 ├── package.json                          # manifest: entry point, scripts, exact dependency versions
 ├── package-lock.json                     # committed lockfile, so `npm ci` is authoritative
-├── .nvmrc                                # pins Node.js 22.16.0 for `nvm use`
+├── .nvmrc                                # pins Node.js 22.23.2 for `nvm use`
 ├── .env.example                          # documents HOST and PORT, the only two variables read
 ├── jest.config.js                        # test discovery, coverage collection, coverage gate
 ├── app.js                                # application assembly: every route, no socket
