@@ -128,10 +128,12 @@ which python  # Should show .venv path
 
 ```bash
 # Install Flask v3.1.1 and production dependencies
+# Run from src/backend (step 1), so this resolves to src/backend/requirements.txt
 pip install -r requirements.txt
 
 # Install development dependencies (optional)
-pip install -r requirements-dev.txt
+# requirements-dev.txt lives at the repository root, two levels above src/backend
+pip install -r ../../requirements-dev.txt
 
 # Verify installed packages
 pip list
@@ -144,6 +146,9 @@ pip-audit
 - `Flask>=3.1.1` - WSGI web framework for HTTP server functionality
 - `python-dotenv>=1.0.1` - Environment variable management
 - `Flask-CORS>=4.0.0` - Cross-origin resource sharing
+- `gunicorn>=21.2.0` - Production WSGI HTTP server
+- `psutil>=5.9.0` - Process and system monitoring, imported by `src/backend/wsgi.py` at module load
+- `wheel>=0.42.0` - Built distribution format for faster installs
 - `pytest>=8.4.0` - Testing framework (development dependency)
 - `pytest-flask>=1.3.0` - Flask testing integration (development dependency)
 

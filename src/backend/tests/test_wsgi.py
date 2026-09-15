@@ -31,15 +31,15 @@ Production Testing Features:
 
 import os
 import sys
+import errno
 import signal
 import time
 import socket
+import tempfile
 import threading
 import subprocess
-import json
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from typing import Dict, Any, Optional, List, Generator
 import logging
 
@@ -61,7 +61,12 @@ except ImportError as e:
 # Import Flask application factory and WSGI entry point
 try:
     from src.backend.app import create_app
-    from src.backend.wsgi import create_wsgi_application
+    from src.backend.wsgi import (
+        create_wsgi_application,
+        create_listening_socket,
+        describe_signal,
+        ephemeral_port_range,
+    )
 except ImportError as e:
     print(f"❌ Flask Application Import Error: {e}")
     print("🔧 Ensure Flask application modules are available:")
@@ -305,10 +310,18 @@ def performance_baseline():
     baseline_context = {
         'measurements': [],
         'thresholds': {
+            # In-application budgets: what Flask itself must achieve per request.
             'cold_start_ms': 100,
             'warm_request_ms': 50,
             'concurrent_avg_ms': 50,
-            'memory_limit_mb': 75
+            'memory_limit_mb': 75,
+            # Whole-process budget: spawning a WSGI server process, polling it until it
+            # answers, and stopping it again.  It is deliberately far larger than the
+            # in-application budgets above, because it measures process creation and a
+            # readiness loop that sleeps between attempts, not request handling.  The
+            # value matches this module's own startup (10-15s) and shutdown (5s)
+            # timeouts, and src/backend/README.md's "starts within 2 seconds" claim.
+            'server_process_lifecycle_ms': 15000,
         }
     }
     
@@ -447,11 +460,19 @@ class TestWSGIServerLifecycle:
                 
                 logger.info("✅ WSGI server shutdown completed")
         
-        # Validate startup performance
+        # Validate startup performance.  The measurement above spans the whole process
+        # lifecycle — spawning Gunicorn, polling until it answers (with a sleep between
+        # attempts) and stopping it again — so it is checked against the process budget.
+        # The 100ms cold_start_ms budget describes Flask's own initialization and cannot
+        # be met by process creation plus a one-second readiness poll.
         startup_measurements = [m for m in performance_baseline['measurements'] if m['label'] == 'wsgi_startup']
         if startup_measurements:
             startup_duration = startup_measurements[-1]['duration_ms']
-            performance_baseline['validate']('WSGI startup', startup_duration, 'cold_start_ms')
+            performance_baseline['validate'](
+                'WSGI server process lifecycle',
+                startup_duration,
+                'server_process_lifecycle_ms',
+            )
         
         logger.info("🎓 Educational Note: Subprocess testing validates production deployment")
     
@@ -594,6 +615,373 @@ class TestWSGIServerLifecycle:
         memory_monitor['validate']()
         
         logger.info("🎓 Educational Note: Dynamic ports enable concurrent testing")
+
+
+# ============================================================================
+# DIRECT EXECUTION LIFECYCLE TESTING (python wsgi.py)
+# ============================================================================
+
+# Location of the entry point under test. The subprocess tests below run it exactly as
+# src/backend/README.md tells a reader to run it, from the directory that holds it.
+WSGI_ENTRY_POINT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'wsgi.py')
+)
+BACKEND_DIRECTORY = os.path.dirname(WSGI_ENTRY_POINT)
+
+
+@contextmanager
+def wsgi_entry_point_process(
+    port: int,
+    flask_env: Optional[str] = None,
+    readiness_timeout: int = 20,
+) -> Generator[Dict[str, Any], None, None]:
+    """
+    Runs `python wsgi.py` as a real subprocess and waits until it answers on `port`.
+    Replaces the Jest practice of spawning `node server.js` for lifecycle assertions.
+    
+    The entry point has to be exercised as a process, not imported: whether a socket is
+    bound, what the startup banner says, and what a signal does to the process are all
+    properties of the process, and an in-process test cannot observe any of them.
+    
+    Output is captured to a temporary file rather than a pipe, because the server logs
+    on every request and a filled pipe buffer would block the process being tested.
+    
+    Args:
+        port: TCP port the server should bind on 127.0.0.1
+        flask_env: Value for FLASK_ENV, or None to run with the variable unset
+        readiness_timeout: Seconds to wait for the server to answer /health
+        
+    Yields:
+        Dict[str, Any]: 'process', 'ready' (bool), 'read_log' (callable returning the
+                        captured output so far), and 'port'
+    """
+    environment = os.environ.copy()
+    environment['HOST'] = '127.0.0.1'
+    environment['PORT'] = str(port)
+    environment.pop('FLASK_ENV', None)
+    
+    if flask_env is not None:
+        environment['FLASK_ENV'] = flask_env
+    
+    log_file = tempfile.NamedTemporaryFile(
+        mode='w+',
+        prefix='wsgi-entry-point-',
+        suffix='.log',
+        delete=False,
+    )
+    
+    process = subprocess.Popen(
+        [sys.executable, 'wsgi.py'],
+        cwd=BACKEND_DIRECTORY,
+        env=environment,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    
+    def read_log() -> str:
+        with open(log_file.name, 'r', encoding='utf-8', errors='replace') as handle:
+            return handle.read()
+    
+    try:
+        ready = wait_for_server_readiness('127.0.0.1', port, timeout=readiness_timeout)
+        yield {
+            'process': process,
+            'ready': ready,
+            'read_log': read_log,
+            'port': port,
+        }
+    finally:
+        # Leave nothing running or on disk, whatever the test asserted or failed on.
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=10)
+        
+        log_file.close()
+        os.unlink(log_file.name)
+
+
+def port_is_free(host: str, port: int) -> bool:
+    """
+    Reports whether a TCP port can be bound, i.e. whether it has actually been released.
+    
+    Args:
+        host: Host address to test
+        port: TCP port to test
+        
+    Returns:
+        bool: True when the port could be bound, False when it is still held
+    """
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    try:
+        probe.bind((host, port))
+        return True
+    except OSError:
+        return False
+    finally:
+        probe.close()
+
+
+class TestWSGIDirectExecutionLifecycle:
+    """
+    Lifecycle testing for the documented entry point, `python wsgi.py`.
+    
+    These tests cover the three behaviours a reader of src/backend/README.md depends on
+    and which are invisible to an in-process test: that executing the entry point binds
+    a listening socket whatever FLASK_ENV says, that a termination signal releases the
+    socket and ends the process with status 0, and that a bind is retried before a
+    momentarily-held port is declared fatal.
+    """
+    
+    def test_entry_point_binds_socket_with_flask_env_unset(self, dynamic_port, memory_monitor):
+        """
+        Test that `python wsgi.py` serves HTTP when FLASK_ENV is not set at all.
+        
+        Validates:
+        - A listening socket is bound on the configured host and port
+        - The process stays alive instead of initializing and exiting
+        - GET /hello returns the documented JSON envelope
+        - The startup banner advertises the port actually bound
+        """
+        logger.info("🚀 Testing direct execution of the WSGI entry point (FLASK_ENV unset)")
+        
+        memory_monitor['record']("direct_execution_test_begin")
+        
+        with wsgi_entry_point_process(dynamic_port) as server:
+            assert server['ready'], (
+                "`python wsgi.py` bound no socket with FLASK_ENV unset; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            assert server['process'].poll() is None, (
+                "Entry point exited instead of serving; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            
+            response = requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=5)
+            validate_wsgi_response_format(response, ['message', 'status', 'timestamp'])
+            
+            payload = response.json()
+            assert payload['message'] == 'Hello world'
+            assert payload['status'] == 'success'
+            assert response.headers['X-API-Version'] == '1.0'
+            
+            # The banner must name the bound port, not the requested configuration.
+            assert f'Application available at: http://127.0.0.1:{dynamic_port}' in server['read_log']()
+        
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: running an entry point is a request to serve")
+    
+    def test_entry_point_serves_with_production_flask_env(self, dynamic_port):
+        """
+        Test that FLASK_ENV=production still binds a socket when run directly.
+        
+        FLASK_ENV selects the application configuration; it is not a switch between
+        serving and not serving, and a reader who exports 'production' still gets a
+        reachable server rather than a process that exits 0 having bound nothing.
+        """
+        logger.info("🏭 Testing direct execution with FLASK_ENV=production")
+        
+        with wsgi_entry_point_process(dynamic_port, flask_env='production') as server:
+            assert server['ready'], (
+                "FLASK_ENV=production bound no socket; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            
+            response = requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=5)
+            assert response.status_code == 200
+            assert response.json()['message'] == 'Hello world'
+        
+        logger.info("🎓 Educational Note: configuration selection is not a server switch")
+    
+    def test_sigterm_releases_port_and_exits_zero(self, dynamic_port, memory_monitor):
+        """
+        Test SIGTERM handling of the directly executed entry point.
+        
+        Validates:
+        - The process exits, rather than logging a shutdown and continuing to serve
+        - It exits with status 0 within the graceful shutdown budget
+        - The listening socket is released, so the port is immediately bindable
+        - A single signal suffices
+        """
+        logger.info("📡 Testing SIGTERM handling of the directly executed entry point")
+        
+        memory_monitor['record']("sigterm_test_begin")
+        
+        with wsgi_entry_point_process(dynamic_port, flask_env='development') as server:
+            process = server['process']
+            assert server['ready'], f"Server never became ready:\n{server['read_log']()}"
+            
+            shutdown_start = time.time()
+            process.send_signal(signal.SIGTERM)
+            return_code = process.wait(timeout=15)
+            shutdown_duration = time.time() - shutdown_start
+            
+            assert return_code == 0, (
+                f"Entry point exited with {return_code} after SIGTERM; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            assert shutdown_duration < 10, f"Shutdown took {shutdown_duration:.2f}s (>10s budget)"
+            
+            # The port must be free, not merely unresponsive.
+            assert port_is_free('127.0.0.1', dynamic_port), (
+                f"Port {dynamic_port} still held after the process exited"
+            )
+            with pytest.raises(requests.exceptions.RequestException):
+                requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=2)
+            
+            # The completion message must describe something that happened.
+            output = server['read_log']()
+            assert 'SIGTERM signal received' in output
+            assert 'Listening socket released' in output
+            assert 'WSGI application shutdown complete' in output
+            
+            logger.info(f"✅ SIGTERM handled in {shutdown_duration:.2f}s with exit code 0")
+        
+        memory_monitor['validate']()
+        
+        logger.info("🎓 Educational Note: a graceful shutdown ends with the process ending")
+    
+    def test_sigint_releases_port_and_exits_zero(self, dynamic_port):
+        """
+        Test SIGINT (Ctrl+C) handling of the directly executed entry point.
+        Ctrl+C is how a reader stops a foreground server, so it must behave as SIGTERM
+        does: release the socket and exit with status 0.
+        """
+        logger.info("⌨️  Testing SIGINT handling of the directly executed entry point")
+        
+        with wsgi_entry_point_process(dynamic_port) as server:
+            process = server['process']
+            assert server['ready'], f"Server never became ready:\n{server['read_log']()}"
+            
+            process.send_signal(signal.SIGINT)
+            return_code = process.wait(timeout=15)
+            
+            assert return_code == 0, (
+                f"Entry point exited with {return_code} after SIGINT; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            assert port_is_free('127.0.0.1', dynamic_port)
+            assert 'SIGINT signal received' in server['read_log']()
+        
+        logger.info("🎓 Educational Note: SIGINT and SIGTERM share one shutdown path")
+    
+    def test_diagnostic_signal_reports_state_without_stopping(self, dynamic_port):
+        """
+        Test that SIGUSR1 reports process state and leaves the server serving.
+        
+        A process supervisor uses the user-defined signals to poke a service — reopen
+        log files, re-exec — so treating one as a stop request would take down a server
+        that was only asked to report on itself.
+        """
+        logger.info("📨 Testing SIGUSR1 handling (observability, not termination)")
+        
+        with wsgi_entry_point_process(dynamic_port) as server:
+            process = server['process']
+            assert server['ready'], f"Server never became ready:\n{server['read_log']()}"
+            
+            process.send_signal(signal.SIGUSR1)
+            time.sleep(1.0)
+            
+            assert process.poll() is None, (
+                "SIGUSR1 terminated the server; "
+                f"captured output:\n{server['read_log']()}"
+            )
+            
+            response = requests.get(f'http://127.0.0.1:{dynamic_port}/hello', timeout=5)
+            assert response.status_code == 200
+            assert response.json()['message'] == 'Hello world'
+            
+            output = server['read_log']()
+            assert 'SIGUSR1 signal received' in output
+            assert 'reporting process state' in output
+        
+        logger.info("🎓 Educational Note: not every signal means stop")
+    
+    def test_create_listening_socket_retries_transient_address_in_use(self, dynamic_port):
+        """
+        Test that a momentarily-held port is retried rather than declared fatal.
+        
+        A port inside the kernel's ephemeral range is also allocated to outbound
+        connections, so an unrelated connection can hold it for the instant of a bind.
+        This test occupies the port, releases it shortly after the first attempt fails,
+        and requires the bind to succeed on a later attempt.
+        """
+        logger.info("🔁 Testing bind retry on a transient EADDRINUSE")
+        
+        occupied = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        occupied.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        occupied.bind(('127.0.0.1', dynamic_port))
+        occupied.listen(1)
+        
+        # Release the port the way a short-lived connection would, after the first
+        # attempt has already failed.
+        release_timer = threading.Timer(0.35, occupied.close)
+        release_timer.daemon = True
+        release_timer.start()
+        
+        bound_socket = None
+        try:
+            bound_socket = create_listening_socket(
+                '127.0.0.1',
+                dynamic_port,
+                max_attempts=5,
+                retry_delay=0.25,
+            )
+            assert bound_socket.getsockname()[1] == dynamic_port
+            logger.info(f"✅ Bind recovered on port {dynamic_port} after a transient clash")
+        finally:
+            release_timer.cancel()
+            occupied.close()
+            if bound_socket is not None:
+                bound_socket.close()
+        
+        logger.info("🎓 Educational Note: retrying a transient clash prevents a false failure")
+    
+    def test_create_listening_socket_fails_when_port_stays_occupied(self, dynamic_port):
+        """
+        Test that a genuinely occupied port still fails, and fails with EADDRINUSE.
+        Retrying must not turn a real conflict into a hang or a silent success.
+        """
+        logger.info("🚫 Testing bind failure on a permanently occupied port")
+        
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as occupied:
+            occupied.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            occupied.bind(('127.0.0.1', dynamic_port))
+            occupied.listen(1)
+            
+            with pytest.raises(OSError) as exception_info:
+                create_listening_socket(
+                    '127.0.0.1',
+                    dynamic_port,
+                    max_attempts=2,
+                    retry_delay=0.1,
+                )
+            
+            assert exception_info.value.errno == errno.EADDRINUSE
+        
+        logger.info("🎓 Educational Note: a real port conflict must still fail fast")
+    
+    def test_ephemeral_port_range_and_signal_naming_helpers(self):
+        """
+        Test the helpers the startup path uses to warn about risky ports and log signals.
+        
+        Validates:
+        - The ephemeral range is a sane ordered pair inside the TCP port space
+        - Signal numbers are rendered as names for log output
+        """
+        low, high = ephemeral_port_range()
+        
+        assert isinstance(low, int) and isinstance(high, int)
+        assert 1024 < low < high <= 65535
+        
+        assert describe_signal(signal.SIGTERM) == 'SIGTERM'
+        assert describe_signal(signal.SIGINT) == 'SIGINT'
+        
+        logger.info(f"✅ Ephemeral range reported as {low}-{high}")
+        logger.info("🎓 Educational Note: warn about ports the kernel also hands out")
 
 
 # ============================================================================
@@ -764,12 +1152,16 @@ class TestWSGIPerformance:
             assert result.json()['message'] == 'Hello world'
             
             # Validate performance against SLA (50ms warm request)
-            mean_time_ms = benchmark.stats.mean * 1000
+            # pytest-benchmark exposes the fixture's Metadata as `benchmark.stats`, and
+            # the computed statistics one level in, as `benchmark.stats.stats`.
+            benchmark_stats = benchmark.stats.stats
+            
+            mean_time_ms = benchmark_stats.mean * 1000
             assert mean_time_ms < 50, f"Mean response time {mean_time_ms:.2f}ms exceeds 50ms SLA"
             
             logger.info(f"📊 Benchmark results - Mean: {mean_time_ms:.2f}ms, "
-                       f"Min: {benchmark.stats.min*1000:.2f}ms, "
-                       f"Max: {benchmark.stats.max*1000:.2f}ms")
+                        f"Min: {benchmark_stats.min*1000:.2f}ms, "
+                        f"Max: {benchmark_stats.max*1000:.2f}ms")
             
         finally:
             # Cleanup WSGI server
@@ -846,8 +1238,8 @@ class TestWSGIPerformance:
             memory_monitor['validate']()
             
             logger.info(f"📈 Memory usage - Initial: {initial_memory:.2f}MB, "
-                       f"Startup: {startup_memory:.2f}MB, "
-                       f"Under load: {load_memory:.2f}MB")
+                        f"Startup: {startup_memory:.2f}MB, "
+                        f"Under load: {load_memory:.2f}MB")
             
         finally:
             # Graceful shutdown and memory cleanup validation
@@ -960,7 +1352,7 @@ class TestWSGIPerformance:
             assert avg_response_time < 50, f"Average response time {avg_response_time:.2f}ms exceeds 50ms SLA"
             
             # Log performance statistics
-            logger.info(f"📊 Concurrent load results:")
+            logger.info("📊 Concurrent load results:")
             logger.info(f"   Successful requests: {len(successful_requests)}/{concurrent_requests}")
             logger.info(f"   Success rate: {success_rate:.2%}")
             logger.info(f"   Average response time: {avg_response_time:.2f}ms")
@@ -984,11 +1376,19 @@ class TestWSGIPerformance:
         # Validate memory usage after concurrent testing
         memory_monitor['validate']()
         
-        # Validate concurrent load performance
+        # Validate concurrent load performance.  The measurement is the wall-clock time
+        # for the whole batch, so the per-request threshold is applied to the per-request
+        # average derived from it — which is what 'concurrent_avg_ms' names.  Comparing
+        # the batch total against a per-request budget would fail for any batch larger
+        # than one request, however fast each request was.
         concurrent_measurements = [m for m in performance_baseline['measurements'] if m['label'] == 'concurrent_load']
-        if concurrent_measurements:
+        if concurrent_measurements and results:
             load_duration = concurrent_measurements[-1]['duration_ms']
-            performance_baseline['validate']('Concurrent load', load_duration, 'concurrent_avg_ms')
+            performance_baseline['validate'](
+                'Concurrent load (per-request average)',
+                load_duration / len(results),
+                'concurrent_avg_ms',
+            )
         
         logger.info("🎓 Educational Note: Concurrent testing validates production readiness")
 
@@ -1153,7 +1553,9 @@ class TestWSGIEndToEndIntegration:
                 '--timeout', '30',
                 '--worker-class', 'sync',
                 '--max-requests', '1000',
-                '--preload-app',
+                # Gunicorn's flag is --preload; --preload-app is rejected with
+                # "unrecognized arguments", so the server never started at all.
+                '--preload',
                 'src.backend.wsgi:application'
             ]
             
@@ -1207,7 +1609,9 @@ class TestWSGIEndToEndIntegration:
                     assert response.status_code == expected_status, \
                         f"Endpoint {endpoint} returned {response.status_code}, expected {expected_status}"
                     
-                    if response.is_json:
+                    # requests.Response has no `is_json`; the media type comes from the
+                    # response header.
+                    if 'application/json' in response.headers.get('Content-Type', ''):
                         data = response.json()
                         assert expected_key in data, f"Expected key '{expected_key}' missing from {endpoint}"
                 
@@ -1225,6 +1629,7 @@ class TestWSGIEndToEndIntegration:
                 load_test_duration = 10  # seconds
                 requests_per_second = 10
                 total_requests = load_test_duration * requests_per_second
+                logger.info(f"🎯 Planned sustained load: {total_requests} requests")
                 
                 successful_requests = 0
                 failed_requests = 0
@@ -1369,9 +1774,12 @@ def validate_wsgi_response_format(response: requests.Response, expected_keys: Li
     Raises:
         AssertionError: If response format validation fails
     """
-    # Validate HTTP status and content type
+    # Validate HTTP status and content type.  The media type is read from the header
+    # because this helper receives a requests.Response from a real HTTP call, which —
+    # unlike a Flask test-client response — has no `is_json` attribute.
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    assert response.is_json, "Response is not JSON format"
+    assert 'application/json' in response.headers.get('Content-Type', ''), \
+        f"Response is not JSON format: {response.headers.get('Content-Type')!r}"
     
     # Validate JSON structure
     data = response.json()

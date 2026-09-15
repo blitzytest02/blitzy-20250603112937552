@@ -1,0 +1,26 @@
+{
+  "name": "hello-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js tutorial project serving a single GET /hello endpoint that returns the plain-text greeting 'Hello world'",
+  "main": "app.js",
+  "type": "commonjs",
+  "engines": {
+    "node": "22.23.2",
+    "npm": "11.19.1"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --runInBand"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  },
+  "devDependencies": {
+    "jest": "29.7.0",
+    "supertest": "7.1.4"
+  }
+}
