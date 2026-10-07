@@ -420,7 +420,7 @@ Expected output:
 ℹ duration_ms <time>
 ```
 
-Each test sends one real HTTP request and checks the response:
+Each test calls the server over real HTTP and checks the response:
 
 1. `GET /hello returns 200 with exactly "Hello world"`: status `200`, the `Content-Type` and
    `Content-Length: 11` headers, and the exact body.
@@ -429,6 +429,7 @@ Each test sends one real HTTP request and checks the response:
 3. `GET /hello ignores the query string`: `/hello?name=learner` still returns `Hello world`.
 4. `GET /hello/ with a trailing slash is 404`: the trailing slash makes it a different path.
 5. `GET / is 404 Not Found`: any path other than `/hello` returns `Not Found`, 9 bytes long.
+   `POST /` and `/HELLO` are `404` too, because the path is checked first and exactly.
 6. `POST /hello is 405 with an Allow header`: an unsupported method returns `405` and
    `Allow: GET, HEAD`.
 
