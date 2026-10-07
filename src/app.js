@@ -14,7 +14,7 @@ function send(res, statusCode, body, extraHeaders = {}) {
     // An explicit charset stops clients guessing how to decode the body.
     'Content-Type': 'text/plain; charset=utf-8',
     // Content-Length is a count of bytes. Buffer.byteLength counts UTF-8 bytes, while
-    // body.length counts characters and would be wrong for any multi-byte character.
+    // body.length counts UTF-16 code units and would be wrong for any multi-byte character.
     'Content-Length': Buffer.byteLength(body),
     ...extraHeaders,
   });
