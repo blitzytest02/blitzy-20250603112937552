@@ -597,22 +597,30 @@ writes to stdout. Every failure goes through one helper, `fail` (comments omitte
 
 ```js
 function fail(message) {
-  const shown = message.replace(/\p{Cc}/gu, (character) => {
+  const shown = message.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, (character) => {
     if (character === '\r') return '\\r';
     if (character === '\n') return '\\n';
-    return `\\x${character.charCodeAt(0).toString(16).padStart(2, '0')}`;
+    const code = character.codePointAt(0);
+    if (code < 0x100) return `\\x${code.toString(16).padStart(2, '0')}`;
+    if (code < 0x10000) return `\\u${code.toString(16).padStart(4, '0')}`;
+    return `\\u{${code.toString(16)}}`;
   });
   console.error(shown);
   process.stderr.write('', () => process.exit(1));
 }
 ```
 
-`fail` first shows every control character in the message as an escape. `\p{Cc}`, with the `u`
-flag, matches Unicode's control-character category. A line break inside a value, such as a `PORT`
-that spans two lines, becomes the two characters `\n` or `\r`, so the failure stays on one line.
-Any other control character becomes `\x` and its two-digit hex code, such as `\x1b` for the
-escape character that starts a terminal command, so the terminal displays it instead of acting on
-it, for example by clearing the screen or hiding text. `console.error` then writes the result to
+`fail` first shows every control, invisible format or separator character in the message as an
+escape. With the `u` flag, the class matches four Unicode categories. `\p{Cc}` is the control
+characters. `\p{Cf}` is the invisible format characters, such as U+202E RIGHT-TO-LEFT OVERRIDE,
+which would make the terminal show the rest of the line reversed. `\p{Zl}` and `\p{Zp}` are the
+line and paragraph separators, U+2028 and U+2029, which some viewers show as a line break. A line
+break inside a value, such as a `PORT` that spans two lines, becomes the two characters `\n` or
+`\r`, so the failure stays on one line. Any other matched character below U+0100 becomes `\x` and
+its two-digit hex code, such as `\x1b` for the escape character that starts a terminal command, so
+the terminal displays it instead of acting on it, for example by clearing the screen or hiding
+text. A matched character from U+0100 up becomes `\u` and four hex digits, such as `\u202e`, or
+`\u{...}` above U+FFFF. `console.error` then writes the result to
 stderr. When stderr is a pipe, the message can still be in transit after `console.error` returns,
 and an immediate `process.exit(1)` could cut it short. The callback of the empty write runs only
 once everything written before it has reached the operating system, so the process exits with

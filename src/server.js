@@ -11,12 +11,17 @@ const DEFAULT_HOST = '127.0.0.1';
 
 // Startup failures go to stderr with exit code 1, so a caller can tell the start failed.
 function fail(message) {
-  // A line break or a terminal control such as ESC, in PORT or in a HOST quoted by an error,
-  // is shown escaped: the message stays on one line and the terminal cannot act on it.
-  const shown = message.replace(/\p{Cc}/gu, (character) => {
+  // A line break, a terminal control such as ESC, an invisible format character such as a
+  // right-to-left override, or a line or paragraph separator, in PORT or in a HOST quoted by an
+  // error, is shown escaped: the message stays on one line, reads as typed, and the terminal
+  // cannot act on it.
+  const shown = message.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, (character) => {
     if (character === '\r') return '\\r';
     if (character === '\n') return '\\n';
-    return `\\x${character.charCodeAt(0).toString(16).padStart(2, '0')}`;
+    const code = character.codePointAt(0);
+    if (code < 0x100) return `\\x${code.toString(16).padStart(2, '0')}`;
+    if (code < 0x10000) return `\\u${code.toString(16).padStart(4, '0')}`;
+    return `\\u{${code.toString(16)}}`;
   });
   console.error(shown);
   // stderr can be asynchronous on a pipe; the empty write's callback waits for earlier writes.
