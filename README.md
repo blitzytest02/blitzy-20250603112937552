@@ -1,1003 +1,724 @@
-# Python Flask Hello World Tutorial
+# Node.js Hello World HTTP Server
 
-[![Python Version](https://img.shields.io/badge/python-v3.12%2B-brightgreen)](https://python.org/)
-[![Flask Version](https://img.shields.io/badge/flask-v3.1.1-blue)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
-[![Test Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/tutorial/python-flask-tutorial)
+A Node.js HTTP server with one endpoint, `/hello`, that returns `Hello world` to any HTTP client
+that calls it: curl, a browser or `fetch`. It is built with Node.js built-ins only, so there are no
+npm dependencies to install, and all the code that answers a request is in this repository.
 
-A comprehensive Python Flask tutorial application demonstrating fundamental WSGI web server concepts using Flask v3.1.1 and Python 3.12+ through hands-on HTTP server implementation with a single `/hello` endpoint returning 'Hello world'.
+## What you will learn
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Overview
-
-### Learning Objectives
-
-This tutorial application is designed to provide hands-on experience with fundamental Python web development and Flask concepts:
-
-- **Understanding Python WSGI server fundamentals** - Learn how Python handles HTTP requests and responses through WSGI protocol
-- **Learning Flask framework basics and routing** - Master Flask decorator-based routing and view function patterns
-- **Implementing RESTful API endpoints** - Create and test HTTP endpoints following REST principles with Flask
-- **Understanding request-response cycles** - Comprehend the complete HTTP request-response flow in Python
-- **Learning error handling patterns** - Implement robust error handling and status code management with Flask decorators
-- **Understanding testing with pytest and Flask test client** - Write comprehensive tests for Flask endpoints using pytest fixtures
-
-### Technology Stack
-
-**Runtime Environment:**
-- **Python 3.12+ 'Latest'** - Modern Python interpreter with enhanced performance, improved type hints, and comprehensive standard library support extending long-term stability
-
-**Web Framework:**
-- **Flask v3.1.1** - Latest WSGI web framework with enhanced type hint support, security defaults, and modern Python 3.12+ compatibility for production-ready applications
-
-**Testing Framework:**
-- **pytest v8.4.0** - Comprehensive Python testing framework with advanced fixture management and Flask-specific integration
-- **pytest-flask v1.3.0** - Flask application testing plugin providing specialized fixtures for HTTP endpoint testing
-
-**WSGI Server:**
-- **Gunicorn v21.2.0** - Production-grade Python WSGI HTTP server with multi-worker process management for scalable deployment
-
-**Containerization (Optional):**
-- **Docker** - Multi-stage builds with python:3.12-alpine for minimal resource usage and deployment learning
-
-### Project Features
-
-- **Single `/hello` endpoint** returning 'Hello world' response demonstrating basic Flask WSGI server functionality
-- **Flask v3.1.1 security features** including automatic JSON serialization and modern security defaults
-- **Comprehensive error handling** with 404 and 500 responses following HTTP standards using Flask decorators
-- **Educational logging and monitoring patterns** for understanding Python web server behavior
-- **Complete test suite with 100% code coverage** demonstrating pytest best practices and Flask testing patterns
-- **Docker containerization support** for deployment learning and environment consistency with Python runtime
+- Start a Node.js HTTP server, and say what `createServer` and `listen` each do.
+- Call the endpoint from curl and a browser, and read the status line, headers and body.
+- Explain why `/hello` returns `200`, `/hello/` returns `404` and `POST /hello` returns `405`.
+- Explain why `Content-Type` carries a charset and why `Content-Length` counts bytes.
+- Change the port with an environment variable in your own shell, and diagnose a port-in-use
+  failure.
+- Run the automated tests, and explain how a test starts a server on port `0` and stops it.
+- Check and pin the Node.js version a project expects.
 
 ## Prerequisites
 
-### System Requirements
+- **Node.js 24 LTS.** This is the line the project's `.nvmrc` file selects, and the one every
+  output in this README was verified on. Check it with:
 
-| Component | Minimum Version | Recommended | Purpose |
-|-----------|----------------|-------------|---------|
-| **Python** | v3.12.0 | Latest 3.12.x | Python runtime environment with modern language features |
-| **pip** | v23.0.0 | Latest | Python package manager (bundled with Python) |
-| **Memory** | 75MB RAM | 150MB | Flask application runtime requirements |
-| **Disk Space** | 100MB | 200MB | Virtual environment and dependencies |
+  ```bash
+  node --version
+  ```
 
-### Installation Links
+  It prints `v24.` followed by the patch release, for example `v24.21.0`. Later releases satisfy
+  the `engines` floor in `package.json` (`>=24`), but the outputs shown here are verified on 24.
 
-- **Python Official**: [https://python.org/downloads/](https://python.org/downloads/) - Official Python installers for all platforms
-- **pyenv (Version Manager)**: [https://github.com/pyenv/pyenv](https://github.com/pyenv/pyenv) - Manage multiple Python versions
-- **Docker (Optional)**: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/) - For containerization learning
+- **npm**, which is bundled with Node.js. Check it with:
 
-### Verification Commands
+  ```bash
+  npm --version
+  ```
 
-Verify your development environment meets the requirements:
+  It prints a version number (11.x with Node.js 24).
 
-```bash
-# Check Python version (should show v3.12.0 or higher)
-python --version
+- **curl**, for calling the server from the terminal. Check it with:
 
-# Check pip version (should show v23.0.0 or higher)
-pip --version
+  ```bash
+  curl --version
+  ```
 
-# Optional: Check Docker version for containerization
-docker --version
-```
+  In Windows PowerShell 5.1, type `curl.exe` instead of `curl` here and in every later command,
+  because there `curl` is an alias for `Invoke-WebRequest`.
 
-## Installation
+- **A version manager (optional)**, if you switch between Node.js versions. With nvm, run these
+  two commands in the project directory. They read `.nvmrc`, install the newest Node.js 24
+  release and switch the current shell to it:
 
-### 1. Clone Repository
+  ```bash
+  nvm install
+  nvm use
+  ```
 
-```bash
-# Clone the tutorial repository
-git clone https://github.com/tutorial/python-flask-tutorial.git
+  With nvm-windows, name the line instead: `nvm install 24`, then `nvm use 24`.
 
-# Navigate to project directory
-cd python-flask-tutorial
+### A note on shells
 
-# Navigate to backend source directory
-cd src/backend
-```
+Commands are written for POSIX shells (bash, zsh) and run unchanged in PowerShell, except in three
+places, where each section also shows the PowerShell form:
 
-### 2. Virtual Environment Setup
+| POSIX shells | PowerShell |
+|--------------|------------|
+| `NAME=value npm start` | `$env:NAME = 'value'; npm start`, then `Remove-Item Env:NAME` once that run has finished or been stopped |
+| `echo $?` | `$LASTEXITCODE` |
+| `curl` | `curl` in PowerShell 7, `curl.exe` in Windows PowerShell 5.1 |
 
-```bash
-# Create Python virtual environment
-python -m venv .venv
+Every `npm` and `node` command is identical in both shells.
 
-# Activate virtual environment
-# On macOS/Linux:
-source .venv/bin/activate
-# On Windows:
-.venv\Scripts\activate
+## Install
 
-# Verify virtual environment activation
-which python  # Should show .venv path
-```
-
-### 3. Install Dependencies
+From the project directory, run:
 
 ```bash
-# Install Flask v3.1.1 and production dependencies
-pip install -r requirements.txt
-
-# Install development dependencies (optional)
-pip install -r requirements-dev.txt
-
-# Verify installed packages
-pip list
-
-# Optional: Check for security vulnerabilities
-pip-audit
+npm install
 ```
 
-**Expected Dependencies:**
-- `Flask>=3.1.1` - WSGI web framework for HTTP server functionality
-- `python-dotenv>=1.0.1` - Environment variable management
-- `Flask-CORS>=4.0.0` - Cross-origin resource sharing
-- `pytest>=8.4.0` - Testing framework (development dependency)
-- `pytest-flask>=1.3.0` - Flask testing integration (development dependency)
+Expected output:
 
-### 4. Environment Setup (Optional)
+```text
+up to date, audited 1 package in <time>
 
-Create a `.env` file for custom configuration:
+found 0 vulnerabilities
+```
+
+The project has no dependencies, so the command downloads nothing and creates no `node_modules/`
+directory. It only confirms that `package-lock.json` matches `package.json`. On a clean checkout,
+`npm ci` is the equivalent command: it installs exactly what the lockfile records, which here is
+nothing.
+
+## Run the server
+
+In a terminal in the project directory, run:
 
 ```bash
-# Optional environment variables
-FLASK_APP=app.py
-FLASK_ENV=development
-PORT=5000
-HOST=localhost
+npm start
 ```
 
-**Default Configuration:**
-- **PORT**: 5000 (customizable via environment variable)
-- **HOST**: localhost (safe for local development)
-- **FLASK_ENV**: development (enables enhanced debugging)
+Expected output:
 
-## Usage
+```text
+> node-hello-tutorial@1.0.0 start
+> node src/server.js
 
-### Development Server
+Server listening on http://127.0.0.1:3000
+```
 
-#### Start the Flask Server
+The first two lines are npm announcing the `start` script and the command it runs. The last line
+comes from the server once it is listening.
+
+The server occupies this terminal until you stop it. Leave it running, and open a second terminal
+in the project directory for every command in the next section.
+
+## Call the endpoint
+
+Run every command in this section in the second terminal, while the server keeps running in the
+first.
+
+### GET /hello: 200 OK
 
 ```bash
-# Activate virtual environment first
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate  # Windows
-
-# Start the Flask development server
-python -m flask run
-
-# Alternative: Start with Gunicorn for production testing
-gunicorn wsgi:app
-
-# Custom port development mode
-python -m flask run --port=8080
-
-# Development mode with debug enabled
-FLASK_DEBUG=True python -m flask run
+curl -i http://127.0.0.1:3000/hello
 ```
 
-**Expected Output:**
-```
-🚀 Flask Server Successfully Started!
-============================================================
-⏰ Startup time: 2024-01-15T10:30:00.000Z
-🌐 Server listening on: http://localhost:5000
-📡 Host: localhost
-🔌 Port: 5000
+Expected output:
 
-🎯 Available Endpoints:
-   GET  http://localhost:5000/hello  →  Returns "Hello world"
-
-🔧 Testing Commands:
-   curl http://localhost:5000/hello
-   curl -i http://localhost:5000/hello  # Include response headers
-
-🌐 Browser Access:
-   Open: http://localhost:5000/hello
-```
-
-#### Test the Endpoint
-
-**Browser Access:**
-```
-http://localhost:5000/hello
-```
-
-**Command Line Testing:**
-```bash
-# Basic request
-curl http://localhost:5000/hello
-
-# Include response headers
-curl -i http://localhost:5000/hello
-
-# Test error handling
-curl http://localhost:5000/invalid
-
-# Test with JSON response format
-curl -H "Accept: application/json" http://localhost:5000/hello
-```
-
-**Expected Responses:**
-
-✅ **Successful Request:**
-```
+```text
 HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
 Content-Length: 11
+Date: <date>
+Connection: keep-alive
+Keep-Alive: timeout=5
 
 Hello world
 ```
 
-❌ **Error Response:**
-```
-HTTP/1.1 404 Not Found
-Content-Type: application/json
+The status is `200 OK` because `/hello` exists and `GET` is a method it supports. The `-i` flag
+makes curl print the status line and headers before the body:
 
-{
-  "status": 404,
-  "message": "Not Found",
-  "path": "/invalid",
-  "method": "GET"
-}
-```
+- `Content-Type: text/plain; charset=utf-8` says the body is plain text encoded as UTF-8, so no
+  client has to guess how to turn the bytes into characters.
+- `Content-Length: 11` is the size of the body in bytes.
+- `Date`, `Connection` and `Keep-Alive` are added by Node.js, not by this project's code, and vary
+  with the client: a client that asks to close the connection receives `Connection: close`
+  instead.
 
-#### Server Management
+Your shell prompt appears directly after `Hello world`, on the same line. That is expected: the
+body is exactly the 11 characters `Hello world`, with no trailing newline.
 
-**Graceful Shutdown:**
+### In a browser
+
+Open `http://localhost:3000/hello` in a browser. It shows the plain text `Hello world`, because a
+browser navigating to a URL sends the same `GET` request curl does.
+
+### HEAD /hello: 200 OK with no body
+
 ```bash
-# Press Ctrl+C for graceful shutdown
-^C
+curl -I http://127.0.0.1:3000/hello
 ```
 
-**Custom Port Configuration:**
-```bash
-# Run on custom port
-FLASK_RUN_PORT=8080 python -m flask run
+Expected output, the same status line and headers as above, and no body:
 
-# Verify custom port
-curl http://localhost:8080/hello
-```
-
-**Environment-Specific Configuration:**
-```bash
-# Enhanced development debugging
-FLASK_DEBUG=True python -m flask run
-
-# Production mode testing
-FLASK_ENV=production gunicorn wsgi:app
-```
-
-## API Documentation
-
-### Endpoints
-
-#### GET /hello
-
-Returns a simple 'Hello world' greeting demonstrating basic Flask WSGI server functionality.
-
-**Request:**
-```http
-GET /hello HTTP/1.1
-Host: localhost:5000
-```
-
-**Response:**
-```http
+```text
 HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
 Content-Length: 11
+Date: <date>
+Connection: keep-alive
+Keep-Alive: timeout=5
 
+```
+
+The `-I` flag sends a `HEAD` request, which asks for the headers a `GET` would return without the
+body. The status is `200 OK` because HTTP expects a server that answers `GET` for a resource to
+answer `HEAD` for it too, and `Content-Length` still reports the 11 bytes a `GET` would send.
+
+### Check the exact bytes
+
+This command is the same in POSIX shells and PowerShell, and needs only Node.js. It fetches the
+endpoint with the `fetch` built into Node.js and prints the body's length in bytes, then the
+bytes in hexadecimal:
+
+```bash
+node -e "fetch('http://127.0.0.1:3000/hello').then((r) => r.arrayBuffer()).then((b) => console.log(b.byteLength, Buffer.from(b).toString('hex')))"
+```
+
+Expected output:
+
+```text
+11 48656c6c6f20776f726c64
+```
+
+That is 11 bytes, the hexadecimal codes of `H`, `e`, `l`, `l`, `o`, a space, `w`, `o`, `r`, `l`
+and `d`. There is no trailing `0a`, the code of a newline character.
+
+### A query string: still 200 OK
+
+```bash
+curl -s "http://127.0.0.1:3000/hello?name=learner"
+```
+
+Expected output:
+
+```text
 Hello world
 ```
 
-**Response Headers:**
-- `Content-Type`: `text/plain; charset=utf-8`
-- `Content-Length`: `11`
-- `Server`: `Werkzeug/3.x.x Python/3.12.x` (development)
+The status is `200 OK` because the server compares only the path, the part of the URL before
+`?`, and ignores the query string. The URL is in quotes because zsh treats `?` as a wildcard and
+would otherwise try to match it against file names. The `-s` flag hides curl's progress output.
 
-**cURL Example:**
+### POST /hello: 405 Method Not Allowed
+
 ```bash
-curl -i http://localhost:5000/hello
+curl -i -X POST http://127.0.0.1:3000/hello
 ```
 
-**Python Requests Example:**
-```python
-import requests
+Expected output:
 
-response = requests.get('http://localhost:5000/hello')
-print(response.text)  # "Hello world"
-print(response.status_code)  # 200
-```
-
-**JavaScript Fetch Example:**
-```javascript
-fetch('http://localhost:5000/hello')
-  .then(response => response.text())
-  .then(data => console.log(data)); // "Hello world"
-```
-
-### Error Responses
-
-#### 404 Not Found
-
-Returned for undefined routes and invalid endpoints using Flask error handlers.
-
-**Request:**
-```bash
-curl http://localhost:5000/nonexistent
-```
-
-**Response:**
-```http
-HTTP/1.1 404 Not Found
-Content-Type: application/json
-
-{
-  "status": 404,
-  "message": "Not Found",
-  "path": "/nonexistent",
-  "method": "GET"
-}
-```
-
-#### 405 Method Not Allowed
-
-Returned for unsupported HTTP methods on existing endpoints.
-
-**Request:**
-```bash
-curl -X POST http://localhost:5000/hello
-```
-
-**Response:**
-```http
+```text
 HTTP/1.1 405 Method Not Allowed
-Content-Type: application/json
+Content-Type: text/plain; charset=utf-8
+Content-Length: 18
+Allow: GET, HEAD
+Date: <date>
+Connection: keep-alive
+Keep-Alive: timeout=5
 
-{
-  "status": 405,
-  "message": "Method Not Allowed"
+Method Not Allowed
+```
+
+The status is `405 Method Not Allowed` because `/hello` exists but does not support `POST`, and
+HTTP requires a `405` response to list the methods the resource does support in an `Allow`
+header.
+
+### Any other path: 404 Not Found
+
+```bash
+curl -i http://127.0.0.1:3000/
+curl -i http://127.0.0.1:3000/hello/
+```
+
+Both commands print:
+
+```text
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+Content-Length: 9
+Date: <date>
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+Not Found
+```
+
+The status is `404 Not Found` because the path is not exactly `/hello`. The match is exact and
+case-sensitive, so `/`, `/hello/` with its trailing slash, `/HELLO` and `/hello/world` are all
+different resources that do not exist. A `404` does not depend on the method: `POST /` is a
+`404` too, because the server checks the path before it checks the method.
+
+### Stop the server
+
+Return to the first terminal and press Ctrl+C to stop the server before you continue.
+
+## Change the port or host
+
+The server reads two environment variables when it starts: `PORT`, default `3000`, and `HOST`,
+default `127.0.0.1`. Start each variant below in the first terminal, call it from the second, and
+stop it with Ctrl+C in the first.
+
+### Port
+
+POSIX shells:
+
+```bash
+PORT=4000 npm start
+```
+
+PowerShell:
+
+```powershell
+$env:PORT = '4000'; npm start
+```
+
+Expected output in either shell:
+
+```text
+> node-hello-tutorial@1.0.0 start
+> node src/server.js
+
+Server listening on http://127.0.0.1:4000
+```
+
+From the second terminal:
+
+```bash
+curl -s http://127.0.0.1:4000/hello
+```
+
+Expected output:
+
+```text
+Hello world
+```
+
+In a POSIX shell, `PORT=4000 npm start` sets the variable for that one command only. In
+PowerShell, `$env:PORT` stays set for the rest of the session, so every later `npm start` in that
+terminal would use port 4000. After stopping the server, clear it:
+
+```powershell
+Remove-Item Env:PORT
+```
+
+Spaces around the value are ignored, and an empty value means the default, `3000`. Otherwise
+`PORT` must be a whole number from 0 to 65535. Port `0` asks the operating system for any free
+port, and the startup line then shows the port it was given.
+
+### Host
+
+> **Warning:** `HOST=0.0.0.0` makes the server reachable from other devices on your network. Use
+> it only on a trusted network.
+
+By default the server listens on `127.0.0.1`, the loopback interface, which only programs on your
+own machine can reach. `0.0.0.0` means all IPv4 interfaces.
+
+POSIX shells:
+
+```bash
+HOST=0.0.0.0 npm start
+```
+
+PowerShell, followed by `Remove-Item Env:HOST` after stopping the server:
+
+```powershell
+$env:HOST = '0.0.0.0'; npm start
+```
+
+In both shells the startup line reads `Server listening on http://0.0.0.0:3000`. An IPv6 address
+such as `::1` is given without brackets, and the startup line prints it in brackets,
+`http://[::1]:3000`, because a URL requires them around an IPv6 address.
+
+### When the server cannot start
+
+A startup failure prints one line on stderr, with no stack trace, and ends the process with exit
+code `1`, which tells the shell, and any script that ran the command, that the start failed.
+
+**Port already in use.** With the server running in the first terminal, run a second copy in the
+second terminal and print its exit code:
+
+```bash
+npm start
+echo $?
+```
+
+In PowerShell, use `$LASTEXITCODE` in place of `echo $?`. Expected output:
+
+```text
+> node-hello-tutorial@1.0.0 start
+> node src/server.js
+
+Port 3000 is already in use. Stop the other process or set the PORT environment variable to a free port.
+1
+```
+
+Only one process can listen on a given port and host. Stop the first server with Ctrl+C when you
+are done.
+
+**Invalid port.** POSIX shells:
+
+```bash
+PORT=abc npm start; echo $?
+```
+
+PowerShell:
+
+```powershell
+$env:PORT = 'abc'; npm start; $LASTEXITCODE; Remove-Item Env:PORT
+```
+
+Expected output:
+
+```text
+> node-hello-tutorial@1.0.0 start
+> node src/server.js
+
+Invalid PORT "abc": use a whole number from 0 to 65535.
+1
+```
+
+Any other failure to listen, such as a `HOST` that does not resolve, prints
+`Server failed to start: <error message>` and exits with code `1` in the same way.
+
+## Run the tests
+
+```bash
+npm test
+```
+
+Expected output:
+
+```text
+> node-hello-tutorial@1.0.0 test
+> node --test
+
+✔ GET /hello returns 200 with exactly "Hello world" (<time>)
+✔ HEAD /hello returns the GET headers and no body (<time>)
+✔ GET /hello ignores the query string (<time>)
+✔ GET /hello/ with a trailing slash is 404 (<time>)
+✔ GET / is 404 Not Found (<time>)
+✔ POST /hello is 405 with an Allow header (<time>)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms <time>
+```
+
+Each test sends one real HTTP request and checks the response:
+
+1. `GET /hello returns 200 with exactly "Hello world"`: status `200`, the `Content-Type` and
+   `Content-Length: 11` headers, and the exact body.
+2. `HEAD /hello returns the GET headers and no body`: status `200`, the same headers as `GET`,
+   and an empty body.
+3. `GET /hello ignores the query string`: `/hello?name=learner` still returns `Hello world`.
+4. `GET /hello/ with a trailing slash is 404`: the trailing slash makes it a different path.
+5. `GET / is 404 Not Found`: any path other than `/hello` returns `Not Found`, 9 bytes long.
+6. `POST /hello is 405 with an Allow header`: an unsupported method returns `405` and
+   `Allow: GET, HEAD`.
+
+The suite starts its own server on a free port (port `0`), so it needs no `npm start` and works
+whether or not the server from "Run the server" is running.
+
+To see how much of the code the tests exercise, run them with coverage (optional):
+
+```bash
+node --test --experimental-test-coverage
+```
+
+After the same test lines and summary, it prints a coverage report:
+
+```text
+ℹ start of coverage report
+ℹ ----------------------------------------------------------
+ℹ file      | line % | branch % | funcs % | uncovered lines
+ℹ ----------------------------------------------------------
+ℹ src       |        |          |         | 
+ℹ  app.js   | 100.00 |   100.00 |  100.00 | 
+ℹ ----------------------------------------------------------
+ℹ all files | 100.00 |   100.00 |  100.00 | 
+ℹ ----------------------------------------------------------
+ℹ end of coverage report
+```
+
+Every line, branch and function of `src/app.js` runs during the tests. `src/server.js` is not in
+the table because the tests never import it. You exercised it by hand with `npm start` above.
+
+
+## How it works
+
+This section walks through each file in turn, from configuration to code to tests. Excerpts are
+copied from the files named. Where an excerpt says "comments omitted", its code lines are exact
+and the comments between and beside them are left out, so read the file for the full version.
+
+### `package.json`
+
+```json
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  }
+```
+
+- `"private": true` makes npm refuse to publish the project, so it cannot be released to the
+  npm registry by accident.
+- `"type": "module"` makes Node.js load every `.js` file in the project as an ES module, so the
+  files use `import` and `export`, the same module syntax as browser JavaScript.
+- `"engines"` declares the oldest Node.js version the project supports. npm treats it as advice:
+  an older Node.js gets an `EBADENGINE` warning from `npm install`, not a failed install.
+- `"scripts"` defines the project's only two commands. `npm start` runs `node src/server.js`, and
+  `npm test` runs `node --test`, which finds files named `*.test.js` on its own. Neither contains
+  shell-specific syntax, so both run unchanged on Linux, macOS and Windows.
+
+### `.nvmrc`
+
+The file holds one line, `24`. Version managers such as nvm read it, so `nvm install` and
+`nvm use` select the newest Node.js 24 release. The two settings do different jobs: `.nvmrc`
+names the line the project recommends and was verified on, while `engines` only sets a minimum.
+
+### `src/app.js`
+
+The file imports one module:
+
+```js
+import http from 'node:http';
+```
+
+The `node:` prefix shows at a glance that `http` is built into Node.js rather than downloaded
+from npm.
+
+`createApp`, the file's only export, builds the server:
+
+```js
+export function createApp() {
+  return http.createServer(handleRequest);
 }
 ```
 
-### Security Features
+`http.createServer` creates a server object and registers `handleRequest` as the function
+Node.js calls once for every request, with `req`, the incoming request, and `res`, the response
+being built. Creating a server does not open a port. That is the job of `listen`, which
+`src/server.js` and the tests each call with a port of their own choosing.
 
-**Flask v3.1.1 Security Enhancements:**
-- **Server header configuration** - Configurable server identification for production
-- **Automatic JSON serialization** - Built-in JSON response handling with security defaults
-- **CORS integration** - Flask-CORS extension for secure cross-origin request handling
-- **Generic error messages** - Prevents information disclosure in production environments
+`handleRequest` decides every response (comments omitted):
 
-## Testing
+```js
+  const path = req.url.split('?')[0];
 
-### Test Execution
+  if (path !== HELLO_PATH) return send(res, 404, 'Not Found');
 
-#### Run All Tests
+  if (req.method === 'GET' || req.method === 'HEAD') return send(res, 200, HELLO_BODY);
 
-```bash
-# Activate virtual environment
-source .venv/bin/activate
-
-# Execute complete test suite
-pytest
-
-# Run tests with verbose output
-pytest -v
-
-# Run tests in watch mode for development (requires pytest-watch)
-pytest-watch
-
-# Generate coverage report
-pytest --cov=. --cov-report=html
-
-# CI/CD optimized testing
-pytest --cov=. --cov-report=xml --junitxml=test-results.xml
+  return send(res, 405, 'Method Not Allowed', { Allow: 'GET, HEAD' });
 ```
 
-#### Test Structure
+`req.url` is the request target exactly as the client sent it, for example
+`/hello?name=learner`. Everything before the first `?` is the path, and everything after it is
+the query string, which this server ignores. `HELLO_PATH` and `HELLO_BODY` are declared once at
+the top of the file:
 
-**Test Files:**
-- `tests/test_app.py` - Flask application testing with pytest-flask fixtures
-- `tests/test_wsgi.py` - WSGI server lifecycle and configuration testing
-
-**Testing Framework Stack:**
-- **pytest v8.4.0** - Advanced testing framework with fixture management
-- **pytest-flask v1.3.0** - Flask-specific testing fixtures and utilities
-- **coverage.py v7.6.0** - Code coverage measurement and reporting
-
-#### Coverage Reports
-
-**Target Coverage Metrics:**
-- **Line Coverage**: 100% (comprehensive code coverage)
-- **Function Coverage**: 100% (all functions tested)
-- **Branch Coverage**: 100% (all code paths covered)
-- **Statement Coverage**: 100% (complete statement testing)
-
-**Coverage Report Example:**
-```bash
-pytest --cov=. --cov-report=term-missing
+```js
+const HELLO_PATH = '/hello';
+const HELLO_BODY = 'Hello world';
 ```
 
-```
-----------------------|---------|----------|---------|---------|
-Name                  | Stmts   | Miss     | Branch  | BrPart  | Cover   |
-----------------------|---------|----------|---------|---------|---------|
-app.py               |      45 |        0 |       8 |       0 |   100%  |
-wsgi.py              |      32 |        0 |       6 |       0 |   100%  |
-tests/test_app.py    |      28 |        0 |       0 |       0 |   100%  |
-----------------------|---------|----------|---------|---------|---------|
-TOTAL                |     105 |        0 |      14 |       0 |   100%  |
-```
+The order of the checks is the routing logic. The path is checked first, so any other path is
+`404 Not Found` whatever the method. Only a request that reached `/hello` has its method
+checked, so `405 Method Not Allowed` is possible only there, with an `Allow` header listing what
+`/hello` does support.
 
-#### Test Examples
+Every branch ends in `send`, which writes the whole response in one place (comments omitted):
 
-**Endpoint Testing with pytest-flask:**
-```python
-# Test /hello endpoint response and headers
-def test_hello_endpoint(client):
-    """Test Flask /hello endpoint returns correct response."""
-    response = client.get('/hello')
-    
-    assert response.status_code == 200
-    assert response.data == b'Hello world'
-    assert response.content_type == 'text/plain; charset=utf-8'
+```js
+  res.writeHead(statusCode, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+    ...extraHeaders,
+  });
 ```
 
-**Error Handling Testing:**
-```python
-# Test 404 error handling with Flask error handlers
-def test_404_error_handling(client):
-    """Test Flask 404 error handler returns JSON response."""
-    response = client.get('/unknown')
-    
-    assert response.status_code == 404
-    assert response.content_type == 'application/json'
-    
-    json_data = response.get_json()
-    assert json_data['status'] == 404
-    assert json_data['message'] == 'Not Found'
+followed by:
+
+```js
+  res.end(body);
 ```
 
-## Deployment
+`res.writeHead` sets the status code and all the headers in one call, and `res.end` sends the
+body and completes the response.
 
-### Local Deployment
+- **Why a charset.** A body travels as bytes. `charset=utf-8` tells the client which encoding
+  turns those bytes back into text, instead of leaving it to guess.
+- **Why bytes, not characters.** `Content-Length` is measured in bytes. A JavaScript string's
+  `.length` counts UTF-16 code units, not bytes, and the two differ as soon as a character needs
+  more than one byte in UTF-8: `'héllo'.length` is 5, but `Buffer.byteLength('héllo')` is 6. For
+  `Hello world` both are 11, and `Buffer.byteLength` stays correct when the text changes.
+- **HEAD.** `send` passes the body to `res.end` for every request. For a `HEAD` request Node.js
+  sends the headers, including `Content-Length: 11`, and leaves the body out.
 
-#### Production Mode
+### `src/server.js`
 
-```bash
-# Activate virtual environment
-source .venv/bin/activate
+This is the program `npm start` runs. It reads `PORT` from the environment:
 
-# Run with Gunicorn for production testing
-gunicorn wsgi:app
-
-# Custom port and workers for production
-gunicorn --bind 0.0.0.0:8080 --workers 2 wsgi:app
-
-# With configuration file
-gunicorn --config gunicorn.conf.py wsgi:app
+```js
+const portValue = process.env.PORT ?? '';
+const portText = portValue.trim();
+const port = portText === '' ? DEFAULT_PORT : Number(portText);
 ```
 
-#### Process Management with Supervisor (Optional)
+`process.env` holds the environment variables the shell passed in, always as strings, or
+`undefined` for a variable that is not set. It then rejects a bad port before trying to listen:
 
-Install and use Supervisor for production process management:
-
-```bash
-# Install Supervisor
-pip install supervisor
-
-# Create configuration file
-cat > supervisord.conf << EOF
-[program:flask-tutorial]
-command=gunicorn --bind 0.0.0.0:5000 wsgi:app
-directory=/path/to/project
-user=www-data
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/flask-tutorial.log
-EOF
-
-# Start application with Supervisor
-supervisorctl start flask-tutorial
+```js
+if (!Number.isInteger(port) || port < 0 || port > 65535) {
+  console.error(`Invalid PORT "${portValue}": use a whole number from 0 to 65535.`);
+  process.exit(1);
+}
 ```
 
-### Docker Deployment
+`Number('abc')` is `NaN` and `Number('3000.5')` is `3000.5`. Neither is an integer, so both are
+rejected. `HOST` is resolved the same way, falling back to the loopback address:
 
-#### Build Docker Images
-
-```bash
-# Development build with debugging tools
-docker build --target development -t flask-tutorial:dev .
-
-# Production build optimized for deployment
-docker build --target production -t flask-tutorial:prod .
+```js
+const host = (process.env.HOST ?? '').trim() || DEFAULT_HOST;
 ```
 
-#### Run Docker Containers
+Listening can fail, for example when another process already holds the port. `listen` does not
+throw in that case: it returns at once and reports the failure later as an `error` event on the
+server. The listener is therefore attached first, before `listen` is called:
 
-```bash
-# Run development container with volume mounting
-docker run -p 5000:5000 -v $(pwd)/src/backend:/usr/src/app flask-tutorial:dev
-
-# Run production container with Gunicorn
-docker run -p 5000:5000 flask-tutorial:prod
-
-# Run with custom port
-docker run -p 8080:5000 -e PORT=5000 flask-tutorial:prod
+```js
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
 ```
 
-#### Docker Compose (Optional)
+`EADDRINUSE` is the operating system's code for "address already in use", and it gets its own
+message. Any other code is reported with the error's own message.
 
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  flask-tutorial:
-    build:
-      context: .
-      target: production
-    ports:
-      - "5000:5000"
-    environment:
-      - FLASK_ENV=production
-    restart: unless-stopped
+Then the server starts listening:
+
+```js
+server.listen(port, host, () => {
+  const { port: boundPort } = server.address();
+  const urlHost = host.includes(':') ? `[${host}]` : host;
+  console.log(`Server listening on http://${urlHost}:${boundPort}`);
+});
 ```
 
-```bash
-# Start with Docker Compose
-docker-compose up -d
+`listen` binds the server to the port and host and starts accepting connections. The callback
+runs once the server is listening. `server.address()` returns the port actually bound, which is
+the only way to learn the port when `PORT` is `0`.
 
-# View logs
-docker-compose logs -f
+The two kinds of output go to different places. The success line uses `console.log`, which
+writes to stdout. Failures use `console.error`, which writes to stderr, and are followed by
+`process.exit(1)`. A shell or script can separate the two streams, and exit code `1`, read with
+`echo $?` or `$LASTEXITCODE`, tells it the start failed. A listening server keeps the process
+alive until Ctrl+C ends it.
 
-# Stop services
-docker-compose down
+### `test/hello.test.js`
+
+The suite uses only what Node.js ships with (comments omitted):
+
+```js
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { createApp } from '../src/app.js';
 ```
 
-### Cloud Deployment
+It imports `createApp`, not `src/server.js`, so it controls its own server. `before` runs once
+before the tests and starts that server on port `0`, which makes the operating system pick a free
+port:
 
-#### Heroku Deployment
-
-```bash
-# Login to Heroku
-heroku login
-
-# Create Heroku application
-heroku create python-flask-tutorial
-
-# Set Python buildpack
-heroku buildpacks:set heroku/python
-
-# Deploy application
-git push heroku main
-
-# Open deployed application
-heroku open
+```js
+    server.listen(0, '127.0.0.1', () => {
 ```
 
-**Required Heroku Files:**
-- `runtime.txt`: `python-3.12.0`
-- `Procfile`: `web: gunicorn wsgi:app`
+The port it was given is read back to build the base URL for every request:
 
-#### Azure Web Apps Deployment
-
-1. Create Azure Web App with Python 3.12 runtime
-2. Configure deployment settings:
-   - **Runtime**: Python 3.12
-   - **Startup Command**: `gunicorn wsgi:app`
-   - **App Settings**: Configure environment variables
-
-```bash
-# Azure CLI deployment
-az webapp create --resource-group myResourceGroup \
-  --plan myAppServicePlan \
-  --name python-flask-tutorial \
-  --runtime "PYTHON|3.12"
-
-# Deploy from local git
-az webapp deployment source config-local-git \
-  --name python-flask-tutorial \
-  --resource-group myResourceGroup
+```js
+  baseUrl = `http://127.0.0.1:${server.address().port}`;
 ```
 
-#### Railway Deployment
+`after` runs once after the last test and closes the server, so the test process exits and
+leaves nothing running:
 
-Railway automatically detects Python applications through `requirements.txt`:
-
-```bash
-# Install Railway CLI
-pip install railway
-
-# Login and deploy
-railway login
-railway init
-railway up
+```js
+  await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
 ```
 
-#### DigitalOcean App Platform
+Each test calls the server with `fetch`, the same API browsers provide, and asserts on the
+status, the headers and the exact body (comments omitted):
 
-1. Connect GitHub repository
-2. Configure app settings:
-   - **Framework**: Python (Flask)
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Run Command**: `gunicorn wsgi:app`
-   - **Port**: 5000
+```js
+test('GET /hello returns 200 with exactly "Hello world"', async () => {
+  const res = await fetch(`${baseUrl}/hello`);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'text/plain; charset=utf-8');
+  assert.equal(res.headers.get('content-length'), '11');
+  assert.equal(await res.text(), 'Hello world');
+});
+```
 
-### Environment Configuration
+`assert.equal` from `node:assert/strict` compares strictly, so `'11'` must be the string `'11'`
+and the body must match `Hello world` exactly, with nothing before or after it. A failed
+assertion fails that test, and `npm test` then exits with a non-zero code.
 
-**Required Environment Variables for Deployment:**
+### `package-lock.json` and `.gitignore`
 
-| Variable | Default | Purpose | Platform Notes |
-|----------|---------|---------|----------------|
-| `PORT` | 5000 | Server port | Heroku/Azure set automatically |
-| `FLASK_ENV` | development | Environment mode | Set to 'production' for deployment |
-| `HOST` | localhost | Host binding | Use '0.0.0.0' for containerized deployment |
-| `WORKERS` | 1 | Gunicorn worker processes | Increase for production traffic |
+`package-lock.json` is written by `npm install` and records the exact dependency set, which for
+this project is the root package alone; it lets `npm ci` reproduce the install on a clean
+checkout, and it is never edited by hand.
 
-**Platform-Specific Configuration:**
+`.gitignore` keeps `node_modules/` and npm's `npm-debug.log*` failure logs out of version control,
+for when you add a package or npm reports an error.
 
-```python
-# wsgi.py - Dynamic configuration
-import os
-from app import create_app
+## Project structure
 
-app = create_app()
-
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    host = os.environ.get('HOST', '0.0.0.0')
-    app.run(host=host, port=port)
+```text
+/                              # Repository root and npm project root
+├── .gitignore                 # Keeps node_modules/ and npm debug logs out of version control
+├── .nvmrc                     # Node.js line for version managers: 24
+├── package.json               # Project metadata, ES module flag, engines pin, start and test scripts
+├── package-lock.json          # npm lockfile (lockfileVersion 3), root package only, generated by npm install
+├── README.md                  # The tutorial: prerequisites, run, call, test, file walkthrough, troubleshooting
+├── src/                       # Application source
+│   ├── app.js                 # createApp(): the request handler that implements the /hello contract
+│   └── server.js              # Entry point: resolves PORT and HOST, listens, logs, reports startup errors
+└── test/                      # Test suite, discovered by node --test
+    └── hello.test.js          # Contract tests over real HTTP against an ephemeral-port server
 ```
 
 ## Troubleshooting
 
-### Common Issues
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `npm warn EBADENGINE Unsupported engine` during install, or `node --version` below `v24` | Node.js older than the `engines` floor | Install Node.js 24 LTS, or run `nvm install` then `nvm use` |
+| `npm test` fails with `fetch is not defined` | Node.js 16 or earlier, which has no global `fetch` | Same as above |
+| `Port 3000 is already in use. Stop the other process or set the PORT environment variable to a free port.` | Another process, often a second `npm start`, holds the port | Stop it with Ctrl+C in its terminal, find it with `lsof -i :3000` (macOS/Linux) or `netstat -ano \| findstr :3000` (Windows), or start on another port as in "Change the port or host" |
+| `Invalid PORT "<value>": use a whole number from 0 to 65535.` | `PORT` is not a whole number, or is out of range | Set `PORT` to a whole number from 0 to 65535 |
+| `curl: (7) Failed to connect to 127.0.0.1 port 3000` | The server is not running, or is listening on another port or host | Start it with `npm start` and use the address printed in the startup line |
+| `Not Found` for a URL that looks right | Trailing slash, capital letters or a typo in the path | Request exactly `/hello` |
+| `Method Not Allowed` | The client sent a method other than GET or HEAD | Use GET, the default for curl and browsers |
+| PowerShell prints a `StatusCode` table instead of raw HTTP | `curl` is an alias for `Invoke-WebRequest` in Windows PowerShell 5.1 | Type `curl.exe` |
+| PowerShell reports that the term `PORT=4000` is not recognized | POSIX syntax typed into PowerShell | Use `$env:PORT = '4000'; npm start`, then `Remove-Item Env:PORT` after stopping the server |
+| The shell prompt appears right after `Hello world` | The body has no trailing newline, by design | Nothing to fix |
 
-#### Port Already in Use
-
-**Error:**
-```
-OSError: [Errno 48] Address already in use
-```
-
-**Solutions:**
-```bash
-# Find process using port 5000
-lsof -ti:5000 | xargs kill  # macOS/Linux
-netstat -ano | findstr :5000  # Windows
-
-# Use different port
-FLASK_RUN_PORT=8080 python -m flask run
-
-# Kill specific process
-kill -9 <process-id>
-```
-
-#### Python Version Compatibility
-
-**Error:**
-```
-ImportError: Flask requires Python 3.8 or higher
-```
-
-**Solutions:**
-```bash
-# Check current Python version
-python --version
-
-# Update Python to 3.12+
-# Download from https://python.org/
-
-# Using pyenv (recommended)
-pyenv install 3.12.0
-pyenv global 3.12.0
-pyenv rehash
-```
-
-#### Virtual Environment Issues
-
-**Error:**
-```
-ModuleNotFoundError: No module named 'flask'
-```
-
-**Solutions:**
-```bash
-# Ensure virtual environment is activated
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate     # Windows
-
-# Verify activation
-which python  # Should show .venv path
-
-# Reinstall dependencies
-pip install -r requirements.txt
-
-# Create new virtual environment if corrupted
-rm -rf .venv
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-#### Dependencies Installation Failed
-
-**Error:**
-```
-ERROR: Could not find a version that satisfies the requirement Flask>=3.1.1
-```
-
-**Solutions:**
-```bash
-# Update pip to latest version
-pip install --upgrade pip
-
-# Clear pip cache
-pip cache purge
-
-# Install with verbose output for debugging
-pip install -r requirements.txt -v
-
-# Install specific Flask version
-pip install Flask==3.1.1
-```
-
-### Debugging Tips
-
-#### Verbose Logging
-
-```bash
-# Enable Flask debug mode
-FLASK_DEBUG=True python -m flask run
-
-# Enhanced logging level
-FLASK_ENV=development python -m flask run
-
-# Gunicorn debug mode
-gunicorn --log-level debug wsgi:app
-```
-
-#### Network Testing
-
-```bash
-# Test endpoint with verbose output
-curl -v http://localhost:5000/hello
-
-# Test with specific headers
-curl -H "Accept: application/json" http://localhost:5000/hello
-
-# Test timeout behavior
-curl --max-time 5 http://localhost:5000/hello
-```
-
-#### Docker Debugging
-
-```bash
-# Debug Docker container
-docker run -it flask-tutorial:dev sh
-
-# View container logs
-docker logs <container-id>
-
-# Inspect running container
-docker exec -it <container-id> sh
-```
-
-### Performance Issues
-
-#### Slow Startup
-
-**Potential Causes:**
-- Python version compatibility
-- Virtual environment configuration issues
-- System resource constraints
-
-**Solutions:**
-```bash
-# Verify system resources
-free -h  # Linux/macOS memory check
-top      # Process monitoring
-
-# Optimize pip install
-pip install --no-cache-dir -r requirements.txt
-
-# Check Python performance
-python -X dev app.py
-```
-
-#### Slow Response Times
-
-**Monitoring:**
-```bash
-# Monitor response times
-curl -w "@curl-format.txt" http://localhost:5000/hello
-
-# Create curl-format.txt
-echo "Response Time: %{time_total}s\nStatus Code: %{http_code}" > curl-format.txt
-```
-
-**Performance Targets:**
-- **Response Time**: < 50ms for /hello endpoint (warm requests)
-- **Memory Usage**: < 75MB for tutorial application
-- **Startup Time**: < 5 seconds for Flask development server
-
-## Contributing
-
-### Development Workflow
-
-#### 1. Fork Repository
-
-```bash
-# Fork the repository on GitHub
-# Clone your fork
-git clone https://github.com/your-username/python-flask-tutorial.git
-cd python-flask-tutorial
-```
-
-#### 2. Create Feature Branch
-
-```bash
-# Create feature branch from main
-git checkout -b feature/your-feature-name
-
-# Set up development environment
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-
-# Make changes and test
-pytest
-pytest --cov=. --cov-report=html
-```
-
-#### 3. Submit Changes
-
-```bash
-# Ensure code quality
-black .
-flake8 .
-isort .
-
-# Add and commit changes
-git add .
-git commit -m "Add: clear description of changes"
-
-# Push to your fork
-git push origin feature/your-feature-name
-
-# Submit pull request on GitHub
-```
-
-### Code Standards
-
-#### Python Style Guidelines
-
-- **PEP 8 Compliance**: Follow Python style guide conventions
-- **Type Hints**: Use type annotations for improved code documentation
-- **Docstrings**: Include comprehensive docstrings for all functions and classes
-- **Black Formatting**: Use Black for consistent code formatting
-
-#### Testing Requirements
-
-- **100% Test Coverage**: Maintain complete test coverage using pytest-cov
-- **pytest Fixtures**: Use pytest-flask fixtures for Flask application testing
-- **Test Documentation**: Clear test descriptions and assertions
-- **Error Case Testing**: Include negative test scenarios
-
-#### Commit Message Format
-
-```bash
-# Format: Type: Description
-git commit -m "Add: new /health endpoint for monitoring"
-git commit -m "Fix: resolve WSGI binding error on containers"
-git commit -m "Update: improve Flask error handling documentation"
-git commit -m "Test: add integration tests for Docker deployment"
-```
-
-### Educational Focus
-
-#### Contribution Guidelines
-
-- **Maintain Simplicity**: Preserve educational clarity and Flask best practices
-- **Comprehensive Documentation**: Ensure all changes are well-documented
-- **Learning Examples**: Provide clear examples and usage patterns
-- **Progressive Learning**: Support progressive Flask learning objectives
-
-**Educational Standards:**
-- Clear explanations for Flask-specific patterns
-- Maintain beginner-friendly documentation
-- Include educational comments in Python code
-- Provide troubleshooting guidance for Python environments
-
-#### Code Review Criteria
-
-- **Educational Value**: Does the change enhance Flask learning?
-- **Simplicity**: Is the implementation clear and understandable?
-- **Documentation**: Are changes properly documented?
-- **Testing**: Is the change properly tested with pytest?
-- **Compatibility**: Does it maintain Python 3.12+ compatibility?
-
-## License
-
-### MIT License
-
-**Copyright (c) 2024 Tutorial Author**
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-### License Permissions
-
-**✅ Permitted:**
-- ✅ Commercial use
-- ✅ Modification
-- ✅ Distribution
-- ✅ Private use
-
-**⚠️ Limitations:**
-- ❌ No liability
-- ❌ No warranty
-
-**📋 Conditions:**
-- 📄 License and copyright notice must be included
-
-### License File
-
-See [LICENSE](LICENSE) file for complete license text and terms.
-
----
-
-## Additional Resources
-
-### Learning Resources
-
-- **Python Official Documentation**: [https://docs.python.org/3/](https://docs.python.org/3/)
-- **Flask Guide**: [https://flask.palletsprojects.com/en/3.0.x/](https://flask.palletsprojects.com/en/3.0.x/)
-- **pytest Documentation**: [https://docs.pytest.org/en/stable/](https://docs.pytest.org/en/stable/)
-- **WSGI Protocol Fundamentals**: [PEP 3333 - Python Web Server Gateway Interface](https://peps.python.org/pep-3333/)
-
-### Community Support
-
-- **GitHub Issues**: [Report bugs and request features](https://github.com/tutorial/python-flask-tutorial/issues)
-- **Stack Overflow**: Tag questions with `python`, `flask`, `tutorial`
-- **Python Community**: [https://www.python.org/community/](https://www.python.org/community/)
-- **Flask Community**: [https://flask.palletsprojects.com/en/3.0.x/community/](https://flask.palletsprojects.com/en/3.0.x/community/)
-
-### Version History
-
-- **v2.0.0** - Migration to Python 3.12+ and Flask 3.1.1 from Node.js/Express.js
-- Features: Single /hello endpoint, comprehensive pytest testing, Docker support with python:3.12-alpine
-- Educational focus: Python WSGI fundamentals and Flask application patterns
-
----
-
-**🐍 Happy Learning!** This tutorial provides a solid foundation for understanding Python web development and Flask fundamentals. Build upon these concepts to create more complex Flask applications and advance your Python web development skills.
