@@ -467,12 +467,15 @@ export function createApp() {
 }
 ```
 
-`http.createServer` creates a server object and registers `handleRequest` as the function
-Node.js calls once for every request, with `req`, the incoming request, and `res`, the response
-being built. Creating a server does not open a port. That is the job of `listen`, which
+`http.createServer` creates a server object and registers `handleRequest` as its request
+listener, the function Node.js calls whenever it passes a request on to the application, with
+`req`, the incoming request, and `res`, the response being built. A few requests never reach it,
+because Node.js handles them itself: for example, it closes the connection on a `CONNECT`
+request without replying, and answers a request it cannot parse with an error such as
+`400 Bad Request`. Creating a server does not open a port. That is the job of `listen`, which
 `src/server.js` and the tests each call with a port of their own choosing.
 
-`handleRequest` decides every response (comments omitted):
+`handleRequest` decides the response to every request it receives (comments omitted):
 
 ```js
   const path = req.url.split('?')[0];
@@ -524,8 +527,10 @@ body and completes the response.
   `.length` counts UTF-16 code units, not bytes, and the two differ as soon as a character needs
   more than one byte in UTF-8: `'héllo'.length` is 5, but `Buffer.byteLength('héllo')` is 6. For
   `Hello world` both are 11, and `Buffer.byteLength` stays correct when the text changes.
-- **HEAD.** `send` passes the body to `res.end` for every request. For a `HEAD` request Node.js
-  sends the headers, including `Content-Length: 11`, and leaves the body out.
+- **HEAD.** `send` passes the body to `res.end` for every response it writes. For a `HEAD`
+  request Node.js sends the headers of whichever response `handleRequest` selected, its
+  `Content-Length` among them, and leaves the body out: `HEAD /hello` reports
+  `Content-Length: 11`, and `HEAD` for an unknown path reports the 9 bytes of `Not Found`.
 
 ### `src/server.js`
 

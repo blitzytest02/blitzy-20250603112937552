@@ -23,7 +23,8 @@ function send(res, statusCode, body, extraHeaders = {}) {
   res.end(body);
 }
 
-// The request listener: Node.js calls it once for every request the server receives.
+// The request listener: Node.js calls it for each request it dispatches. Some requests, such as
+// CONNECT and ones its HTTP parser rejects, never get here and keep Node.js's default handling.
 function handleRequest(req, res) {
   // Splitting on '?' cannot throw, unlike new URL() on request targets such as //[ that the
   // HTTP parser accepts. An exception thrown here would crash the server.
@@ -32,7 +33,6 @@ function handleRequest(req, res) {
   // Path before method: an unknown path is 404 whatever the method, so only /hello can be 405.
   if (path !== HELLO_PATH) return send(res, 404, 'Not Found');
 
-  // HTTP expects a server that answers GET for a resource to answer HEAD for it too.
   if (req.method === 'GET' || req.method === 'HEAD') return send(res, 200, HELLO_BODY);
 
   // RFC 9110: a 405 response must list the methods the target supports in an Allow header.
