@@ -195,6 +195,9 @@ Expected output:
 That is 11 bytes, the hexadecimal codes of `H`, `e`, `l`, `l`, `o`, a space, `w`, `o`, `r`, `l`
 and `d`. There is no trailing `0a`, the code of a newline character.
 
+The status is `200 OK` because `fetch` sends the same `GET /hello` request as curl, and `/hello`
+exists and supports `GET`; the command shows only the body that comes back.
+
 ### A query string: still 200 OK
 
 ```bash
@@ -341,57 +344,6 @@ In both shells the startup line reads `Server listening on http://0.0.0.0:3000`.
 such as `::1` is given without brackets, and the startup line prints it in brackets,
 `http://[::1]:3000`, because a URL requires them around an IPv6 address.
 
-### When the server cannot start
-
-A startup failure prints one line on stderr, with no stack trace, and ends the process with exit
-code `1`, which tells the shell, and any script that ran the command, that the start failed.
-
-**Port already in use.** With the server running in the first terminal, run a second copy in the
-second terminal and print its exit code:
-
-```bash
-npm start
-echo $?
-```
-
-In PowerShell, use `$LASTEXITCODE` in place of `echo $?`. Expected output:
-
-```text
-> node-hello-tutorial@1.0.0 start
-> node src/server.js
-
-Port 3000 is already in use. Stop the other process or set the PORT environment variable to a free port.
-1
-```
-
-Only one process can listen on a given port and host. Stop the first server with Ctrl+C when you
-are done.
-
-**Invalid port.** POSIX shells:
-
-```bash
-PORT=abc npm start; echo $?
-```
-
-PowerShell:
-
-```powershell
-$env:PORT = 'abc'; npm start; $LASTEXITCODE; Remove-Item Env:PORT
-```
-
-Expected output:
-
-```text
-> node-hello-tutorial@1.0.0 start
-> node src/server.js
-
-Invalid PORT "abc": use a whole number from 0 to 65535.
-1
-```
-
-Any other failure to listen, such as a `HOST` that does not resolve, prints
-`Server failed to start: <error message>` and exits with code `1` in the same way.
-
 ## Run the tests
 
 ```bash
@@ -459,7 +411,6 @@ After the same test lines and summary, it prints a coverage report:
 
 Every line, branch and function of `src/app.js` runs during the tests. `src/server.js` is not in
 the table because the tests never import it. You exercised it by hand with `npm start` above.
-
 
 ## How it works
 
@@ -613,7 +564,8 @@ server.on('error', (error) => {
 ```
 
 `EADDRINUSE` is the operating system's code for "address already in use", and it gets its own
-message. Any other code is reported with the error's own message.
+message. Any other error, such as a `HOST` that does not resolve, is reported as
+`Server failed to start: <error message>`.
 
 Then the server starts listening:
 
