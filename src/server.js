@@ -40,7 +40,9 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
 
   // A failed listen arrives as an 'error' event, so the listener is attached before listen is
   // called. With no listener, Node.js throws the error as an uncaught exception and a stack trace.
+  // An error after listening is not a startup failure, so it is rethrown to that default path.
   server.on('error', (error) => {
+    if (server.listening) throw error;
     if (error.code === 'EADDRINUSE') {
       fail(
         `Port ${port} is already in use. ` +

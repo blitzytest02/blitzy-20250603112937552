@@ -2,7 +2,7 @@
 
 A Node.js HTTP server with one endpoint, `/hello`, that returns `Hello world` to any HTTP client
 that calls it: curl, a browser or `fetch`. It is built with Node.js built-ins only, so there are no
-npm dependencies to install, and all the code that answers a request is in this repository.
+npm dependencies to install.
 
 ## What you will learn
 
@@ -57,8 +57,9 @@ npm dependencies to install, and all the code that answers a request is in this 
 
 ### A note on shells
 
-Commands are written for POSIX shells (bash, zsh) and run unchanged in PowerShell, except in three
-places, where each section also shows the PowerShell form:
+Commands are written for POSIX shells (bash, zsh) and run unchanged in PowerShell, apart from the
+three forms in this table. "Change the port or host" shows the PowerShell form of each `NAME=value`
+command. For `echo $?` and `curl`, use the PowerShell form given here:
 
 | POSIX shells | PowerShell |
 |--------------|------------|
@@ -567,12 +568,14 @@ server. The listener is therefore attached first, before `listen` is called:
 
 ```js
   server.on('error', (error) => {
+    if (server.listening) throw error;
     if (error.code === 'EADDRINUSE') {
 ```
 
 `EADDRINUSE` is the operating system's code for "address already in use", and it gets its own
 message. Any other error, such as a `HOST` that does not resolve, is reported as
-`Server failed to start: <error message>`.
+`Server failed to start: <error message>`. Both messages are for startup only: once
+`server.listening` is `true`, the error is rethrown and Node.js reports it in its default way.
 
 Then the server starts listening (comments omitted):
 
@@ -704,4 +707,3 @@ for when you add a package or npm reports an error.
 | PowerShell prints a `StatusCode` table instead of raw HTTP | `curl` is an alias for `Invoke-WebRequest` in Windows PowerShell 5.1 | Type `curl.exe` |
 | PowerShell reports that the term `PORT=4000` is not recognized | POSIX syntax typed into PowerShell | Use `$env:PORT = '4000'; npm start`, then `Remove-Item Env:PORT` after stopping the server |
 | The shell prompt appears right after `Hello world` | The body has no trailing newline, by design | Nothing to fix |
-
