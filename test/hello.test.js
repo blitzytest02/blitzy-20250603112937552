@@ -78,11 +78,27 @@ test('GET / is 404 Not Found', async () => {
   // The path is checked before the method and compared exactly, letter case included, so a
   // POST to an unknown path and a differently cased /hello are 404 too, not 405 or 200.
   const postRootRes = await fetch(`${baseUrl}/`, { method: 'POST' });
-  assert.equal(postRootRes.status, 404);
-  assert.equal(await postRootRes.text(), 'Not Found');
+  assert.equal(
+    postRootRes.status,
+    404,
+    'POST / must be 404: the path is checked before the method',
+  );
+  assert.equal(
+    await postRootRes.text(),
+    'Not Found',
+    'POST / must return the Not Found body: the path is checked before the method',
+  );
   const upperCaseRes = await fetch(`${baseUrl}/HELLO`);
-  assert.equal(upperCaseRes.status, 404);
-  assert.equal(await upperCaseRes.text(), 'Not Found');
+  assert.equal(
+    upperCaseRes.status,
+    404,
+    'GET /HELLO must be 404: path matching is case-sensitive',
+  );
+  assert.equal(
+    await upperCaseRes.text(),
+    'Not Found',
+    'GET /HELLO must return the Not Found body: path matching is case-sensitive',
+  );
 });
 
 test('POST /hello is 405 with an Allow header', async () => {
