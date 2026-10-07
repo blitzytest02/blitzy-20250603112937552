@@ -9,15 +9,17 @@ const DEFAULT_PORT = 3000;
 // The loopback address: only programs on this machine can reach the server.
 const DEFAULT_HOST = '127.0.0.1';
 
-// Every startup failure ends here. Errors go to stderr, not stdout, and exit code 1 tells the
-// shell and any script that the start failed: echo $? (PowerShell: $LASTEXITCODE) prints 1.
+// Startup failures go to stderr with exit code 1, so a caller can tell the start failed.
 function fail(message) {
-  // A line break inside PORT, or inside a HOST quoted by an error message, would split the
-  // message, so it is shown as the two characters \r or \n and the failure stays on one line.
-  console.error(message.replaceAll('\r', '\\r').replaceAll('\n', '\\n'));
-  // On a pipe, stderr can still be sending the message when console.error returns, and
-  // process.exit would cut it short. An empty write's callback runs only once everything
-  // written before it has been handed to the operating system, so the exit waits for that.
+  // A line break or a terminal control such as ESC, in PORT or in a HOST quoted by an error,
+  // is shown escaped: the message stays on one line and the terminal cannot act on it.
+  const shown = message.replace(/\p{Cc}/gu, (character) => {
+    if (character === '\r') return '\\r';
+    if (character === '\n') return '\\n';
+    return `\\x${character.charCodeAt(0).toString(16).padStart(2, '0')}`;
+  });
+  console.error(shown);
+  // stderr can be asynchronous on a pipe; the empty write's callback waits for earlier writes.
   process.stderr.write('', () => process.exit(1));
 }
 

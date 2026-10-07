@@ -574,7 +574,7 @@ server. The listener is therefore attached first, before `listen` is called:
 message. Any other error, such as a `HOST` that does not resolve, is reported as
 `Server failed to start: <error message>`.
 
-Then the server starts listening:
+Then the server starts listening (comments omitted):
 
 ```js
   server.listen(port, host, () => {
@@ -590,23 +590,32 @@ field is the port actually bound. Reading that field, here into `boundPort`, is 
 learn which port the operating system chose when `PORT` is `0`.
 
 The two kinds of output go to different places. The success line uses `console.log`, which
-writes to stdout. Every failure goes through one helper, `fail`:
+writes to stdout. Every failure goes through one helper, `fail` (comments omitted):
 
 ```js
 function fail(message) {
-  console.error(message.replaceAll('\r', '\\r').replaceAll('\n', '\\n'));
+  const shown = message.replace(/\p{Cc}/gu, (character) => {
+    if (character === '\r') return '\\r';
+    if (character === '\n') return '\\n';
+    return `\\x${character.charCodeAt(0).toString(16).padStart(2, '0')}`;
+  });
+  console.error(shown);
   process.stderr.write('', () => process.exit(1));
 }
 ```
 
-`console.error` writes to stderr. A line break inside a value, such as a `PORT` that spans two
-lines, is shown as the two characters `\n` or `\r`, so the failure stays on one line. When stderr
-is a pipe, the message can still be in transit after `console.error` returns, and an immediate
-`process.exit(1)` could cut it short. The callback of the empty write runs only once everything
-written before it has reached the operating system, so the process exits with code `1` after the
-whole message is out. A shell or script can separate the two streams, and exit code `1`, read
-with `echo $?` or `$LASTEXITCODE`, tells it the start failed. A listening server keeps the
-process alive until Ctrl+C ends it.
+`fail` first shows every control character in the message as an escape. `\p{Cc}`, with the `u`
+flag, matches Unicode's control-character category. A line break inside a value, such as a `PORT`
+that spans two lines, becomes the two characters `\n` or `\r`, so the failure stays on one line.
+Any other control character becomes `\x` and its two-digit hex code, such as `\x1b` for the
+escape character that starts a terminal command, so the terminal displays it instead of acting on
+it, for example by clearing the screen or hiding text. `console.error` then writes the result to
+stderr. When stderr is a pipe, the message can still be in transit after `console.error` returns,
+and an immediate `process.exit(1)` could cut it short. The callback of the empty write runs only
+once everything written before it has reached the operating system, so the process exits with
+code `1` after the whole message is out. A shell or script can separate the two streams, and exit
+code `1`, read with `echo $?` or `$LASTEXITCODE`, tells it the start failed. A listening server
+keeps the process alive until Ctrl+C ends it.
 
 ### `test/hello.test.js`
 
