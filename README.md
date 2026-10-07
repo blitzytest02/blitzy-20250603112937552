@@ -547,16 +547,18 @@ const port = portText === '' ? DEFAULT_PORT : Number(portText);
 
 ```js
 if (!Number.isInteger(port) || port < 0 || port > 65535) {
-  console.error(`Invalid PORT "${portValue}": use a whole number from 0 to 65535.`);
-  process.exit(1);
-}
+  fail(`Invalid PORT "${portValue}": use a whole number from 0 to 65535.`);
+} else {
 ```
 
 `Number('abc')` is `NaN` and `Number('3000.5')` is `3000.5`. Neither is an integer, so both are
-rejected. `HOST` is resolved the same way, falling back to the loopback address:
+rejected. `fail`, shown at the end of this section, reports the error and ends the process once
+the message is written. It returns before that happens, so the code that creates and starts the
+server sits in the `else` branch, which a bad port never reaches. There, `HOST` is resolved the
+same way as `PORT`, falling back to the loopback address:
 
 ```js
-const host = (process.env.HOST ?? '').trim() || DEFAULT_HOST;
+  const host = (process.env.HOST ?? '').trim() || DEFAULT_HOST;
 ```
 
 Listening can fail, for example when another process already holds the port. `listen` does not
@@ -564,8 +566,8 @@ throw in that case: it returns at once and reports the failure later as an `erro
 server. The listener is therefore attached first, before `listen` is called:
 
 ```js
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
 ```
 
 `EADDRINUSE` is the operating system's code for "address already in use", and it gets its own
@@ -575,22 +577,36 @@ message. Any other error, such as a `HOST` that does not resolve, is reported as
 Then the server starts listening:
 
 ```js
-server.listen(port, host, () => {
-  const { port: boundPort } = server.address();
-  const urlHost = host.includes(':') ? `[${host}]` : host;
-  console.log(`Server listening on http://${urlHost}:${boundPort}`);
-});
+  server.listen(port, host, () => {
+    const { port: boundPort } = server.address();
+    const urlHost = host.includes(':') ? `[${host}]` : host;
+    console.log(`Server listening on http://${urlHost}:${boundPort}`);
+  });
 ```
 
 `listen` binds the server to the port and host and starts accepting connections. The callback
-runs once the server is listening. `server.address()` returns the port actually bound, which is
-the only way to learn the port when `PORT` is `0`.
+runs once the server is listening. `server.address()` returns an address object whose `port`
+field is the port actually bound. Reading that field, here into `boundPort`, is the only way to
+learn which port the operating system chose when `PORT` is `0`.
 
 The two kinds of output go to different places. The success line uses `console.log`, which
-writes to stdout. Failures use `console.error`, which writes to stderr, and are followed by
-`process.exit(1)`. A shell or script can separate the two streams, and exit code `1`, read with
-`echo $?` or `$LASTEXITCODE`, tells it the start failed. A listening server keeps the process
-alive until Ctrl+C ends it.
+writes to stdout. Every failure goes through one helper, `fail`:
+
+```js
+function fail(message) {
+  console.error(message.replaceAll('\r', '\\r').replaceAll('\n', '\\n'));
+  process.stderr.write('', () => process.exit(1));
+}
+```
+
+`console.error` writes to stderr. A line break inside a value, such as a `PORT` that spans two
+lines, is shown as the two characters `\n` or `\r`, so the failure stays on one line. When stderr
+is a pipe, the message can still be in transit after `console.error` returns, and an immediate
+`process.exit(1)` could cut it short. The callback of the empty write runs only once everything
+written before it has reached the operating system, so the process exits with code `1` after the
+whole message is out. A shell or script can separate the two streams, and exit code `1`, read
+with `echo $?` or `$LASTEXITCODE`, tells it the start failed. A listening server keeps the
+process alive until Ctrl+C ends it.
 
 ### `test/hello.test.js`
 
