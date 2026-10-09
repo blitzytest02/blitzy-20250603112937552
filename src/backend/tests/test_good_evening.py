@@ -2,19 +2,18 @@
 """
 Pytest test suite for the GET /good-evening greeting endpoint.
 
-Covers the new read-only greeting route added beside the existing greeting route of
-this Flask service. The request that produced the change named a Jest file
-(test/good-evening.test.js) in the naming convention of the Node.js predecessor this
-repository was migrated from; that name is replaced here by the repository's own
-framework and directory, with the file named after the feature as requested.
+Covers the read-only greeting route beside the existing greeting route of this Flask
+service. The Jest naming convention of the Node.js predecessor this repository was
+migrated from would place this suite in test/good-evening.test.js; this repository's
+pytest framework and directory replace that name, with the file named after the feature.
 
 This module mirrors the structure of the existing Flask route-handler tests in
-src/backend/tests/test_app.py: the same class organisation, the same fixture-injected
-client, the same test_<subject>_<expected outcome> naming, and the same exact-value
-assertions on the response body and headers.
+src/backend/tests/test_app.py: the same one-class-per-area layout, the same
+fixture-injected client, the same test_<subject>_<expected outcome> naming, and the
+same exact-value assertions on the response body and headers.
 
 Educational Purpose:
-- Shows pytest-flask test client patterns for validating a newly added Flask route
+- Shows pytest-flask test client patterns for validating a Flask route
 - Demonstrates exact-value assertions on a JSON response envelope
 - Shows validation of handler-set and application-inherited response headers
 - Demonstrates the method-not-allowed behaviour of a GET-only route
