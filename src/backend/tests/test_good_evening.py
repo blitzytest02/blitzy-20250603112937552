@@ -50,7 +50,7 @@ class TestGoodEveningRouteHandler:
     pytest-flask test client fixtures, mirroring the /hello tests in test_app.py.
     """
 
-    # The required test-method name plus its typed client parameter is 94 columns wide,
+    # The required test-method name plus its typed client parameter is 93 columns wide,
     # past the repository's 88-column flake8 limit, so the parameter list is wrapped
     # rather than the name changed.
     def test_good_evening_endpoint_returns_200_with_json_response(
@@ -105,6 +105,17 @@ class TestGoodEveningRouteHandler:
         assert 'X-Frame-Options' in response.headers
         assert response.headers['X-Frame-Options'] == 'DENY'
         assert 'X-XSS-Protection' in response.headers
+        assert response.headers['X-XSS-Protection'] == '1; mode=block'
+        assert 'Referrer-Policy' in response.headers
+        assert response.headers['Referrer-Policy'] == 'strict-origin-when-cross-origin'
+        assert 'Content-Security-Policy' in response.headers
+        assert response.headers['Content-Security-Policy'] == "default-src 'self'"
+        assert 'X-Permitted-Cross-Domain-Policies' in response.headers
+        assert response.headers['X-Permitted-Cross-Domain-Policies'] == 'none'
+
+        # Validate the per-request headers the response middleware hook adds app-wide
+        assert 'X-Response-Time' in response.headers
+        assert 'X-Request-ID' in response.headers
 
         # Validate server identification removal for security
         assert 'Server' not in response.headers
@@ -131,6 +142,9 @@ class TestGoodEveningRouteHandler:
         assert 'message' in error_data
         assert error_data['method'] == 'POST'
         assert error_data['path'] == '/good-evening'
+        assert 'allowed_methods' in error_data
+        assert 'GET' in error_data['allowed_methods']
+        assert 'POST' not in error_data['allowed_methods']
 
         # Validate Allow header membership only: the handler builds the header from
         # Flask's routing method set, so its rendered order is not stable between runs
