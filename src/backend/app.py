@@ -423,6 +423,55 @@ def register_route_handlers(app: Flask) -> None:
             error_response.status_code = 500
             return error_response
     
+    @app.route('/good-evening', methods=['GET'])
+    def good_evening_route_handler() -> Response:
+        """
+        Flask route handler for GET /good-evening endpoint that generates and returns
+        'Good evening' response with proper HTTP headers and JSON formatting.
+        Mirrors the /hello route handler pattern for the new greeting endpoint.
+
+        Returns:
+            Response: Flask response object with 'Good evening' message
+        """
+        try:
+            # Log route handler execution for educational visibility
+            logger.info("🌆 Processing GET /good-evening request")
+
+            # Generate response body as specified in requirements
+            response_body = 'Good evening'
+
+            # Create JSON response using Flask's jsonify() function
+            response_data = {
+                'message': response_body,
+                'timestamp': datetime.now().isoformat(),
+                'status': 'success'
+            }
+
+            # Generate Flask response with proper status code and content type
+            response = jsonify(response_data)
+            response.status_code = 200
+
+            # Add custom headers for educational demonstration
+            response.headers['Content-Type'] = 'application/json'
+            response.headers['X-API-Version'] = '1.0'
+
+            # Log successful response generation for educational purposes
+            logger.info(f"✅ GET /good-evening - 200 OK - \"{response_body}\"")
+            return response
+
+        except Exception as e:
+            # Handle route handler errors with comprehensive logging
+            logger.error(f"❌ Error in /good-evening route handler: {e}")
+
+            # Return error response using Flask error handling
+            error_response = jsonify({
+                'status': 'error',
+                'message': 'Internal server error in good-evening endpoint',
+                'timestamp': datetime.now().isoformat()
+            })
+            error_response.status_code = 500
+            return error_response
+
     @app.route('/health', methods=['GET'])
     def health_check_handler() -> Response:
         """
