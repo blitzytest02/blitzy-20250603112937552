@@ -117,6 +117,12 @@ class TestGoodEveningRouteHandler:
         assert 'X-Request-ID' in response.headers
 
         # Validate server identification removal for security
+        # These assertions cover the application's own suppression: the security-header
+        # hook pops any 'Server' value and nothing sets 'X-Powered-By'. No WSGI server
+        # is involved in-process, so both hold here. A WSGI server re-adds its own
+        # transport-layer 'Server' header after Flask's hooks run (Werkzeug on the
+        # development server, gunicorn under WSGI), so that header is removed in server
+        # or edge-proxy configuration, not in the application.
         assert 'Server' not in response.headers
         assert 'X-Powered-By' not in response.headers
 
